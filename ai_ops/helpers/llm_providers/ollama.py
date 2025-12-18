@@ -66,7 +66,7 @@ class OllamaHandler(BaseLLMProviderHandler):
             ) from e
 
         # Get base URL from config or environment
-        base_url = self.config.get("base_url") or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        base_url = self.config.get("base_url") or os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434")
 
         logger.info(f"Initializing ChatOllama with model={model_name}, base_url={base_url}, temperature={temperature}")
 
