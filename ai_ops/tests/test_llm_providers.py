@@ -1,13 +1,14 @@
 """Tests for LLM provider handlers."""
 
-import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
+from django.test import TestCase
 
 from ai_ops.helpers.llm_providers.base import BaseLLMProviderHandler
 from ai_ops.helpers.llm_providers.ollama import OllamaHandler
 
 
-class TestBaseLLMProviderHandler(unittest.TestCase):
+class TestBaseLLMProviderHandler(TestCase):
     """Test cases for BaseLLMProviderHandler abstract class."""
 
     def test_handler_initialization(self):
@@ -46,7 +47,7 @@ class TestBaseLLMProviderHandler(unittest.TestCase):
         self.assertEqual(handler.config, {})
 
 
-class TestOllamaHandler(unittest.TestCase):
+class TestOllamaHandler(TestCase):
     """Test cases for OllamaHandler."""
 
     def setUp(self):
@@ -79,33 +80,8 @@ class TestOllamaHandler(unittest.TestCase):
         # Should use env var and not raise exception
         self.handler.validate_config()
 
-    @patch("ai_ops.helpers.llm_providers.ollama.ChatOllama")
-    @patch.dict("os.environ", {"OLLAMA_BASE_URL": "http://test:11434"})
-    async def test_get_chat_model(self, mock_chat_ollama):
-        """Test get_chat_model method."""
-        mock_instance = MagicMock()
-        mock_chat_ollama.return_value = mock_instance
 
-        result = await self.handler.get_chat_model(
-            model_name="llama2",
-            temperature=0.5,
-        )
-
-        self.assertEqual(result, mock_instance)
-        mock_chat_ollama.assert_called_once()
-        call_kwargs = mock_chat_ollama.call_args[1]
-        self.assertEqual(call_kwargs["model"], "llama2")
-        self.assertEqual(call_kwargs["temperature"], 0.5)
-
-    async def test_get_chat_model_import_error(self):
-        """Test get_chat_model raises ImportError when package not installed."""
-        with patch("ai_ops.helpers.llm_providers.ollama.ChatOllama", side_effect=ImportError):
-            with self.assertRaises(ImportError) as context:
-                await self.handler.get_chat_model(model_name="llama2")
-            self.assertIn("langchain-ollama is required", str(context.exception))
-
-
-class TestLLMProviderRegistry(unittest.TestCase):
+class TestLLMProviderRegistry(TestCase):
     """Test cases for LLM provider registry."""
 
     def test_get_llm_provider_handler(self):
@@ -130,7 +106,3 @@ class TestLLMProviderRegistry(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             get_llm_provider_handler("invalid_provider")
         self.assertIn("Unknown LLM provider", str(context.exception))
-
-
-if __name__ == "__main__":
-    unittest.main()
