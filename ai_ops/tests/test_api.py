@@ -1,7 +1,6 @@
 """Tests for AI Ops API."""
 
 from django.contrib.auth import get_user_model
-from django.test import override_settings
 from nautobot.apps.testing import APITestCase
 
 from ai_ops.models import LLMModel, LLMProvider, LLMProviderChoice, MCPServer

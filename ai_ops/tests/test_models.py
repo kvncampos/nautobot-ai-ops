@@ -32,7 +32,9 @@ class LLMProviderTestCase(TestCase):
 
     def test_llm_provider_unique_name(self):
         """Test that provider names must be unique."""
-        with self.assertRaises(Exception):
+        from django.db import IntegrityError
+
+        with self.assertRaises(IntegrityError):
             LLMProvider.objects.create(
                 name=LLMProviderChoice.OLLAMA,
                 description="Duplicate provider",
@@ -178,13 +180,15 @@ class LLMMiddlewareTestCase(TestCase):
 
     def test_llm_middleware_unique_together(self):
         """Test that each middleware type can only be configured once per model."""
+        from django.db import IntegrityError
+
         LLMMiddleware.objects.create(
             llm_model=self.model,
             middleware=self.middleware_type,
             priority=5,
         )
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(IntegrityError):
             LLMMiddleware.objects.create(
                 llm_model=self.model,
                 middleware=self.middleware_type,
