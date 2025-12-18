@@ -21,20 +21,25 @@ To avoid extra work and temporary links, make sure that publishing docs (or merg
 
 ## Overview
 
-The AI Ops plugin brings advanced artificial intelligence capabilities to Nautobot through integration with Azure OpenAI and the Model Context Protocol (MCP). This app provides an intelligent chat assistant that can interact with your Nautobot environment, external MCP servers, and other integrated systems to help automate operational tasks, answer questions, and provide insights based on your network infrastructure data.
+The AI Ops plugin brings advanced artificial intelligence capabilities to Nautobot through a flexible multi-provider architecture and the Model Context Protocol (MCP). This app provides an intelligent chat assistant that can interact with your Nautobot environment, external MCP servers, and other integrated systems to help automate operational tasks, answer questions, and provide insights based on your network infrastructure data.
 
-At its core, AI Ops leverages LangGraph and LangChain to orchestrate conversations with Large Language Models (LLMs), maintaining conversation context through checkpointed sessions stored in Redis. The plugin supports multiple LLM configurations with Azure OpenAI, allowing administrators to define and manage different AI models for various use cases. Additionally, it implements a multi-MCP server architecture that enables the AI assistant to connect to both internal and external MCP servers, providing extensible tool access for network automation, data retrieval, and operational workflows. The plugin includes enterprise features such as health monitoring for MCP servers, automatic status tracking, conversation persistence, and scheduled checkpoint cleanup to maintain optimal performance.
+At its core, AI Ops leverages LangGraph and LangChain to orchestrate conversations with Large Language Models (LLMs) from multiple providers (Ollama, OpenAI, Azure AI, Anthropic, HuggingFace, and custom providers), maintaining conversation context through checkpointed sessions stored in Redis. The plugin supports flexible LLM provider and model management, allowing administrators to define multiple providers and models for various use cases. A powerful middleware system enables request/response processing with features like caching, logging, validation, and retry logic. The multi-MCP server architecture enables the AI assistant to connect to both internal and external MCP servers, providing extensible tool access for network automation, data retrieval, and operational workflows. Enterprise features include automated health monitoring for MCP servers, middleware cache management, automatic status tracking, conversation persistence, and scheduled maintenance tasks to maintain optimal performance.
 
 ### Key Features
 
-- **AI Chat Assistant**: Interactive chat interface powered by Azure OpenAI that understands and responds to natural language queries about your Nautobot environment
-- **Multiple LLM Support**: Configure and manage multiple Azure OpenAI deployments (GPT-4o, GPT-4 Turbo, etc.) with different temperature settings and capabilities
-- **MCP Server Integration**: Connect to internal and external Model Context Protocol servers to extend the AI assistant's capabilities with custom tools and integrations
+- **Multi-Provider LLM Support**: Use models from Ollama (local), OpenAI, Azure AI, Anthropic, HuggingFace, or implement custom providers
+- **LLM Provider Management**: Configure and manage multiple LLM providers with provider-specific settings and handler classes
+- **LLM Model Management**: Configure multiple models from different providers with varying capabilities, temperature settings, and configurations
+- **Middleware System**: Apply middleware chains to models for caching, logging, validation, retry logic, rate limiting, and custom processing
+- **Priority-Based Middleware Execution**: Control middleware execution order (1-100) with pre and post-processing phases
+- **AI Chat Assistant**: Interactive chat interface that understands and responds to natural language queries about your Nautobot environment
+- **MCP Server Integration**: Connect to internal and external Model Context Protocol servers to extend capabilities with custom tools
+- **Automated Health Monitoring**: Scheduled health checks for MCP servers with retry logic and automatic cache invalidation
 - **Conversation Persistence**: Checkpoint-based conversation management using Redis ensures context is maintained across sessions
-- **Health Monitoring**: Automatic health checks and status tracking for MCP servers with configurable endpoints
-- **Secure Configuration**: API keys and sensitive credentials managed through Nautobot's Secret objects
-- **Scheduled Tasks**: Background jobs for checkpoint cleanup and MCP server health monitoring
-- **RESTful API**: Full API support for programmatic access to LLM models and MCP server configurations
+- **Secure Configuration**: API keys and credentials managed through Nautobot's Secret objects, never stored directly
+- **Scheduled Tasks**: Background jobs for checkpoint cleanup, MCP server health monitoring, and middleware cache management
+- **RESTful API**: Full API support for programmatic access to all models (providers, models, middleware, MCP servers)
+- **Environment-Aware**: Supports LAB (local development with Ollama), NONPROD, and PROD environments
 
 More screenshots and detailed use cases can be found in the [Using the App](https://docs.nautobot.com/projects/ai-ops/en/latest/user/app_use_cases/) page in the documentation.
 
@@ -42,8 +47,14 @@ More screenshots and detailed use cases can be found in the [Using the App](http
 
 - Nautobot 2.4.22+
 - Python 3.10 - 3.12
-- Azure OpenAI API access
-- Redis (for conversation checkpointing)
+- Redis (for conversation checkpointing and caching)
+- At least one LLM provider:
+  - **Ollama** (local, free): For development and testing
+  - **OpenAI API**: For OpenAI models (requires API key)
+  - **Azure OpenAI**: For Azure-hosted models (requires subscription)
+  - **Anthropic API**: For Claude models (requires API key)
+  - **HuggingFace**: For HuggingFace models (requires API key)
+  - **Custom**: Implement your own provider handler
 - Optional: MCP servers for extended functionality
 
 ## Documentation

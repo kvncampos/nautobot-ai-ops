@@ -127,6 +127,208 @@ The job returns a dictionary with cleanup statistics:
 2024-12-05 10:30:05 SUCCESS Job completed successfully
 ```
 
+## MCP Server Health Check Job
+
+::: ai_ops.jobs.mcp_health_check.MCPServerHealthCheckJob
+    options:
+        show_root_heading: true
+        show_source: false
+
+The MCP Server Health Check Job performs automated health monitoring of HTTP-based MCP servers to ensure they're operational.
+
+### Purpose
+
+MCP servers are critical for providing tools and capabilities to AI agents. This job automatically:
+
+- Checks all HTTP MCP servers for availability
+- Updates server status based on health check results
+- Implements retry logic to avoid false positives
+- Invalidates agent cache when server status changes
+- Runs in parallel for efficient checking
+
+### Job Details
+
+- **Name**: MCP Server Health Check
+- **Group**: AI Agents
+- **Description**: Perform automated health checks on HTTP MCP servers with retry logic and parallel execution
+- **Scheduling**: Can be scheduled for automatic execution
+- **Hidden**: Yes (typically triggered by scheduler, not manually run)
+- **Sensitive Variables**: None
+
+### Key Features
+
+- **Parallel Execution**: Uses ThreadPoolExecutor (1 worker per server, max 4 workers)
+- **Retry Logic**: 2 verification checks (5 seconds apart) before status change
+- **Cache Invalidation**: Clears MCP client cache if any status changes
+- **Protocol Filtering**: Only checks HTTP servers, skips STDIO protocol
+- **Status Filtering**: Skips servers with "Vulnerable" status
+
+### Health Check Process
+
+```python
+# For each HTTP MCP server:
+1. Send GET request to {server.url}{server.health_check}
+2. If response differs from current status:
+   a. Wait 5 seconds
+   b. Perform verification check
+   c. Wait 5 seconds  
+   d. Perform second verification check
+   e. If both verifications confirm: update status
+3. If any status changed: clear agent MCP cache
+```
+
+### Status Change Logic
+
+- **Healthy server + successful check** = No change
+- **Unhealthy server + failed check** = No change
+- **Status differs** = Perform 2 verification checks, then flip if confirmed
+
+### Usage Example
+
+#### Manual Execution
+
+1. Navigate to **Jobs > Jobs** in Nautobot
+2. Find **AI Agents > MCP Server Health Check**
+3. Click **Run Job Now**
+4. Review job log for health check results
+
+#### Scheduled Execution
+
+Recommended schedule: Every 5-15 minutes
+
+```python
+# Configure via Nautobot UI or programmatically
+from nautobot.extras.models import ScheduledJob
+
+ScheduledJob.objects.create(
+    name="MCP Health Monitoring",
+    job_model="ai_ops.jobs.mcp_health_check.MCPServerHealthCheckJob",
+    interval="crontab",
+    crontab="*/10 * * * *",  # Every 10 minutes
+    enabled=True
+)
+```
+
+### Job Output
+
+```python
+{
+    "success": True,
+    "checked_count": 5,        # Number of servers checked
+    "changed_count": 1,        # Number of status changes
+    "failed_count": 1,         # Number of servers that failed
+    "worker_count": 4,         # Number of parallel workers used
+    "cache_cleared": True,     # Whether agent cache was invalidated
+    "error": None              # Error message if failed
+}
+```
+
+### Example Job Log
+
+```
+2024-12-18 10:00:00 INFO Starting MCP server health checks...
+2024-12-18 10:00:02 INFO ✅ MCP health check completed: 5 server(s) checked using 4 worker(s), 1 status change(s), 1 failure(s)
+2024-12-18 10:00:02 INFO ✅ MCP client cache cleared due to status changes
+2024-12-18 10:00:02 WARNING ⚠️ 1 server(s) changed status - check logs for details
+2024-12-18 10:00:02 SUCCESS Job completed successfully
+```
+
+### Performance Considerations
+
+- **Parallel Workers**: Max 4 workers to balance speed vs resource usage
+- **Timeout**: Each health check times out after 10 seconds
+- **Verification Delay**: 5 seconds between verification checks
+- **Total Time**: Typically completes in 10-30 seconds for 5-10 servers
+
+## Middleware Cache Jobs
+
+The AI Ops App includes two job hooks that automatically manage middleware caching when models change.
+
+### Middleware Cache Invalidation Job
+
+::: ai_ops.jobs.middleware_cache_jobs.MiddlewareCacheInvalidationJob
+    options:
+        show_root_heading: true
+        show_source: false
+
+Automatically invalidates middleware cache when `LLMMiddleware` objects are created, updated, or deleted.
+
+#### Purpose
+
+Middleware configurations are cached for performance. When middleware settings change, the cache must be invalidated to ensure the agent uses current configurations.
+
+#### Job Details
+
+- **Name**: Middleware Cache Invalidation
+- **Group**: AI Agents (JobHookReceiver)
+- **Trigger**: Automatic on LLMMiddleware changes
+- **Hidden**: Yes (runs automatically)
+- **Type**: JobHookReceiver
+
+#### Trigger Events
+
+Responds to these `LLMMiddleware` events:
+- **Create**: New middleware added to a model
+- **Update**: Middleware configuration changed
+- **Delete**: Middleware removed from a model
+
+#### Example Log
+
+```
+2024-12-18 10:15:00 INFO Middleware cache invalidation triggered: update on CacheMiddleware for model gpt-4o
+2024-12-18 10:15:00 INFO Middleware cache cleared. Previous state: {'cached_models': 3, 'total_middleware': 8}
+```
+
+### Default Model Cache Warming Job
+
+::: ai_ops.jobs.middleware_cache_jobs.DefaultModelCacheWarmingJob
+    options:
+        show_root_heading: true
+        show_source: false
+
+Automatically warms middleware cache when a model is marked as the default model.
+
+#### Purpose
+
+When a new default model is set, pre-loading its middleware configuration improves first-request performance for users.
+
+#### Job Details
+
+- **Name**: Default Model Cache Warming
+- **Group**: AI Agents (JobHookReceiver)
+- **Trigger**: Automatic when `is_default=True` set on LLMModel
+- **Hidden**: Yes (runs automatically)
+- **Type**: JobHookReceiver
+
+#### Trigger Events
+
+Responds to:
+- **LLMModel Update**: When `is_default` field changes to `True`
+
+#### Example Log
+
+```
+2024-12-18 10:20:00 INFO Default model cache warming triggered for model gpt-4o
+2024-12-18 10:20:01 INFO Middleware cache warmed. Cache state: {'cached_models': 1, 'total_middleware': 3}
+```
+
+#### Cache Warming Process
+
+```python
+# 1. Load default model's middleware configurations
+model = LLMModel.get_default_model()
+middlewares = model.middlewares.filter(is_active=True).order_by('priority')
+
+# 2. Initialize middleware instances
+for middleware_config in middlewares:
+    middleware_instance = initialize_middleware(middleware_config)
+    cache[model.id][middleware_config.id] = middleware_instance
+
+# 3. Update cache metadata
+cache['last_warmed'] = datetime.now()
+cache['cached_models'].add(model.id)
+```
+
 ## Checkpoint Storage
 
 ### Redis Key Structure
