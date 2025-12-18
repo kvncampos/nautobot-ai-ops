@@ -17,6 +17,26 @@ class OllamaHandler(BaseLLMProviderHandler):
     Reference: https://docs.langchain.com/oss/python/integrations/chat/ollama
     """
 
+    def validate_config(self) -> None:
+        """Validate Ollama provider configuration.
+
+        Ollama typically runs locally, so we mainly check if the base_url
+        is configured properly.
+
+        Raises:
+            ValueError: If configuration is invalid
+        """
+        import os
+
+        # Check if base_url is provided via config or use default localhost
+        base_url = self.config.get("base_url") or os.getenv("OLLAMA_HOST", "http://localhost:11434")
+
+        # Basic URL validation
+        if not base_url.startswith(("http://", "https://")):
+            raise ValueError(f"Invalid Ollama base_url: '{base_url}'. Must start with http:// or https://")
+
+        logger.debug(f"Ollama configuration validation passed for base_url: {base_url}")
+
     async def get_chat_model(
         self,
         model_name: str,

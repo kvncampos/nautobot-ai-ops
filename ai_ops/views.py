@@ -201,21 +201,19 @@ class ChatMessageView(GenericView):
             # Get optional provider override (only allow admins to select provider)
             provider_override = None
             if request.user.is_staff:
-                provider_override = request.POST.get("provider", "").strip()
+                provider_override = request.POST.get("llm_provider", "").strip()
                 # Validate provider exists and is enabled if specified
                 if provider_override:
-                    try:
-                        provider_instance = models.LLMProvider.objects.get(name=provider_override, is_enabled=True)
-                        logger.debug(f"Admin {request.user.username} selected provider: {provider_override}")
-                    except models.LLMProvider.DoesNotExist:
+                    if not models.LLMProvider.objects.filter(name=provider_override, is_enabled=True).exists():
                         return JsonResponse(
                             {"error": f"Provider '{provider_override}' not found or is disabled"}, status=400
                         )
-            elif request.POST.get("provider"):
+                    logger.debug(f"Admin {request.user.username} selected provider: {provider_override}")
+            elif request.POST.get("llm_provider"):
                 # Non-admin users cannot select provider
                 logger.warning(
                     f"Non-admin user {request.user.username} attempted to select provider: "
-                    f"{request.POST.get('provider')}"
+                    f"{request.POST.get('llm_provider')}"
                 )
                 return JsonResponse({"error": "Only administrators can select a specific provider"}, status=403)
 
@@ -234,10 +232,8 @@ class ChatMessageView(GenericView):
 
         except Exception as e:
             # Log full traceback for debugging
-            import logging
             import traceback
 
-            logger = logging.getLogger(__name__)
             logger.error(f"Chat message error: {e!s}\n{traceback.format_exc()}")
 
             # Return technical error for POC
@@ -271,11 +267,20 @@ class ChatClearView(GenericView):
             else:
                 return JsonResponse({"success": True, "message": "No conversation history to clear"})
 
+        except RuntimeError as e:
+            # Handle interpreter shutdown gracefully
+            if "cannot schedule new futures after interpreter shutdown" in str(e):
+                logger.warning(f"Cannot clear conversation during shutdown: {str(e)}")
+                return JsonResponse(
+                    {"success": True, "message": "Server is shutting down, conversation will be cleared on restart"},
+                    status=200,
+                )
+            else:
+                logger.error(f"Runtime error clearing conversation: {str(e)}")
+                return JsonResponse({"success": False, "error": str(e)}, status=500)
         except Exception as e:
-            import logging
             import traceback
 
-            logger = logging.getLogger(__name__)
             logger.error(f"Failed to clear conversation: {str(e)}\n{traceback.format_exc()}")
 
             return JsonResponse({"success": False, "error": str(e)}, status=500)
@@ -299,18 +304,13 @@ class ClearMCPCacheView(GenericView):
             cleared_count = await clear_mcp_cache()
 
             # Log the action (system action, not an object change)
-            import logging
-
-            logger = logging.getLogger(__name__)
             logger.info(f"User {request.user.username} cleared MCP client cache for {cleared_count} healthy servers")
 
             return JsonResponse({"success": True, "cleared_count": cleared_count})
 
         except Exception as e:
-            import logging
             import traceback
 
-            logger = logging.getLogger(__name__)
             logger.error(f"Failed to clear MCP cache: {str(e)}\n{traceback.format_exc()}")
 
             return JsonResponse({"success": False, "error": f"Failed to clear cache: {str(e)}"}, status=500)

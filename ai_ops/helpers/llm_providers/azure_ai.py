@@ -16,6 +16,36 @@ class AzureAIHandler(BaseLLMProviderHandler):
     Reference: https://docs.langchain.com/oss/python/integrations/providers/azure_ai
     """
 
+    def validate_config(self) -> None:
+        """Validate Azure AI provider configuration.
+
+        Checks that required configuration values are present either in config
+        or as environment variables.
+
+        Raises:
+            ValueError: If required configuration is missing
+        """
+        import os
+
+        # Check if azure_endpoint is provided via config or environment
+        azure_endpoint = self.config.get("azure_endpoint") or os.getenv("AZURE_OPENAI_ENDPOINT")
+        if not azure_endpoint:
+            raise ValueError(
+                "Azure endpoint is required. Set via config 'azure_endpoint' field or "
+                "AZURE_OPENAI_ENDPOINT environment variable."
+            )
+
+        # API key can be provided at runtime, so we don't strictly require it during validation
+        # But we can warn if it's not available
+        api_key = os.getenv("AZURE_OPENAI_API_KEY")
+        if not api_key:
+            logger.warning(
+                "Azure OpenAI API key not found in environment. "
+                "Ensure AZURE_OPENAI_API_KEY is set or provide api_key parameter when creating models."
+            )
+
+        logger.debug(f"Azure AI configuration validation passed for endpoint: {azure_endpoint}")
+
     async def get_chat_model(
         self,
         model_name: str,

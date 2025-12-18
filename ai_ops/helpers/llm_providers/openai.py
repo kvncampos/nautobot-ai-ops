@@ -16,6 +16,32 @@ class OpenAIHandler(BaseLLMProviderHandler):
     Reference: https://docs.langchain.com/oss/python/integrations/chat/openai
     """
 
+    def validate_config(self) -> None:
+        """Validate OpenAI provider configuration.
+
+        Checks for API key availability and validates any configured base_url.
+
+        Raises:
+            ValueError: If configuration is invalid
+        """
+        import os
+
+        # API key can be provided at runtime, so we don't strictly require it during validation
+        # But we can warn if it's not available
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            logger.warning(
+                "OpenAI API key not found in environment. "
+                "Ensure OPENAI_API_KEY is set or provide api_key parameter when creating models."
+            )
+
+        # Validate base_url if provided
+        base_url = self.config.get("base_url")
+        if base_url and not base_url.startswith(("http://", "https://")):
+            raise ValueError(f"Invalid OpenAI base_url: '{base_url}'. Must start with http:// or https://")
+
+        logger.debug("OpenAI configuration validation passed")
+
     async def get_chat_model(
         self,
         model_name: str,

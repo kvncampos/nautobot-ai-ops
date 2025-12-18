@@ -18,6 +18,27 @@ class AnthropicHandler(BaseLLMProviderHandler):
     Reference: https://docs.langchain.com/oss/python/integrations/chat/anthropic
     """
 
+    def validate_config(self) -> None:
+        """Validate Anthropic provider configuration.
+
+        Checks for API key availability and validates any configured settings.
+
+        Raises:
+            ValueError: If configuration is invalid
+        """
+        import os
+
+        # API key can be provided at runtime, so we don't strictly require it during validation
+        # But we can warn if it's not available
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            logger.warning(
+                "Anthropic API key not found in environment. "
+                "Ensure ANTHROPIC_API_KEY is set or provide api_key parameter when creating models."
+            )
+
+        logger.debug("Anthropic configuration validation passed")
+
     async def get_chat_model(
         self,
         model_name: str,

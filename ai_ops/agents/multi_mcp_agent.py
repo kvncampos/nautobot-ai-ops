@@ -52,44 +52,99 @@ async def get_or_create_mcp_client(force_refresh: bool = False) -> tuple[MultiSe
     Returns:
         Tuple of (client, tools) or (None, []) if no healthy servers
     """
-    async with _cache_lock:
-        now = datetime.now()
+    try:
+        async with _cache_lock:
+            now = datetime.now()
 
-        # Get cache TTL from default LLM model
-        try:
-            from asgiref.sync import sync_to_async
+            # Get cache TTL from default LLM model
+            try:
+                from asgiref.sync import sync_to_async
 
-            from ai_ops.models import LLMModel
+                from ai_ops.models import LLMModel
 
-            default_model = await sync_to_async(LLMModel.get_default_model)()
-            cache_ttl_seconds = default_model.cache_ttl
-        except Exception as e:
-            logger.warning(f"Failed to get cache TTL from default model, using 300s: {e}")
-            cache_ttl_seconds = 300
+                default_model = await sync_to_async(LLMModel.get_default_model)()
+                cache_ttl_seconds = default_model.cache_ttl
+            except Exception as e:
+                logger.warning(f"Failed to get cache TTL from default model, using 300s: {e}")
+                cache_ttl_seconds = 300
 
-        # Check cache validity
-        if not force_refresh and _mcp_client_cache["client"] is not None:
-            cache_age = (now - _mcp_client_cache["timestamp"]).total_seconds()
-            if cache_age < cache_ttl_seconds:
-                logger.debug(f"Using cached MCP client (age: {cache_age:.1f}s, TTL: {cache_ttl_seconds}s)")
-                return _mcp_client_cache["client"], _mcp_client_cache["tools"]
+            # Check cache validity
+            if not force_refresh and _mcp_client_cache["client"] is not None:
+                cache_age = (now - _mcp_client_cache["timestamp"]).total_seconds()
+                if cache_age < cache_ttl_seconds:
+                    logger.debug(f"Using cached MCP client (age: {cache_age:.1f}s, TTL: {cache_ttl_seconds}s)")
+                    return _mcp_client_cache["client"], _mcp_client_cache["tools"]
 
-        # Query for enabled, healthy MCP servers
-        try:
-            from asgiref.sync import sync_to_async
-            from nautobot.extras.models import Status
+            # Query for enabled, healthy MCP servers
+            try:
+                from asgiref.sync import sync_to_async
+                from nautobot.extras.models import Status
 
-            healthy_status = await sync_to_async(Status.objects.get)(name="Healthy")
-            servers = await sync_to_async(list)(
-                MCPServer.objects.filter(
-                    status__name="Healthy",
-                    protocol="http",
-                    status=healthy_status,
+                healthy_status = await sync_to_async(Status.objects.get)(name="Healthy")
+                servers = await sync_to_async(list)(
+                    MCPServer.objects.filter(
+                        status__name="Healthy",
+                        protocol="http",
+                        status=healthy_status,
+                    )
                 )
-            )
 
-            if not servers:
-                logger.warning("No enabled, healthy MCP servers found")
+                if not servers:
+                    logger.warning("No enabled, healthy MCP servers found")
+                    _mcp_client_cache.update(
+                        {
+                            "client": None,
+                            "tools": [],
+                            "timestamp": now,
+                            "server_count": 0,
+                        }
+                    )
+                    return None, []
+
+                # Build connections dict for MultiServerMCPClient
+                def httpx_client_factory(**kwargs):
+                    """Factory for httpx client with SSL verification disabled.
+
+                    Note: verify=False is intentional per requirements for connecting
+                    to internal MCP servers with self-signed certificates.
+                    """
+                    return httpx.AsyncClient(
+                        verify=False,  # noqa: S501 - intentional per requirements
+                        limits=httpx.Limits(
+                            max_keepalive_connections=5,
+                            max_connections=10,
+                        ),
+                    )
+
+                connections = {}
+                for server in servers:
+                    # Build full MCP URL: base_url + mcp_endpoint
+                    mcp_url = f"{server.url.rstrip('/')}{server.mcp_endpoint}"
+                    connections[server.name] = {
+                        "transport": "streamable_http",
+                        "url": mcp_url,
+                        "httpx_client_factory": httpx_client_factory,
+                    }
+
+                # Create MultiServerMCPClient
+                client = MultiServerMCPClient(connections)
+                tools = await client.get_tools()
+
+                # Update cache
+                _mcp_client_cache.update(
+                    {
+                        "client": client,
+                        "tools": tools,
+                        "timestamp": now,
+                        "server_count": len(servers),
+                    }
+                )
+
+                logger.info(f"Created MCP client with {len(servers)} server(s), {len(tools)} tool(s)")
+                return client, tools
+
+            except Exception as e:
+                logger.error(f"Failed to create MCP client: {e}", exc_info=True)
                 _mcp_client_cache.update(
                     {
                         "client": None,
@@ -100,59 +155,15 @@ async def get_or_create_mcp_client(force_refresh: bool = False) -> tuple[MultiSe
                 )
                 return None, []
 
-            # Build connections dict for MultiServerMCPClient
-            def httpx_client_factory(**kwargs):
-                """Factory for httpx client with SSL verification disabled.
-
-                Note: verify=False is intentional per requirements for connecting
-                to internal MCP servers with self-signed certificates.
-                """
-                return httpx.AsyncClient(
-                    verify=False,  # noqa: S501 - intentional per requirements
-                    limits=httpx.Limits(
-                        max_keepalive_connections=5,
-                        max_connections=10,
-                    ),
-                )
-
-            connections = {}
-            for server in servers:
-                # Build full MCP URL: base_url + mcp_endpoint
-                mcp_url = f"{server.url.rstrip('/')}{server.mcp_endpoint}"
-                connections[server.name] = {
-                    "transport": "streamable_http",
-                    "url": mcp_url,
-                    "httpx_client_factory": httpx_client_factory,
-                }
-
-            # Create MultiServerMCPClient
-            client = MultiServerMCPClient(connections)
-            tools = await client.get_tools()
-
-            # Update cache
-            _mcp_client_cache.update(
-                {
-                    "client": client,
-                    "tools": tools,
-                    "timestamp": now,
-                    "server_count": len(servers),
-                }
-            )
-
-            logger.info(f"Created MCP client with {len(servers)} server(s), {len(tools)} tool(s)")
-            return client, tools
-
-        except Exception as e:
-            logger.error(f"Failed to create MCP client: {e}", exc_info=True)
-            _mcp_client_cache.update(
-                {
-                    "client": None,
-                    "tools": [],
-                    "timestamp": now,
-                    "server_count": 0,
-                }
-            )
+    except RuntimeError as e:
+        if "cannot schedule new futures after interpreter shutdown" in str(e):
+            logger.warning(f"Cannot access MCP client during interpreter shutdown: {e}")
             return None, []
+        else:
+            raise
+    except Exception as e:
+        logger.error(f"Unexpected error in get_or_create_mcp_client: {e}", exc_info=True)
+        return None, []
 
 
 async def clear_mcp_cache() -> int:
@@ -194,6 +205,60 @@ async def warm_mcp_cache():
     except Exception as e:
         logger.warning(f"Failed to warm MCP cache on startup: {e}")
         # Don't raise - wait for scheduled health check
+
+
+async def shutdown_mcp_client():
+    """Gracefully shutdown MCP client and clear cache.
+
+    This function should be called during application shutdown to ensure
+    proper cleanup of async resources and prevent shutdown errors.
+    """
+    global _mcp_client_cache
+
+    try:
+        async with _cache_lock:
+            logger.info("Shutting down MCP client...")
+
+            # Close existing client if present
+            if _mcp_client_cache["client"] is not None:
+                try:
+                    # Attempt to close client connections gracefully
+                    client = _mcp_client_cache["client"]
+                    if hasattr(client, "close"):
+                        await client.close()
+                    elif hasattr(client, "aclose"):
+                        await client.aclose()
+                except Exception as e:
+                    logger.warning(f"Error closing MCP client during shutdown: {e}")
+
+            # Reset cache
+            _mcp_client_cache.update(
+                {
+                    "client": None,
+                    "tools": None,
+                    "timestamp": None,
+                    "server_count": 0,
+                }
+            )
+
+            logger.info("MCP client shutdown completed")
+
+    except RuntimeError as e:
+        if "cannot schedule new futures after interpreter shutdown" in str(e):
+            logger.warning(f"Cannot shutdown MCP client gracefully, interpreter already shutting down: {e}")
+            # Force clear the cache without async operations
+            _mcp_client_cache.update(
+                {
+                    "client": None,
+                    "tools": None,
+                    "timestamp": None,
+                    "server_count": 0,
+                }
+            )
+        else:
+            logger.error(f"Runtime error during MCP client shutdown: {e}", exc_info=True)
+    except Exception as e:
+        logger.error(f"Error during MCP client shutdown: {e}", exc_info=True)
 
 
 async def build_agent(llm_model=None, checkpointer=None, provider: str | None = None):
@@ -343,6 +408,11 @@ async def process_message(user_input: str, thread_id: str, provider: str | None 
         from ai_ops.checkpointer import get_checkpointer
 
         async with get_checkpointer() as checkpointer:
+            # Handle case where checkpointer is None (during shutdown)
+            if checkpointer is None:
+                logger.warning("Checkpointer unavailable during shutdown, using stateless response")
+                return "Server is currently shutting down. Please try again in a moment."
+
             # Build agent v2 with checkpointer integration
             # If provider is specified, the LLM model selection will use it
             graph = await build_agent(checkpointer=checkpointer, provider=provider)
@@ -371,6 +441,13 @@ async def process_message(user_input: str, thread_id: str, provider: str | None 
 
             return response_text
 
+    except RuntimeError as e:
+        if "cannot schedule new futures after interpreter shutdown" in str(e):
+            logger.warning(f"Cannot process message during interpreter shutdown: {e}")
+            return "Server is shutting down. Please try again in a moment."
+        else:
+            logger.error(f"Runtime error in process_message: {e}", exc_info=True)
+            return f"Runtime error processing message: {str(e)}"
     except Exception as e:
         logger.error(f"Error in process_message: {e}", exc_info=True)
         return f"Error processing message: {str(e)}"

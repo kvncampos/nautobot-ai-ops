@@ -47,18 +47,18 @@ async def get_llm_model_async(
     try:
         # Get the LLM model from database
         if model_name:
-            llm_model = await sync_to_async(LLMModel.objects.select_related("provider").get)(name=model_name)
+            llm_model = await sync_to_async(LLMModel.objects.select_related("llm_provider").get)(name=model_name)
         else:
             llm_model = await sync_to_async(LLMModel.get_default_model)()
 
-        logger.debug(f"Retrieved LLMModel: {llm_model.name}, provider: {llm_model.provider.name}")
+        logger.debug(f"Retrieved LLMModel: {llm_model.name}, provider: {llm_model.llm_provider.name}")
 
         # Use provided provider or model's configured provider
-        provider_instance = llm_model.provider
+        provider_instance = llm_model.llm_provider
         if provider:
             # Override provider if specified
             provider_instance = await sync_to_async(
-                lambda: __import__("ai_ops.models", fromlist=["Provider"]).Provider.objects.get(name=provider)
+                lambda: __import__("ai_ops.models", fromlist=["LLMProvider"]).LLMProvider.objects.get(name=provider)
             )()
             logger.debug(f"Using overridden provider: {provider}")
 

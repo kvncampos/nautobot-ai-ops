@@ -107,17 +107,26 @@ async def get_checkpointer():
         _memory_saver_lock = asyncio.Lock()
 
     # Use singleton pattern to maintain conversation history across requests
-    async with _memory_saver_lock:
-        if _memory_saver_instance is None:
-            logger.info("Initializing singleton LangGraph MemorySaver checkpointer")
-            _memory_saver_instance = MemorySaver()
-        else:
-            logger.debug("Reusing existing MemorySaver checkpointer instance")
-
     try:
-        yield _memory_saver_instance
-    finally:
-        logger.debug("MemorySaver checkpointer request complete")
+        async with _memory_saver_lock:
+            if _memory_saver_instance is None:
+                logger.info("Initializing singleton LangGraph MemorySaver checkpointer")
+                _memory_saver_instance = MemorySaver()
+            else:
+                logger.debug("Reusing existing MemorySaver checkpointer instance")
+
+        try:
+            yield _memory_saver_instance
+        finally:
+            logger.debug("MemorySaver checkpointer request complete")
+
+    except RuntimeError as e:
+        if "cannot schedule new futures after interpreter shutdown" in str(e):
+            logger.warning(f"Cannot access checkpointer during interpreter shutdown: {e}")
+            # Return a None checkpointer during shutdown to prevent further errors
+            yield None
+        else:
+            raise
 
 
 async def clear_checkpointer_for_thread(thread_id: str) -> bool:
@@ -159,6 +168,20 @@ async def clear_checkpointer_for_thread(thread_id: str) -> bool:
         logger.warning(f"Could not access storage to clear thread {thread_id}")
         return False
 
+    except RuntimeError as e:
+        if "cannot schedule new futures after interpreter shutdown" in str(e):
+            logger.warning(f"Cannot clear thread {thread_id} during interpreter shutdown: {e}")
+            # During shutdown, we can still try to clear from memory directly if available
+            if hasattr(_memory_saver_instance, "storage"):
+                thread_key = (thread_id,)
+                if thread_key in _memory_saver_instance.storage:
+                    del _memory_saver_instance.storage[thread_key]
+                    logger.info(f"Force-cleared conversation history for thread {thread_id} during shutdown")
+                    return True
+            return False
+        else:
+            logger.error(f"Runtime error clearing checkpointer for thread {thread_id}: {e}", exc_info=True)
+            return False
     except Exception as e:
         logger.error(f"Error clearing checkpointer for thread {thread_id}: {e}", exc_info=True)
         return False

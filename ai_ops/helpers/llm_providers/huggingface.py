@@ -16,6 +16,32 @@ class HuggingFaceHandler(BaseLLMProviderHandler):
     Reference: https://docs.langchain.com/oss/python/integrations/chat/huggingface
     """
 
+    def validate_config(self) -> None:
+        """Validate HuggingFace provider configuration.
+
+        Checks for API token availability and validates configured endpoints.
+
+        Raises:
+            ValueError: If configuration is invalid
+        """
+        import os
+
+        # API token can be provided at runtime, so we don't strictly require it during validation
+        # But we can warn if it's not available
+        api_token = os.getenv("HUGGINGFACEHUB_API_TOKEN") or os.getenv("HF_API_TOKEN")
+        if not api_token:
+            logger.warning(
+                "HuggingFace API token not found in environment. "
+                "Ensure HUGGINGFACEHUB_API_TOKEN or HF_API_TOKEN is set or provide api_key parameter when creating models."
+            )
+
+        # Validate endpoint_url if provided
+        endpoint_url = self.config.get("endpoint_url")
+        if endpoint_url and not endpoint_url.startswith(("http://", "https://")):
+            raise ValueError(f"Invalid HuggingFace endpoint_url: '{endpoint_url}'. Must start with http:// or https://")
+
+        logger.debug("HuggingFace configuration validation passed")
+
     async def get_chat_model(
         self,
         model_name: str,
