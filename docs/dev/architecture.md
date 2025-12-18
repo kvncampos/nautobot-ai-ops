@@ -4,7 +4,7 @@ This document provides a comprehensive overview of the AI Ops App architecture.
 
 ## High-Level Architecture
 
-The AI Ops App integrates Azure OpenAI services with Nautobot through a multi-layered architecture:
+The AI Ops App integrates multiple LLM providers with Nautobot through a multi-layered architecture with middleware support:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -23,8 +23,10 @@ The AI Ops App integrates Azure OpenAI services with Nautobot through a multi-la
 │                      Application Layer                        │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
 │  │  AI Agents   │  │   Models     │  │   Helpers    │       │
-│  │  (LangGraph) │  │ (LLMModel,   │  │(get_azure_   │       │
-│  │              │  │  MCPServer)  │  │ model, etc)  │       │
+│  │  (LangGraph) │  │ (LLMProvider,│  │(get_llm_     │       │
+│  │  + Middleware│  │  LLMModel,   │  │ model,       │       │
+│  │              │  │  Middleware, │  │ middleware)  │       │
+│  │              │  │  MCPServer)  │  │              │       │
 │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘       │
 └─────────┼──────────────────┼──────────────────┼──────────────┘
           │                  │                  │
@@ -32,17 +34,56 @@ The AI Ops App integrates Azure OpenAI services with Nautobot through a multi-la
 │                   Integration Layer                           │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
 │  │  LangChain   │  │    Redis     │  │  PostgreSQL  │       │
-│  │   (MCP)      │  │(Checkpoints) │  │  (Models)    │       │
+│  │   (MCP)      │  │(Checkpoints, │  │  (Models)    │       │
+│  │              │  │  Middleware  │  │              │       │
+│  │              │  │   Cache)     │  │              │       │
 │  └──────┬───────┘  └──────────────┘  └──────────────┘       │
 └─────────┼────────────────────────────────────────────────────┘
           │
 ┌─────────▼─────────────────────────────────────────────────────┐
 │                   External Services                            │
-│  ┌──────────────┐  ┌──────────────┐                          │
-│  │Azure OpenAI  │  │ MCP Servers  │                          │
-│  │ (GPT Models) │  │ (Tools/Ctx)  │                          │
-│  └──────────────┘  └──────────────┘                          │
+│  ┌─────────────────────────────────────────────────┐          │
+│  │     LLM Providers (Multi-Provider Support)      │          │
+│  │  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐│          │
+│  │  │ Ollama │  │ OpenAI │  │Azure AI│  │Anthropic│          │
+│  │  └────────┘  └────────┘  └────────┘  └────────┘│          │
+│  │  ┌────────┐  ┌────────┐                        │          │
+│  │  │HuggingF│  │ Custom │                        │          │
+│  │  └────────┘  └────────┘                        │          │
+│  └─────────────────────────────────────────────────┘          │
+│  ┌──────────────┐                                             │
+│  │ MCP Servers  │                                             │
+│  │ (Tools/Ctx)  │                                             │
+│  └──────────────┘                                             │
 └────────────────────────────────────────────────────────────────┘
+```
+
+## Middleware Architecture
+
+The app supports a flexible middleware system that processes requests before and after they reach the LLM:
+
+```
+User Request
+    ↓
+┌───────────────────────────────────────┐
+│        Middleware Chain               │
+│  (Executed in Priority Order 1-100)  │
+├───────────────────────────────────────┤
+│  Priority 10: LoggingMiddleware      │ ← Log request
+│  Priority 20: CacheMiddleware        │ ← Check cache
+│  Priority 30: RetryMiddleware        │ ← Retry logic
+│  Priority 40: ValidationMiddleware   │ ← Validate input
+├───────────────────────────────────────┤
+│              LLM Model                │ ← Process request
+│      (Ollama/OpenAI/Azure/etc)       │
+├───────────────────────────────────────┤
+│  Priority 40: ValidationMiddleware   │ ← Validate output
+│  Priority 30: RetryMiddleware        │ ← (if needed)
+│  Priority 20: CacheMiddleware        │ ← Store in cache
+│  Priority 10: LoggingMiddleware      │ ← Log response
+└───────────────────────────────────────┘
+    ↓
+Response to User
 ```
 
 ## Component Architecture
@@ -51,12 +92,17 @@ The AI Ops App integrates Azure OpenAI services with Nautobot through a multi-la
 
 #### Web UI
 - **Chat Interface**: `/plugins/ai-ops/chat/` - Interactive chat widget
+- **Provider Management**: List, create, edit, delete LLM providers
 - **Model Management**: List, create, edit, delete LLM models
+- **Middleware Management**: Configure middleware for models
 - **Server Management**: Configure and monitor MCP servers
 - **Navigation**: Integrated into Nautobot's navigation menu
 
 #### REST API
+- **LLM Providers API**: `/api/plugins/ai-ops/llm-providers/`
 - **LLM Models API**: `/api/plugins/ai-ops/llm-models/`
+- **Middleware Types API**: `/api/plugins/ai-ops/middleware-types/`
+- **LLM Middleware API**: `/api/plugins/ai-ops/llm-middleware/`
 - **MCP Servers API**: `/api/plugins/ai-ops/mcp-servers/`
 - **Chat API**: `/plugins/ai-ops/api/chat/` - Programmatic chat access
 
@@ -70,6 +116,7 @@ The AI Ops App integrates Azure OpenAI services with Nautobot through a multi-la
 - Application-level caching for performance
 - Health-based server selection
 - LangGraph state management
+- Middleware integration
 
 **Single-MCP Agent** (`ai_ops/agents/single_mcp_agent.py`):
 - Simplified single-server implementation
@@ -78,26 +125,47 @@ The AI Ops App integrates Azure OpenAI services with Nautobot through a multi-la
 **Agent Features**:
 - Conversation history via checkpointing
 - Tool discovery from MCP servers
-- Azure OpenAI model integration
+- Multi-provider LLM support (Ollama, OpenAI, Azure AI, Anthropic, HuggingFace)
+- Middleware chain execution
 - Async/await architecture
 
 #### Models
 
+**LLMProvider**:
+- Defines available LLM providers (Ollama, OpenAI, Azure AI, Anthropic, HuggingFace, Custom)
+- Stores provider-specific configuration in JSON schema
+- Has corresponding provider handler classes
+- Enable/disable providers without deletion
+
 **LLMModel**:
-- Stores Azure OpenAI model configurations
+- Stores model configurations for any supported provider
 - Environment-aware (LAB/NONPROD/PROD)
 - Integrates with Nautobot Secrets
 - Supports default model selection
+- Can have multiple middleware configurations
+- References LLMProvider via foreign key
+
+**MiddlewareType**:
+- Defines middleware types (built-in LangChain or custom)
+- Reusable across multiple models
+- Name validation and formatting
+
+**LLMMiddleware**:
+- Configures middleware instances for specific models
+- Priority-based execution order (1-100)
+- JSON configuration for flexibility
+- Active/inactive toggle
+- Critical flag for initialization requirements
 
 **MCPServer**:
 - Stores MCP server configurations
-- Health status tracking
+- Health status tracking with automated checks
 - Protocol support (HTTP/STDIO)
 - Type classification (Internal/External)
 
 #### Helpers
 
-**get_azure_model**:
+**get_llm_model**:
 - Environment detection
 - Model configuration retrieval
 - Azure OpenAI client creation
@@ -160,16 +228,19 @@ The AI Ops App integrates Azure OpenAI services with Nautobot through a multi-la
 
 **Service**: Microsoft Azure OpenAI Service
 
-**Models Supported**:
-- GPT-4
-- GPT-4o (Optimized)
-- GPT-4-turbo
-- GPT-3.5-turbo
+**LLM Provider Support**:
+- **Ollama**: Local open-source models
+- **OpenAI**: GPT-4, GPT-4o, GPT-3.5-turbo
+- **Azure AI**: Azure OpenAI Service
+- **Anthropic**: Claude models
+- **HuggingFace**: HuggingFace Hub models
+- **Custom**: Extensible provider system
 
 **Communication**:
 - HTTPS REST API
-- API Key authentication
-- Configured endpoints per model
+- API Key authentication (via Secrets)
+- Provider-specific endpoints
+- Handler-based initialization
 
 #### MCP Servers
 
@@ -184,13 +255,14 @@ The AI Ops App integrates Azure OpenAI services with Nautobot through a multi-la
 - **STDIO**: Process-based servers
 
 **Health Monitoring**:
-- Automatic health checks
+- Automatic health checks via scheduled job
 - Status field in database
 - Failed servers excluded from operations
+- Parallel health checking with retry logic
 
 ## Data Flow
 
-### Chat Message Flow
+### Chat Message Flow with Middleware
 
 ```
 1. User submits message
@@ -203,13 +275,132 @@ The AI Ops App integrates Azure OpenAI services with Nautobot through a multi-la
    ↓
 5. MCP client cache checked/created
    ↓
-6. Azure model configuration retrieved
+6. LLM model configuration retrieved
    ↓
-7. LangGraph state graph created
+7. Middleware cache checked
    ↓
-8. Message added to state
+8. Middleware chain initialized (priority order)
    ↓
-9. Agent processes message
+9. LangGraph state graph created with middleware
+   ↓
+10. Message added to state
+    ↓
+11. Middleware pre-processing (Priority 1 → 100)
+    ↓
+12. Agent processes message
+    ↓
+13. LLM provider handler creates model instance
+    ↓
+14. Model processes request
+    ↓
+15. Tools invoked if needed (via MCP)
+    ↓
+16. Middleware post-processing (Priority 100 → 1)
+    ↓
+17. Response generated by LLM
+    ↓
+18. State persisted to Redis
+    ↓
+19. Response returned to user
+```
+
+### Provider Selection Flow
+
+```
+1. Get LLM model (by name or default)
+   ↓
+2. Load model's provider relationship
+   ↓
+3. Get provider handler from registry
+   ↓
+4. Retrieve provider config_schema from database
+   ↓
+5. Get model's API key from Secret
+   ↓
+6. Provider handler initializes LLM
+   │
+   ├─ Ollama: ChatOllama(base_url, model_name)
+   ├─ OpenAI: ChatOpenAI(api_key, model_name)
+   ├─ Azure AI: AzureChatOpenAI(api_key, endpoint, deployment)
+   ├─ Anthropic: ChatAnthropic(api_key, model_name)
+   ├─ HuggingFace: ChatHuggingFace(api_key, model_name)
+   └─ Custom: CustomHandler(config, api_key)
+   ↓
+7. Return initialized chat model instance
+```
+
+### Middleware Execution Flow
+
+```
+┌────────────────────────────────────────────┐
+│  Request from Agent                        │
+└───────────────┬────────────────────────────┘
+                ↓
+┌───────────────▼────────────────────────────┐
+│  Load Model's Middleware Configurations    │
+│  - Query LLMMiddleware.objects             │
+│  - Filter: is_active=True                  │
+│  - Order by: priority, middleware__name    │
+└───────────────┬────────────────────────────┘
+                ↓
+┌───────────────▼────────────────────────────┐
+│  Initialize Middleware Chain               │
+│  For each middleware (priority order):     │
+│    1. Load middleware type                 │
+│    2. Get configuration JSON               │
+│    3. Initialize middleware instance       │
+│    4. Add to chain                         │
+└───────────────┬────────────────────────────┘
+                ↓
+┌───────────────▼────────────────────────────┐
+│  Pre-Processing Phase                      │
+│  (Priority 1 → 100)                        │
+│                                            │
+│  Priority 10: LoggingMiddleware            │
+│    - Log request timestamp                 │
+│    - Log user info and message             │
+│                                            │
+│  Priority 20: CacheMiddleware              │
+│    - Check if response cached              │
+│    - If cached: return cached response     │
+│    - If not: continue chain                │
+│                                            │
+│  Priority 30: ValidationMiddleware         │
+│    - Validate input format                 │
+│    - Check for malicious content           │
+│    - Sanitize input if needed              │
+└───────────────┬────────────────────────────┘
+                ↓
+┌───────────────▼────────────────────────────┐
+│  LLM Processing                            │
+│  - Model generates response                │
+│  - Tools invoked if needed                 │
+└───────────────┬────────────────────────────┘
+                ↓
+┌───────────────▼────────────────────────────┐
+│  Post-Processing Phase                     │
+│  (Priority 100 → 1)                        │
+│                                            │
+│  Priority 30: ValidationMiddleware         │
+│    - Validate output format                │
+│    - Check for sensitive data              │
+│    - Filter response if needed             │
+│                                            │
+│  Priority 20: CacheMiddleware              │
+│    - Store response in cache               │
+│    - Set TTL from middleware config        │
+│                                            │
+│  Priority 10: LoggingMiddleware            │
+│    - Log response timestamp                │
+│    - Log token usage and latency           │
+└───────────────┬────────────────────────────┘
+                ↓
+┌───────────────▼────────────────────────────┐
+│  Response to User                          │
+└────────────────────────────────────────────┘
+```
+
+### Chat Message Flow
    ↓
 10. Tools invoked if needed (via MCP)
     ↓
@@ -224,30 +415,34 @@ The AI Ops App integrates Azure OpenAI services with Nautobot through a multi-la
 
 **LAB Environment**:
 ```
-get_azure_model()
+get_llm_model()
   ↓
 Detect environment → "LAB"
   ↓
 Read environment variables
   ↓
-Create AzureChatOpenAI client
+Create model via default provider (typically Ollama)
   ↓
 Return model
 ```
 
 **Production Environment**:
 ```
-get_azure_model()
+get_llm_model()
   ↓
 Detect environment → "PROD"
   ↓
 Query LLMModel.get_default_model()
   ↓
+Load model's provider relationship
+  ↓
+Get provider handler from registry
+  ↓
 Retrieve Secret for API key
   ↓
-Build configuration dict
+Build configuration dict from provider config_schema
   ↓
-Create AzureChatOpenAI client
+Provider handler creates model instance
   ↓
 Return model
 ```
@@ -257,7 +452,7 @@ Return model
 ```
 1. App startup or cache expiry
    ↓
-2. Query MCPServer.objects.filter(status="Healthy")
+2. Query MCPServer.objects.filter(status__name="Active")
    ↓
 3. Build connections dict
    ↓
@@ -265,9 +460,58 @@ Return model
    ↓
 5. Discover tools from each server
    ↓
-6. Cache client and tools
+6. Cache client and tools (5 min TTL)
    ↓
 7. Tools available to agent
+```
+
+### Middleware Cache Flow
+
+```
+1. Agent needs to process request
+   ↓
+2. Check middleware cache for model
+   ↓
+3. If cache miss:
+   │  a. Query LLMMiddleware for model
+   │  b. Filter: is_active=True
+   │  c. Order by: priority, middleware__name
+   │  d. Initialize each middleware with config
+   │  e. Store in cache with TTL
+   ↓
+4. If cache hit:
+   │  a. Validate cache not expired
+   │  b. Return cached middleware chain
+   ↓
+5. Apply middleware chain to request
+```
+
+### Health Check Flow (Scheduled Job)
+
+```
+1. MCPServerHealthCheckJob triggered (scheduled)
+   ↓
+2. Query all HTTP MCP servers (exclude STDIO, Vulnerable)
+   ↓
+3. Parallel execution (ThreadPoolExecutor, max 4 workers)
+   │  For each server:
+   │    a. Send GET to {url}{health_check}
+   │    b. If status differs from database:
+   │       - Wait 5 seconds
+   │       - Verify (check #1)
+   │       - Wait 5 seconds
+   │       - Verify (check #2)
+   │       - If both confirm: update database
+   ↓
+4. If any status changed:
+   │  a. Clear MCP client cache
+   │  b. Log cache invalidation
+   ↓
+5. Return summary:
+   │  - checked_count
+   │  - changed_count
+   │  - failed_count
+   │  - cache_cleared
 ```
 
 ## State Management
@@ -309,10 +553,27 @@ Return model
 }
 ```
 
-**Cache Invalidation**:
+**MCP Cache Invalidation**:
 - Time-based (5 minute TTL)
 - Manual refresh available
-- Server status changes trigger refresh
+- Server status changes trigger refresh (via health check job)
+
+**Middleware Cache**:
+```python
+{
+    model_id: {
+        "middlewares": [Middleware1, Middleware2, ...],
+        "timestamp": datetime,
+        "config_hashes": {middleware_id: hash, ...}
+    }
+}
+```
+
+**Middleware Cache Invalidation**:
+- Automatic via JobHookReceiver on LLMMiddleware changes
+- Cache cleared when middleware created/updated/deleted
+- Cache warmed when new default model set
+- Ensures middleware changes take effect immediately
 
 ## Security Architecture
 
@@ -329,10 +590,22 @@ Return model
 - Token permissions enforced
 
 **Permissions**:
+- `ai_ops.view_llmprovider`
+- `ai_ops.add_llmprovider`
+- `ai_ops.change_llmprovider`
+- `ai_ops.delete_llmprovider`
 - `ai_ops.view_llmmodel`
 - `ai_ops.add_llmmodel`
 - `ai_ops.change_llmmodel`
 - `ai_ops.delete_llmmodel`
+- `ai_ops.view_middlewaretype`
+- `ai_ops.add_middlewaretype`
+- `ai_ops.change_middlewaretype`
+- `ai_ops.delete_middlewaretype`
+- `ai_ops.view_llmmiddleware`
+- `ai_ops.add_llmmiddleware`
+- `ai_ops.change_llmmiddleware`
+- `ai_ops.delete_llmmiddleware`
 - `ai_ops.view_mcpserver`
 - `ai_ops.add_mcpserver`
 - `ai_ops.change_mcpserver`
@@ -353,7 +626,7 @@ Return model
 ### Data Security
 
 **In Transit**:
-- HTTPS for Azure OpenAI
+- HTTPS for all LLM providers (Ollama, OpenAI, Azure AI, Anthropic, etc.)
 - HTTPS for MCP servers (recommended)
 - TLS for Redis connections (optional)
 
@@ -365,7 +638,12 @@ Return model
 ### Network Security
 
 **Firewall Rules**:
-- Outbound to Azure OpenAI (443)
+- Outbound to LLM provider APIs (443)
+  - Ollama: Configurable port (default 11434)
+  - OpenAI: api.openai.com:443
+  - Azure AI: *.openai.azure.com:443
+  - Anthropic: api.anthropic.com:443
+  - HuggingFace: huggingface.co:443
 - Outbound to MCP servers (various)
 - Inbound to Nautobot (80/443)
 
