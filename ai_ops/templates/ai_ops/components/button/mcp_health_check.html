@@ -1,0 +1,14 @@
+{% load helpers %}
+{# Custom button template for MCP Health Check #}
+<button type="button"
+        class="btn btn-{{ color }}{% if size %} btn-{{ size }}{% endif %}"
+        {% for key, value in attributes.items %}{{ key }}="{{ value }}" {% endfor %}
+        data-server-id="{{ object.pk }}">
+    {% if icon %}<span class="mdi {{ icon }}" aria-hidden="true"></span>{% endif %}
+    {{ label }}
+</button>
+
+{# Toast notification container - Bootstrap alerts will be injected here #}
+<div id="mcp-health-toast-container" 
+     style="position: fixed; top: 80px; right: 20px; z-index: 99999; min-width: 400px; max-width: 600px;">
+</div>
