@@ -1528,7 +1528,9 @@
 <span class="normal"><a href="#__codelineno-0-67">67</a></span>
 <span class="normal"><a href="#__codelineno-0-68">68</a></span>
 <span class="normal"><a href="#__codelineno-0-69">69</a></span>
-<span class="normal"><a href="#__codelineno-0-70">70</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-11" name="__codelineno-0-11"></a><span class="k">class</span><span class="w"> </span><span class="nc">AiOpsConfig</span><span class="p">(</span><span class="n">NautobotAppConfig</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-70">70</a></span>
+<span class="normal"><a href="#__codelineno-0-71">71</a></span>
+<span class="normal"><a href="#__codelineno-0-72">72</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-11" name="__codelineno-0-11"></a><span class="k">class</span><span class="w"> </span><span class="nc">AiOpsConfig</span><span class="p">(</span><span class="n">NautobotAppConfig</span><span class="p">):</span>
 <a id="__codelineno-0-12" name="__codelineno-0-12"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;App configuration for the ai_ops app.&quot;&quot;&quot;</span>
 <a id="__codelineno-0-13" name="__codelineno-0-13"></a>
 <a id="__codelineno-0-14" name="__codelineno-0-14"></a>    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;ai_ops&quot;</span>
@@ -1548,46 +1550,48 @@
 <a id="__codelineno-0-28" name="__codelineno-0-28"></a>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">.signals</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a>            <span class="n">assign_mcp_server_statuses</span><span class="p">,</span>
-<a id="__codelineno-0-31" name="__codelineno-0-31"></a>            <span class="n">create_default_middleware_types</span><span class="p">,</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a>            <span class="n">setup_checkpoint_cleanup_schedule</span><span class="p">,</span>
-<a id="__codelineno-0-33" name="__codelineno-0-33"></a>            <span class="n">setup_mcp_health_check_schedule</span><span class="p">,</span>
-<a id="__codelineno-0-34" name="__codelineno-0-34"></a>            <span class="n">setup_middleware_cache_jobs</span><span class="p">,</span>
-<a id="__codelineno-0-35" name="__codelineno-0-35"></a>        <span class="p">)</span>
-<a id="__codelineno-0-36" name="__codelineno-0-36"></a>
-<a id="__codelineno-0-37" name="__codelineno-0-37"></a>        <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38"></a>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a>        <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">assign_mcp_server_statuses</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
-<a id="__codelineno-0-40" name="__codelineno-0-40"></a>        <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">create_default_middleware_types</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
-<a id="__codelineno-0-41" name="__codelineno-0-41"></a>        <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">setup_checkpoint_cleanup_schedule</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
-<a id="__codelineno-0-42" name="__codelineno-0-42"></a>        <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">setup_middleware_cache_jobs</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43"></a>        <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">setup_mcp_health_check_schedule</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
-<a id="__codelineno-0-44" name="__codelineno-0-44"></a>
-<a id="__codelineno-0-45" name="__codelineno-0-45"></a>        <span class="c1"># Note: Periodic tasks are handled via Nautobot Jobs (ai_agents.jobs).</span>
-<a id="__codelineno-0-46" name="__codelineno-0-46"></a>        <span class="c1"># These jobs can be scheduled through the Nautobot UI for automatic execution.</span>
-<a id="__codelineno-0-47" name="__codelineno-0-47"></a>
-<a id="__codelineno-0-48" name="__codelineno-0-48"></a>        <span class="c1"># Warm caches on startup (if event loop is available)</span>
-<a id="__codelineno-0-49" name="__codelineno-0-49"></a>        <span class="c1"># During unit tests, there may not be a running event loop</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50"></a>        <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-51" name="__codelineno-0-51"></a>            <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52"></a>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a>            <span class="kn">from</span><span class="w"> </span><span class="nn">ai_ops.agents.multi_mcp_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">warm_mcp_cache</span>
-<a id="__codelineno-0-54" name="__codelineno-0-54"></a>            <span class="kn">from</span><span class="w"> </span><span class="nn">ai_ops.helpers.get_middleware</span><span class="w"> </span><span class="kn">import</span> <span class="n">warm_middleware_cache</span>
-<a id="__codelineno-0-55" name="__codelineno-0-55"></a>
-<a id="__codelineno-0-56" name="__codelineno-0-56"></a>            <span class="c1"># Try to get the running event loop</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a>            <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a>                <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span>
-<a id="__codelineno-0-59" name="__codelineno-0-59"></a>                <span class="c1"># If we have a running loop, schedule the tasks</span>
-<a id="__codelineno-0-60" name="__codelineno-0-60"></a>                <span class="n">loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">warm_mcp_cache</span><span class="p">())</span>
-<a id="__codelineno-0-61" name="__codelineno-0-61"></a>                <span class="n">loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">warm_middleware_cache</span><span class="p">())</span>
-<a id="__codelineno-0-62" name="__codelineno-0-62"></a>                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Scheduled MCP and middleware cache warming&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-63" name="__codelineno-0-63"></a>            <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
-<a id="__codelineno-0-64" name="__codelineno-0-64"></a>                <span class="c1"># No running event loop (e.g., during tests or startup)</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65"></a>                <span class="c1"># This is expected and not an error</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66"></a>                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;No running event loop available for cache warming&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-<a id="__codelineno-0-68" name="__codelineno-0-68"></a>            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to warm caches on startup: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-69" name="__codelineno-0-69"></a>
-<a id="__codelineno-0-70" name="__codelineno-0-70"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">ready</span><span class="p">()</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31"></a>            <span class="n">create_default_llm_providers</span><span class="p">,</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a>            <span class="n">create_default_middleware_types</span><span class="p">,</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33"></a>            <span class="n">setup_checkpoint_cleanup_schedule</span><span class="p">,</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34"></a>            <span class="n">setup_mcp_health_check_schedule</span><span class="p">,</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35"></a>            <span class="n">setup_middleware_cache_jobs</span><span class="p">,</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36"></a>        <span class="p">)</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37"></a>
+<a id="__codelineno-0-38" name="__codelineno-0-38"></a>        <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a>
+<a id="__codelineno-0-40" name="__codelineno-0-40"></a>        <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">assign_mcp_server_statuses</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41"></a>        <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">create_default_llm_providers</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42"></a>        <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">create_default_middleware_types</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43"></a>        <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">setup_checkpoint_cleanup_schedule</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-44" name="__codelineno-0-44"></a>        <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">setup_middleware_cache_jobs</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-45" name="__codelineno-0-45"></a>        <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">setup_mcp_health_check_schedule</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-46" name="__codelineno-0-46"></a>
+<a id="__codelineno-0-47" name="__codelineno-0-47"></a>        <span class="c1"># Note: Periodic tasks are handled via Nautobot Jobs (ai_agents.jobs).</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48"></a>        <span class="c1"># These jobs can be scheduled through the Nautobot UI for automatic execution.</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49"></a>
+<a id="__codelineno-0-50" name="__codelineno-0-50"></a>        <span class="c1"># Warm caches on startup (if event loop is available)</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51"></a>        <span class="c1"># During unit tests, there may not be a running event loop</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52"></a>        <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a>            <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54"></a>
+<a id="__codelineno-0-55" name="__codelineno-0-55"></a>            <span class="kn">from</span><span class="w"> </span><span class="nn">ai_ops.agents.multi_mcp_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">warm_mcp_cache</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56"></a>            <span class="kn">from</span><span class="w"> </span><span class="nn">ai_ops.helpers.get_middleware</span><span class="w"> </span><span class="kn">import</span> <span class="n">warm_middleware_cache</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a>            <span class="c1"># Try to get the running event loop</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a>            <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a>                <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a>                <span class="c1"># If we have a running loop, schedule the tasks</span>
+<a id="__codelineno-0-62" name="__codelineno-0-62"></a>                <span class="n">loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">warm_mcp_cache</span><span class="p">())</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a>                <span class="n">loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">warm_middleware_cache</span><span class="p">())</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a>                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Scheduled MCP and middleware cache warming&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a>            <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a>                <span class="c1"># No running event loop (e.g., during tests or startup)</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a>                <span class="c1"># This is expected and not an error</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a>                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;No running event loop available for cache warming&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a>        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a>            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to warm caches on startup: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">ready</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -1663,52 +1667,56 @@
 <span class="normal"><a href="#__codelineno-0-67">67</a></span>
 <span class="normal"><a href="#__codelineno-0-68">68</a></span>
 <span class="normal"><a href="#__codelineno-0-69">69</a></span>
-<span class="normal"><a href="#__codelineno-0-70">70</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="k">def</span><span class="w"> </span><span class="nf">ready</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-70">70</a></span>
+<span class="normal"><a href="#__codelineno-0-71">71</a></span>
+<span class="normal"><a href="#__codelineno-0-72">72</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="k">def</span><span class="w"> </span><span class="nf">ready</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Connect signal handlers when the app is ready.&quot;&quot;&quot;</span>
 <a id="__codelineno-0-27" name="__codelineno-0-27"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <a id="__codelineno-0-28" name="__codelineno-0-28"></a>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">.signals</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a>        <span class="n">assign_mcp_server_statuses</span><span class="p">,</span>
-<a id="__codelineno-0-31" name="__codelineno-0-31"></a>        <span class="n">create_default_middleware_types</span><span class="p">,</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a>        <span class="n">setup_checkpoint_cleanup_schedule</span><span class="p">,</span>
-<a id="__codelineno-0-33" name="__codelineno-0-33"></a>        <span class="n">setup_mcp_health_check_schedule</span><span class="p">,</span>
-<a id="__codelineno-0-34" name="__codelineno-0-34"></a>        <span class="n">setup_middleware_cache_jobs</span><span class="p">,</span>
-<a id="__codelineno-0-35" name="__codelineno-0-35"></a>    <span class="p">)</span>
-<a id="__codelineno-0-36" name="__codelineno-0-36"></a>
-<a id="__codelineno-0-37" name="__codelineno-0-37"></a>    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38"></a>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a>    <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">assign_mcp_server_statuses</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
-<a id="__codelineno-0-40" name="__codelineno-0-40"></a>    <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">create_default_middleware_types</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
-<a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">setup_checkpoint_cleanup_schedule</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
-<a id="__codelineno-0-42" name="__codelineno-0-42"></a>    <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">setup_middleware_cache_jobs</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43"></a>    <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">setup_mcp_health_check_schedule</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
-<a id="__codelineno-0-44" name="__codelineno-0-44"></a>
-<a id="__codelineno-0-45" name="__codelineno-0-45"></a>    <span class="c1"># Note: Periodic tasks are handled via Nautobot Jobs (ai_agents.jobs).</span>
-<a id="__codelineno-0-46" name="__codelineno-0-46"></a>    <span class="c1"># These jobs can be scheduled through the Nautobot UI for automatic execution.</span>
-<a id="__codelineno-0-47" name="__codelineno-0-47"></a>
-<a id="__codelineno-0-48" name="__codelineno-0-48"></a>    <span class="c1"># Warm caches on startup (if event loop is available)</span>
-<a id="__codelineno-0-49" name="__codelineno-0-49"></a>    <span class="c1"># During unit tests, there may not be a running event loop</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50"></a>    <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-51" name="__codelineno-0-51"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52"></a>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">ai_ops.agents.multi_mcp_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">warm_mcp_cache</span>
-<a id="__codelineno-0-54" name="__codelineno-0-54"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">ai_ops.helpers.get_middleware</span><span class="w"> </span><span class="kn">import</span> <span class="n">warm_middleware_cache</span>
-<a id="__codelineno-0-55" name="__codelineno-0-55"></a>
-<a id="__codelineno-0-56" name="__codelineno-0-56"></a>        <span class="c1"># Try to get the running event loop</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a>        <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a>            <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span>
-<a id="__codelineno-0-59" name="__codelineno-0-59"></a>            <span class="c1"># If we have a running loop, schedule the tasks</span>
-<a id="__codelineno-0-60" name="__codelineno-0-60"></a>            <span class="n">loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">warm_mcp_cache</span><span class="p">())</span>
-<a id="__codelineno-0-61" name="__codelineno-0-61"></a>            <span class="n">loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">warm_middleware_cache</span><span class="p">())</span>
-<a id="__codelineno-0-62" name="__codelineno-0-62"></a>            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Scheduled MCP and middleware cache warming&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-63" name="__codelineno-0-63"></a>        <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
-<a id="__codelineno-0-64" name="__codelineno-0-64"></a>            <span class="c1"># No running event loop (e.g., during tests or startup)</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65"></a>            <span class="c1"># This is expected and not an error</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66"></a>            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;No running event loop available for cache warming&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-<a id="__codelineno-0-68" name="__codelineno-0-68"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to warm caches on startup: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-69" name="__codelineno-0-69"></a>
-<a id="__codelineno-0-70" name="__codelineno-0-70"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">ready</span><span class="p">()</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31"></a>        <span class="n">create_default_llm_providers</span><span class="p">,</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a>        <span class="n">create_default_middleware_types</span><span class="p">,</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33"></a>        <span class="n">setup_checkpoint_cleanup_schedule</span><span class="p">,</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34"></a>        <span class="n">setup_mcp_health_check_schedule</span><span class="p">,</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35"></a>        <span class="n">setup_middleware_cache_jobs</span><span class="p">,</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36"></a>    <span class="p">)</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37"></a>
+<a id="__codelineno-0-38" name="__codelineno-0-38"></a>    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a>
+<a id="__codelineno-0-40" name="__codelineno-0-40"></a>    <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">assign_mcp_server_statuses</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">create_default_llm_providers</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42"></a>    <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">create_default_middleware_types</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43"></a>    <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">setup_checkpoint_cleanup_schedule</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-44" name="__codelineno-0-44"></a>    <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">setup_middleware_cache_jobs</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-45" name="__codelineno-0-45"></a>    <span class="n">nautobot_database_ready</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">setup_mcp_health_check_schedule</span><span class="p">,</span> <span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+<a id="__codelineno-0-46" name="__codelineno-0-46"></a>
+<a id="__codelineno-0-47" name="__codelineno-0-47"></a>    <span class="c1"># Note: Periodic tasks are handled via Nautobot Jobs (ai_agents.jobs).</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48"></a>    <span class="c1"># These jobs can be scheduled through the Nautobot UI for automatic execution.</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49"></a>
+<a id="__codelineno-0-50" name="__codelineno-0-50"></a>    <span class="c1"># Warm caches on startup (if event loop is available)</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51"></a>    <span class="c1"># During unit tests, there may not be a running event loop</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54"></a>
+<a id="__codelineno-0-55" name="__codelineno-0-55"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">ai_ops.agents.multi_mcp_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">warm_mcp_cache</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">ai_ops.helpers.get_middleware</span><span class="w"> </span><span class="kn">import</span> <span class="n">warm_middleware_cache</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a>        <span class="c1"># Try to get the running event loop</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a>        <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a>            <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a>            <span class="c1"># If we have a running loop, schedule the tasks</span>
+<a id="__codelineno-0-62" name="__codelineno-0-62"></a>            <span class="n">loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">warm_mcp_cache</span><span class="p">())</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a>            <span class="n">loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">warm_middleware_cache</span><span class="p">())</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a>            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Scheduled MCP and middleware cache warming&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a>        <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a>            <span class="c1"># No running event loop (e.g., during tests or startup)</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a>            <span class="c1"># This is expected and not an error</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a>            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;No running event loop available for cache warming&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a>    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to warm caches on startup: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">ready</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
