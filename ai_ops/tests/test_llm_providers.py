@@ -105,4 +105,4 @@ class TestLLMProviderRegistry(TestCase):
 
         with self.assertRaises(ValueError) as context:
             get_llm_provider_handler("invalid_provider")
-        self.assertIn("Unknown LLM provider", str(context.exception))
+        self.assertIn("Unknown provider type", str(context.exception))

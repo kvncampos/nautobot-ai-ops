@@ -203,7 +203,7 @@ class LLMModel(PrimaryModel):  # pylint: disable=too-many-ancestors
                 "description": model.description,
                 "is_default": model.is_default,
                 "llm_provider": model.llm_provider.name,
-                "endpoint": model.azure_endpoint,
+                "endpoint": model.endpoint,
                 "api_version": model.api_version,
             }
             for model in models
