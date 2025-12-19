@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load helpers %}
+{% load static %}
+
+{% block title %}AI Chat Agent{% endblock %}
+
+{% block content %}
+<!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+
+<!-- Chat Widget Styles -->
+    <link rel="stylesheet" href="{% static 'ai_ops/css/chat_widget.css' %}">
+
+    {% csrf_token %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <i class="mdi mdi-chat"></i> AI Chat Agent
+                            <button id="clear-chat" class="btn btn-danger btn-sm pull-right" title="Clear chat history" {% if not chat_enabled %}disabled{% endif %}>
+                                <i class="mdi mdi-delete"></i> Clear History
+                            </button>
+                        </h3>
+                    </div>
+                    <div class="panel-body" style="padding: 0;">
+                    <!-- Chat Messages Container -->
+                        <div id="chat-messages" style="overflow-y: auto; padding: 20px; background-color: #f5f5f5; border-bottom: 1px solid #ddd;">
+                        <!-- Messages will be dynamically added here -->
+                        </div>
+
+                    <!-- Chat Input Area -->
+                        <div style="padding: 15px; background-color: #fff;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <div class="input-group">
+                                    <input type="text"
+                                           id="chat-input"
+                                           class="form-control"
+                                           placeholder="{% if chat_enabled %}Type your message here...{% elif not has_default_model and not has_healthy_mcp %}Chat disabled - configure default LLM model and healthy MCP server{% elif not has_default_model %}Chat disabled - configure default LLM model first{% elif not has_healthy_mcp %}Chat disabled - no healthy MCP servers available{% else %}Chat disabled{% endif %}"
+                                           style="height: 45px;"
+                                           {% if not chat_enabled %}disabled{% endif %}>
+                                    <span class="input-group-btn">
+                                        <button id="send-message"
+                                                class="btn btn-primary"
+                                                type="button"
+                                                style="height: 45px;"
+                                                {% if not chat_enabled %}disabled{% endif %}>
+                                            <i class="mdi mdi-send"></i> Send
+                                        </button>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Chat Widget JavaScript -->
+{% endblock %}
+
+{% block javascript %}
+    <script>
+    // Pass chat enabled status and detailed info to JavaScript
+        window.CHAT_ENABLED = {{ chat_enabled|yesno:"true,false" }};
+        window.HAS_DEFAULT_MODEL = {{ has_default_model|yesno:"true,false" }};
+        window.HAS_HEALTHY_MCP = {{ has_healthy_mcp|yesno:"true,false" }};
+        window.HAS_ANY_MCP = {{ has_any_mcp|yesno:"true,false" }};
+    </script>
+    <script src="{% static 'ai_ops/js/chat_widget.js' %}"></script>
+{% endblock %}
