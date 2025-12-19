@@ -269,7 +269,7 @@ class LLMMiddlewareFactory:
 class TestDataMixin:
     """Mixin to provide common test data setup and teardown."""
 
-    def setUp_test_data(self):
+    def setup_test_data(self):
         """Set up common test data using factories."""
         # Create providers
         self.ollama_provider, _ = LLMProviderFactory.create_ollama()
@@ -285,7 +285,7 @@ class TestDataMixin:
         self.auth_middleware_type, _ = MiddlewareTypeFactory.create_auth_middleware()
         self.logging_middleware_type, _ = MiddlewareTypeFactory.create_logging_middleware()
 
-    def tearDown_test_data(self):
+    def teardown_test_data(self):
         """Clean up test data if needed."""
         # Note: With get_or_create, we typically don't need to clean up
         # unless we want to reset state for specific tests
@@ -300,11 +300,11 @@ class TestDataMixin:
             model_class.objects.all().delete()
 
         # Recreate base test data
-        self.setUp_test_data()
+        self.setup_test_data()
 
     def tearDown(self):
         """Standard tearDown method for test cleanup."""
-        self.tearDown_test_data()
+        self.teardown_test_data()
         # Call parent tearDown if it exists
         if hasattr(super(), "tearDown"):
             super().tearDown()
@@ -315,8 +315,8 @@ class TestDataMixin:
         from django.contrib.auth.models import Permission
         from django.contrib.contenttypes.models import ContentType
 
-        User = get_user_model()
-        user, created = User.objects.get_or_create(
+        user_model = get_user_model()
+        user, created = user_model.objects.get_or_create(
             username=username,
             defaults={
                 "email": f"{username}@example.com",

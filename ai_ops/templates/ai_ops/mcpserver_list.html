@@ -4,8 +4,8 @@
 {% block buttons %}
     {# Add custom Clear MCP Cache button - superuser only #}
     {% if request.user.is_superuser %}
-        <button type="button" 
-                id="clear-mcp-cache-btn" 
+        <button type="button"
+                id="clear-mcp-cache-btn"
                 class="btn btn-warning"
                 data-clear-cache-url="{% url 'plugins:ai_ops:clear_mcp_cache' %}"
                 onclick="clearMCPCache(event)"

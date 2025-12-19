@@ -1,85 +1,72 @@
 ---
-name: Deploy Documentation to GitHub Pages
+name: "Deploy Documentation"
 
-on:
+on:  # yamllint disable-line rule:truthy rule:comments
   push:
     branches:
-      - main
-      - develop
-    paths:
-      - 'docs/**'
-      - 'mkdocs.yml'
-      - '.github/workflows/deploy-docs.yml'
+      - "main"
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: "read"
+  pages: "write"
+  id-token: "write"
 
-# Allow only one concurrent deployment, skipping runs queued between
-# the run in-progress and latest queued. However, do NOT cancel
-# in-progress runs as we want to allow these deployments to complete.
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: "ubuntu-latest"
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: "Checkout repository"
+        uses: "actions/checkout@v4"
         with:
-          python-version: '3.11'
+          fetch-depth: 0
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: "Setup Python"
+        id: "setup-python"
+        uses: "actions/setup-python@v5"
         with:
-          version: latest
+          python-version: "3.11"
+
+      - name: "Install Poetry"
+        uses: "snok/install-poetry@v1"
+        with:
+          version: "latest"
           virtualenvs-create: true
           virtualenvs-in-project: true
+          installer-parallel: true
 
-      - name: Load cached venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v4
+      - name: "Load cached venv"
+        id: "cached-poetry-dependencies"
+        uses: "actions/cache@v3"
         with:
-          path: .venv
-          key: >-
-            venv-${{ runner.os }}-${{
-            steps.setup-python.outputs.python-version }}-${{
-            hashFiles('**/poetry.lock') }}
+          path: ".venv"
+          key: "venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}"
 
-      - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root --only docs
-
-      - name: Install project
-        run: poetry install --no-interaction --only-root
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Build documentation
+      - name: "Install dependencies"
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'  # yamllint disable-line rule:quoted-strings
         run: |
-          # Build docs to site directory for GitHub Pages
-          poetry run mkdocs build --site-dir site --strict
+          poetry install --with docs
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: "Build documentation"
+        run: |
+          poetry run mkdocs build --strict
+
+      - name: "Upload artifact"
+        uses: "actions/upload-pages-artifact@v3"
         with:
-          path: ./site
+          path: "./site"
 
   deploy:
     environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
+      name: "github-pages"
+      url: "${{ steps.deployment.outputs.page_url }}"
+    runs-on: "ubuntu-latest"
+    needs: "build"
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: "Deploy to GitHub Pages"
+        id: "deployment"
+        uses: "actions/deploy-pages@v4"
