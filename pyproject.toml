@@ -4,6 +4,7 @@ version = "1.0.0"
 description = "AI Ops"
 authors = ["Kevin Campos <kvncampos@duck.com>"]
 readme = "README.md"
+license = "Apache-2.0"
 homepage = "https://github.com/kvncampos/nautobot-ai-ops"
 repository = "https://github.com/kvncampos/nautobot-ai-ops"
 documentation = "https://docs.nautobot.com/projects/ai-ops/en/latest/"
@@ -16,6 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: Apache Software License",
 ]
 packages = [
     { include = "ai_ops" },
