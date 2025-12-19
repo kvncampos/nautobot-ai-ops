@@ -1,0 +1,22 @@
+{% extends 'generic/object_list.html' %}
+{% load static %}
+
+{% block buttons %}
+    {# Add custom Clear MCP Cache button - superuser only #}
+    {% if request.user.is_superuser %}
+        <button type="button"
+                id="clear-mcp-cache-btn"
+                class="btn btn-warning"
+                data-clear-cache-url="{% url 'plugins:ai_ops:clear_mcp_cache' %}"
+                onclick="clearMCPCache(event)"
+                title="Clear MCP client cache and force reconnection">
+            <i class="mdi mdi-delete-sweep"></i> Clear MCP Cache
+        </button>
+    {% endif %}
+    {{ block.super }}
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script src="{% static 'ai_ops/js/mcp_cache_clear.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,353 @@
+"""Views for ai_ops."""
+
+import logging
+
+from django.contrib.auth.decorators import user_passes_test
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.utils.decorators import method_decorator
+from nautobot.apps.ui import Button, ButtonColorChoices, ObjectDetailContent, ObjectFieldsPanel, SectionChoices
+from nautobot.apps.views import GenericView, NautobotUIViewSet
+
+from ai_ops import filters, forms, models, tables
+from ai_ops.agents.multi_mcp_agent import process_message
+from ai_ops.api import serializers
+
+logger = logging.getLogger(__name__)
+
+
+class LLMProviderUIViewSet(NautobotUIViewSet):
+    """ViewSet for Provider views."""
+
+    bulk_update_form_class = forms.LLMProviderBulkEditForm
+    filterset_class = filters.LLMProviderFilterSet
+    filterset_form_class = forms.LLMProviderFilterForm
+    form_class = forms.LLMProviderForm
+    lookup_field = "pk"
+    queryset = models.LLMProvider.objects.all()
+    serializer_class = serializers.LLMProviderSerializer
+    table_class = tables.LLMProviderTable
+    object_detail_content = ObjectDetailContent(
+        panels=[
+            ObjectFieldsPanel(
+                weight=100,
+                section=SectionChoices.LEFT_HALF,
+                fields="__all__",
+            ),
+        ],
+    )
+
+
+class LLMModelUIViewSet(NautobotUIViewSet):
+    """ViewSet for LLMModel views."""
+
+    bulk_update_form_class = forms.LLMModelBulkEditForm
+    filterset_class = filters.LLMModelFilterSet
+    filterset_form_class = forms.LLMModelFilterForm
+    form_class = forms.LLMModelForm
+    lookup_field = "pk"
+    queryset = models.LLMModel.objects.all()
+    serializer_class = serializers.LLMModelSerializer
+    table_class = tables.LLMModelTable
+
+    # Here is an example of using the UI  Component Framework for the detail view.
+    # More information can be found in the Nautobot documentation:
+    # https://docs.nautobot.com/projects/core/en/stable/development/core/ui-component-framework/
+    object_detail_content = ObjectDetailContent(
+        panels=[
+            ObjectFieldsPanel(
+                weight=100,
+                section=SectionChoices.LEFT_HALF,
+                fields="__all__",
+                # Alternatively, you can specify a list of field names:
+                # fields=[
+                #     "name",
+                #     "description",
+                # ],
+                # Some fields may require additional configuration, we can use value_transforms
+                # value_transforms={
+                #     "name": [helpers.bettertitle]
+                # },
+            ),
+            # If there is a ForeignKey or M2M with this model we can use ObjectsTablePanel
+            # to display them in a table format.
+            # ObjectsTablePanel(
+            # weight=200,
+            # section=SectionChoices.RIGHT_HALF,
+            # table_class=tables.AIModelsTable,
+            # You will want to filter the table using the related_name
+            # filter="aimodelss",
+            # ),
+        ],
+    )
+
+
+class MiddlewareTypeUIViewSet(NautobotUIViewSet):
+    """ViewSet for MiddlewareType views."""
+
+    bulk_update_form_class = forms.MiddlewareTypeBulkEditForm
+    filterset_class = filters.MiddlewareTypeFilterSet
+    filterset_form_class = forms.MiddlewareTypeFilterForm
+    form_class = forms.MiddlewareTypeForm
+    lookup_field = "pk"
+    queryset = models.MiddlewareType.objects.all()
+    serializer_class = serializers.MiddlewareTypeSerializer
+    table_class = tables.MiddlewareTypeTable
+
+    object_detail_content = ObjectDetailContent(
+        panels=[
+            ObjectFieldsPanel(
+                weight=100,
+                section=SectionChoices.LEFT_HALF,
+                fields="__all__",
+            ),
+        ],
+    )
+
+
+class LLMMiddlewareUIViewSet(NautobotUIViewSet):
+    """ViewSet for LLMMiddleware views."""
+
+    bulk_update_form_class = forms.LLMMiddlewareBulkEditForm
+    filterset_class = filters.LLMMiddlewareFilterSet
+    filterset_form_class = forms.LLMMiddlewareFilterForm
+    form_class = forms.LLMMiddlewareForm
+    lookup_field = "pk"
+    queryset = models.LLMMiddleware.objects.all()
+    serializer_class = serializers.LLMMiddlewareSerializer
+    table_class = tables.LLMMiddlewareTable
+
+    object_detail_content = ObjectDetailContent(
+        panels=[
+            ObjectFieldsPanel(
+                weight=100,
+                section=SectionChoices.LEFT_HALF,
+                fields="__all__",
+            ),
+        ],
+    )
+
+
+class AIChatBotGenericView(GenericView):
+    """View for displaying LLMChatBot."""
+
+    template_name = "ai_ops/chat_widget.html"
+
+    def get(self, request, *args, **kwargs):
+        """Render the chat widget template."""
+        # Check if there's a default LLM model configured
+        has_default_model = models.LLMModel.objects.filter(is_default=True).exists()
+
+        # Check if there are any healthy MCP servers
+        has_healthy_mcp = models.MCPServer.objects.filter(status__name="Healthy").exists()
+
+        # Check if there are any MCP servers at all
+        has_any_mcp = models.MCPServer.objects.exists()
+
+        # Chat is enabled only if we have both a default model AND at least one healthy MCP server
+        chat_enabled = has_default_model and has_healthy_mcp
+
+        # Get list of enabled providers for admin provider selection
+        # Only staff users can select providers; normal users use default
+        enabled_providers = []
+        is_admin = request.user.is_staff
+        if is_admin:
+            providers = models.LLMProvider.objects.filter(is_enabled=True)
+            enabled_providers = [
+                {"name": provider.name, "get_name_display": provider.get_name_display()} for provider in providers
+            ]
+
+        # You can pass any context data needed for your chatbot template
+        context = {
+            "title": "LLM ChatBot",
+            "chat_enabled": chat_enabled,
+            "has_default_model": has_default_model,
+            "has_healthy_mcp": has_healthy_mcp,
+            "has_any_mcp": has_any_mcp,
+            "is_admin": is_admin,
+            "enabled_providers": enabled_providers,
+            # Add other context variables as needed
+        }
+        return render(request, self.template_name, context)
+
+
+# ============================================================================
+# Chat API Endpoints
+# ============================================================================
+
+
+class ChatMessageView(GenericView):
+    """Handle chat message processing via agent with checkpointed conversation history."""
+
+    async def post(self, request, *args, **kwargs):
+        """Process user message through LangGraph agent with PostgreSQL checkpointing.
+
+        Conversation history is automatically managed by LangGraph's checkpointer.
+        Each session gets a unique thread_id for conversation isolation.
+
+        Query Parameters:
+            message (str): User's message to process
+            provider (str, optional): Provider name override (only for admin users)
+                                     If not provided, uses default provider
+
+        Returns JSON with agent response or error.
+        """
+        try:
+            # Get user message
+            user_message = request.POST.get("message", "").strip()
+            if not user_message:
+                return JsonResponse({"error": "No message provided"}, status=400)
+
+            # Get optional provider override (only allow admins to select provider)
+            provider_override = None
+            if request.user.is_staff:
+                provider_override = request.POST.get("llm_provider", "").strip()
+                # Validate provider exists and is enabled if specified
+                if provider_override:
+                    if not models.LLMProvider.objects.filter(name=provider_override, is_enabled=True).exists():
+                        return JsonResponse(
+                            {"error": f"Provider '{provider_override}' not found or is disabled"}, status=400
+                        )
+                    logger.debug(f"Admin {request.user.username} selected provider: {provider_override}")
+            elif request.POST.get("llm_provider"):
+                # Non-admin users cannot select provider
+                logger.warning(
+                    f"Non-admin user {request.user.username} attempted to select provider: "
+                    f"{request.POST.get('llm_provider')}"
+                )
+                return JsonResponse({"error": "Only administrators can select a specific provider"}, status=403)
+
+            # Ensure session exists
+            if not request.session.session_key:
+                await request.session.acreate()
+
+            # Use session key as thread_id for conversation isolation
+            thread_id = request.session.session_key
+
+            # Process message through checkpointed agent with optional provider override
+            # Checkpointer automatically loads/saves conversation history
+            response_text = await process_message(user_message, thread_id, provider=provider_override)
+
+            return JsonResponse({"response": response_text, "error": None})
+
+        except Exception as e:
+            # Log full traceback for debugging
+            import traceback
+
+            logger.error(f"Chat message error: {e!s}\n{traceback.format_exc()}")
+
+            # Return technical error for POC
+            return JsonResponse({"response": None, "error": f"Error processing message: {e!s}"}, status=500)
+
+
+class ChatClearView(GenericView):
+    """Clear chat conversation history from checkpointer."""
+
+    async def post(self, request, *args, **kwargs):
+        """Clear the conversation checkpoint for this session.
+
+        This clears the conversation history for the current session thread,
+        allowing the user to start a fresh conversation.
+        """
+        try:
+            # Get the session thread_id
+            thread_id = request.session.session_key
+
+            if not thread_id:
+                return JsonResponse({"success": False, "message": "No active session to clear"}, status=400)
+
+            # Import here to avoid circular dependencies
+            from ai_ops.checkpointer import clear_checkpointer_for_thread
+
+            # Clear the conversation history for this thread
+            cleared = await clear_checkpointer_for_thread(thread_id)
+
+            if cleared:
+                return JsonResponse({"success": True, "message": "Conversation history cleared successfully"})
+            else:
+                return JsonResponse({"success": True, "message": "No conversation history to clear"})
+
+        except RuntimeError as e:
+            # Handle interpreter shutdown gracefully
+            if "cannot schedule new futures after interpreter shutdown" in str(e):
+                logger.warning(f"Cannot clear conversation during shutdown: {str(e)}")
+                return JsonResponse(
+                    {"success": True, "message": "Server is shutting down, conversation will be cleared on restart"},
+                    status=200,
+                )
+            else:
+                logger.error(f"Runtime error clearing conversation: {str(e)}")
+                return JsonResponse({"success": False, "error": str(e)}, status=500)
+        except Exception as e:
+            import traceback
+
+            logger.error(f"Failed to clear conversation: {str(e)}\n{traceback.format_exc()}")
+
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+class ClearMCPCacheView(GenericView):
+    """Clear MCP client cache (superuser only)."""
+
+    @method_decorator(user_passes_test(lambda u: u.is_superuser))
+    def dispatch(self, *args, **kwargs):
+        """Ensure only superusers can access this view."""
+        return super().dispatch(*args, **kwargs)
+
+    async def post(self, request, *args, **kwargs):
+        """Clear the MCP client application cache."""
+        try:
+            # Import here to avoid circular dependencies
+            from ai_ops.agents.multi_mcp_agent import clear_mcp_cache
+
+            # Clear the cache
+            cleared_count = await clear_mcp_cache()
+
+            # Log the action (system action, not an object change)
+            logger.info(f"User {request.user.username} cleared MCP client cache for {cleared_count} healthy servers")
+
+            return JsonResponse({"success": True, "cleared_count": cleared_count})
+
+        except Exception as e:
+            import traceback
+
+            logger.error(f"Failed to clear MCP cache: {str(e)}\n{traceback.format_exc()}")
+
+            return JsonResponse({"success": False, "error": f"Failed to clear cache: {str(e)}"}, status=500)
+
+
+# ============================================================================
+# MCP Servers API Endpoints
+# ============================================================================
+class MCPServerUIViewSet(NautobotUIViewSet):
+    """ViewSet for MCP Servers views."""
+
+    bulk_update_form_class = forms.MCPServerBulkEditForm
+    filterset_class = filters.MCPServerFilterSet
+    filterset_form_class = forms.MCPServerFilterForm
+    form_class = forms.MCPServerForm
+    lookup_field = "pk"
+    queryset = models.MCPServer.objects.all()
+    serializer_class = serializers.MCPServerSerializer
+    table_class = tables.MCPServerTable
+
+    object_detail_content = ObjectDetailContent(
+        panels=[
+            ObjectFieldsPanel(
+                weight=100,
+                section=SectionChoices.LEFT_HALF,
+                fields="__all__",
+            ),
+        ],
+        extra_buttons=[
+            Button(
+                weight=100,
+                label="Check Health",
+                icon="mdi-heart-pulse",
+                color=ButtonColorChoices.BLUE,
+                template_path="ai_ops/components/button/mcp_health_check.html",
+                javascript_template_path="ai_ops/extras/mcp_health_check_button.js",
+                attributes={"onClick": "checkMCPHealth(event)"},
+            ),
+        ],
+    )

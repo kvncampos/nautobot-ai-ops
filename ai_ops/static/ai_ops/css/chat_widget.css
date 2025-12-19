@@ -1,0 +1,176 @@
+.chat-message {
+    margin-bottom: 15px;
+    padding: 12px 15px;
+    border-radius: 8px;
+    max-width: 80%;
+    word-wrap: break-word;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.human-message {
+    background-color: #007bff;
+    color: white;
+    margin-left: auto;
+    text-align: right;
+}
+
+.ai-message {
+    background-color: #ffffff;
+    color: #333;
+    border: 1px solid #ddd;
+    margin-right: auto;
+}
+
+.message-label {
+    font-weight: bold;
+    font-size: 0.85em;
+    margin-bottom: 5px;
+    opacity: 0.8;
+}
+
+.message-content {
+    line-height: 1.5;
+}
+
+.message-wrapper {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.message-wrapper.human {
+    justify-content: flex-end;
+}
+
+.message-wrapper.ai {
+    justify-content: flex-start;
+}
+
+/* Responsive chat height based on viewport */
+#chat-messages {
+    height: calc(100vh - 350px);
+    min-height: 400px;
+    max-height: 800px;
+}
+
+/* For smaller screens */
+@media (max-width: 768px) {
+    #chat-messages {
+        height: calc(100vh - 300px);
+        min-height: 300px;
+    }
+}
+
+/* For very large screens */
+@media (min-height: 1200px) {
+    #chat-messages {
+        height: calc(100vh - 400px);
+        max-height: none;
+    }
+}
+
+#chat-messages::-webkit-scrollbar {
+    width: 8px;
+}
+
+#chat-messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+#chat-messages::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+#chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Markdown styling */
+.message-content ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.message-content li {
+    margin: 5px 0;
+    line-height: 1.6;
+}
+
+.message-content strong {
+    font-weight: 600;
+}
+
+.message-content code {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+.message-content pre {
+    background-color: #f4f4f4;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    overflow-x: auto;
+    margin: 10px 0;
+}
+
+.message-content pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+.human-message code,
+.human-message pre {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Heading styles */
+.message-content h1,
+.message-content h2,
+.message-content h3,
+.message-content h4,
+.message-content h5,
+.message-content h6 {
+    margin: 16px 0 8px 0;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.message-content h1 { font-size: 1.8em; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+.message-content h2 { font-size: 1.5em; border-bottom: 1px solid #e0e0e0; padding-bottom: 6px; }
+.message-content h3 { font-size: 1.3em; }
+.message-content h4 { font-size: 1.1em; }
+.message-content h5 { font-size: 1.0em; }
+.message-content h6 { font-size: 0.9em; color: #666; }
+
+/* First heading has no top margin */
+.message-content h1:first-child,
+.message-content h2:first-child,
+.message-content h3:first-child,
+.message-content h4:first-child,
+.message-content h5:first-child,
+.message-content h6:first-child {
+    margin-top: 0;
+}
+
+/* Horizontal rule styling */
+.message-content hr {
+    border: none;
+    border-top: 2px solid #e0e0e0;
+    margin: 20px 0;
+}
