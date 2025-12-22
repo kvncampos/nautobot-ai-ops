@@ -8,6 +8,8 @@ from rest_framework.response import Response
 
 from ai_ops import filters, models
 from ai_ops.api import serializers
+from ai_ops.helpers.common.enums import NautobotEnvironment
+from ai_ops.helpers.common.helpers import get_environment
 
 
 class LLMProviderViewSet(NautobotModelViewSet):  # pylint: disable=too-many-ancestors
@@ -105,11 +107,19 @@ class MCPServerViewSet(NautobotModelViewSet):  # pylint: disable=too-many-ancest
         except Exception as e:
             health_path = getattr(mcp_server, "health_check", "/health")
             health_url = f"{mcp_server.url.rstrip('/')}{health_path}"
+            
+            # Only expose exception details in LOCAL environment for security
+            env = get_environment()
+            if env == NautobotEnvironment.LOCAL:
+                error_details = f"{str(e)}"
+            else:
+                error_details = "Connection error. Please check server configuration."
+            
             return Response(
                 {
                     "success": False,
                     "message": f"MCP Server '{mcp_server.name}' health check failed",
-                    "details": f"{str(e)}",
+                    "details": error_details,
                     "url": health_url,
                 }
             )
