@@ -2,6 +2,7 @@
 
 import logging
 
+from asgiref.sync import sync_to_async
 from django.contrib.auth.decorators import user_passes_test
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -204,7 +205,10 @@ class ChatMessageView(GenericView):
                 provider_override = request.POST.get("llm_provider", "").strip()
                 # Validate provider exists and is enabled if specified
                 if provider_override:
-                    if not models.LLMProvider.objects.filter(name=provider_override, is_enabled=True).exists():
+                    provider_exists = await sync_to_async(
+                        models.LLMProvider.objects.filter(name=provider_override, is_enabled=True).exists
+                    )()
+                    if not provider_exists:
                         return JsonResponse(
                             {"error": f"Provider '{provider_override}' not found or is disabled"}, status=400
                         )
