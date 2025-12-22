@@ -111,7 +111,7 @@ class MCPServerViewSet(NautobotModelViewSet):  # pylint: disable=too-many-ancest
             # Only expose exception details in LOCAL environment for security
             env = get_environment()
             if env == NautobotEnvironment.LOCAL:
-                error_details = f"{str(e)}"
+                error_details = str(e)
             else:
                 error_details = "Connection error. Please check server configuration."
             

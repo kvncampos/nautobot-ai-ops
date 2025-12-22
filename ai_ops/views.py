@@ -18,6 +18,8 @@ from ai_ops.helpers.common.helpers import get_environment
 
 logger = logging.getLogger(__name__)
 
+# Generic error message for production environments
+GENERIC_ERROR_MESSAGE = "Please contact your administrator."
 
 class LLMProviderUIViewSet(NautobotUIViewSet):
     """ViewSet for Provider views."""
@@ -247,7 +249,7 @@ class ChatMessageView(GenericView):
             if env == NautobotEnvironment.LOCAL:
                 error_message = f"Error processing message: {e!s}"
             else:
-                error_message = "Error processing message. Please contact your administrator."
+                error_message = f"Error processing message. {GENERIC_ERROR_MESSAGE}"
             
             return JsonResponse({"response": None, "error": error_message}, status=500)
 
@@ -294,7 +296,7 @@ class ChatClearView(GenericView):
                 if env == NautobotEnvironment.LOCAL:
                     error_message = str(e)
                 else:
-                    error_message = "Failed to clear conversation. Please contact your administrator."
+                    error_message = f"Failed to clear conversation. {GENERIC_ERROR_MESSAGE}"
                 return JsonResponse({"success": False, "error": error_message}, status=500)
         except Exception as e:
             import traceback
@@ -306,7 +308,7 @@ class ChatClearView(GenericView):
             if env == NautobotEnvironment.LOCAL:
                 error_message = str(e)
             else:
-                error_message = "Failed to clear conversation. Please contact your administrator."
+                error_message = f"Failed to clear conversation. {GENERIC_ERROR_MESSAGE}"
             
             return JsonResponse({"success": False, "error": error_message}, status=500)
 
@@ -343,7 +345,7 @@ class ClearMCPCacheView(GenericView):
             if env == NautobotEnvironment.LOCAL:
                 error_message = f"Failed to clear cache: {str(e)}"
             else:
-                error_message = "Failed to clear cache. Please contact your administrator."
+                error_message = f"Failed to clear cache. {GENERIC_ERROR_MESSAGE}"
             
             return JsonResponse({"success": False, "error": error_message}, status=500)
 
