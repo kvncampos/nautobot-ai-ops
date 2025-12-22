@@ -1,6 +1,7 @@
 """API views for ai_ops."""
 
 import httpx
+from asgiref.sync import sync_to_async
 from nautobot.apps.api import NautobotModelViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -57,7 +58,7 @@ class MCPServerViewSet(NautobotModelViewSet):  # pylint: disable=too-many-ancest
     @action(detail=True, methods=["post"], url_path="health-check")
     async def health_check(self, request, pk=None):
         """Perform health check on MCP server."""
-        mcp_server = self.get_object()
+        mcp_server = await sync_to_async(self.get_object)()
 
         try:
             # Build health check URL using base URL + health_check path
