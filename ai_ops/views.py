@@ -12,6 +12,8 @@ from nautobot.apps.views import GenericView, NautobotUIViewSet
 from ai_ops import filters, forms, models, tables
 from ai_ops.agents.multi_mcp_agent import process_message
 from ai_ops.api import serializers
+from ai_ops.helpers.common.enums import NautobotEnvironment
+from ai_ops.helpers.common.helpers import get_environment
 
 logger = logging.getLogger(__name__)
 
@@ -236,8 +238,14 @@ class ChatMessageView(GenericView):
 
             logger.error(f"Chat message error: {e!s}\n{traceback.format_exc()}")
 
-            # Return technical error for POC
-            return JsonResponse({"response": None, "error": f"Error processing message: {e!s}"}, status=500)
+            # Only expose exception details in LOCAL environment for security
+            env = get_environment()
+            if env == NautobotEnvironment.LOCAL:
+                error_message = f"Error processing message: {e!s}"
+            else:
+                error_message = "Error processing message. Please contact your administrator."
+            
+            return JsonResponse({"response": None, "error": error_message}, status=500)
 
 
 class ChatClearView(GenericView):
@@ -277,13 +285,26 @@ class ChatClearView(GenericView):
                 )
             else:
                 logger.error(f"Runtime error clearing conversation: {str(e)}")
-                return JsonResponse({"success": False, "error": str(e)}, status=500)
+                # Only expose exception details in LOCAL environment for security
+                env = get_environment()
+                if env == NautobotEnvironment.LOCAL:
+                    error_message = str(e)
+                else:
+                    error_message = "Failed to clear conversation. Please contact your administrator."
+                return JsonResponse({"success": False, "error": error_message}, status=500)
         except Exception as e:
             import traceback
 
             logger.error(f"Failed to clear conversation: {str(e)}\n{traceback.format_exc()}")
 
-            return JsonResponse({"success": False, "error": str(e)}, status=500)
+            # Only expose exception details in LOCAL environment for security
+            env = get_environment()
+            if env == NautobotEnvironment.LOCAL:
+                error_message = str(e)
+            else:
+                error_message = "Failed to clear conversation. Please contact your administrator."
+            
+            return JsonResponse({"success": False, "error": error_message}, status=500)
 
 
 class ClearMCPCacheView(GenericView):
@@ -313,7 +334,14 @@ class ClearMCPCacheView(GenericView):
 
             logger.error(f"Failed to clear MCP cache: {str(e)}\n{traceback.format_exc()}")
 
-            return JsonResponse({"success": False, "error": f"Failed to clear cache: {str(e)}"}, status=500)
+            # Only expose exception details in LOCAL environment for security
+            env = get_environment()
+            if env == NautobotEnvironment.LOCAL:
+                error_message = f"Failed to clear cache: {str(e)}"
+            else:
+                error_message = "Failed to clear cache. Please contact your administrator."
+            
+            return JsonResponse({"success": False, "error": error_message}, status=500)
 
 
 # ============================================================================
