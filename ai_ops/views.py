@@ -134,16 +134,16 @@ class AIChatBotGenericView(GenericView):
 
     template_name = "ai_ops/chat_widget.html"
 
-    def get(self, request, *args, **kwargs):
+    async def get(self, request, *args, **kwargs):
         """Render the chat widget template."""
         # Check if there's a default LLM model configured
-        has_default_model = models.LLMModel.objects.filter(is_default=True).exists()
+        has_default_model = await sync_to_async(models.LLMModel.objects.filter(is_default=True).exists)()
 
         # Check if there are any healthy MCP servers
-        has_healthy_mcp = models.MCPServer.objects.filter(status__name="Healthy").exists()
+        has_healthy_mcp = await sync_to_async(models.MCPServer.objects.filter(status__name="Healthy").exists)()
 
         # Check if there are any MCP servers at all
-        has_any_mcp = models.MCPServer.objects.exists()
+        has_any_mcp = await sync_to_async(models.MCPServer.objects.exists)()
 
         # Chat is enabled only if we have both a default model AND at least one healthy MCP server
         chat_enabled = has_default_model and has_healthy_mcp
@@ -153,7 +153,7 @@ class AIChatBotGenericView(GenericView):
         enabled_providers = []
         is_admin = request.user.is_staff
         if is_admin:
-            providers = models.LLMProvider.objects.filter(is_enabled=True)
+            providers = await sync_to_async(list)(models.LLMProvider.objects.filter(is_enabled=True))
             enabled_providers = [
                 {"name": provider.name, "get_name_display": provider.get_name_display()} for provider in providers
             ]
