@@ -33,7 +33,7 @@ nautobot = ">=2.4.22,<2.4.23"
 
 langgraph = "^1.0.4"
 langchain = "^1.1.0"
-langchain-core = "^1.1.0"
+langchain-core = "^1.2.5"
 langchain-openai = "^1.1.0"
 langchain-mcp-adapters = "^0.1.14"
 langgraph-checkpoint-redis = "^0.2.1"
