@@ -13,6 +13,9 @@ from nautobot.apps.views import GenericView, NautobotUIViewSet
 from ai_ops import filters, forms, models, tables
 from ai_ops.agents.multi_mcp_agent import process_message
 from ai_ops.api import serializers
+from ai_ops.helpers.common.constants import ErrorMessages
+from ai_ops.helpers.common.enums import NautobotEnvironment
+from ai_ops.helpers.common.helpers import get_environment
 
 logger = logging.getLogger(__name__)
 
@@ -134,16 +137,16 @@ class AIChatBotGenericView(GenericView):
 
     template_name = "ai_ops/chat_widget.html"
 
-    def get(self, request, *args, **kwargs):
+    async def get(self, request, *args, **kwargs):
         """Render the chat widget template."""
         # Check if there's a default LLM model configured
-        has_default_model = models.LLMModel.objects.filter(is_default=True).exists()
+        has_default_model = await sync_to_async(models.LLMModel.objects.filter(is_default=True).exists)()
 
         # Check if there are any healthy MCP servers
-        has_healthy_mcp = models.MCPServer.objects.filter(status__name="Healthy").exists()
+        has_healthy_mcp = await sync_to_async(models.MCPServer.objects.filter(status__name="Healthy").exists)()
 
         # Check if there are any MCP servers at all
-        has_any_mcp = models.MCPServer.objects.exists()
+        has_any_mcp = await sync_to_async(models.MCPServer.objects.exists)()
 
         # Chat is enabled only if we have both a default model AND at least one healthy MCP server
         chat_enabled = has_default_model and has_healthy_mcp
@@ -153,7 +156,7 @@ class AIChatBotGenericView(GenericView):
         enabled_providers = []
         is_admin = request.user.is_staff
         if is_admin:
-            providers = models.LLMProvider.objects.filter(is_enabled=True)
+            providers = await sync_to_async(list)(models.LLMProvider.objects.filter(is_enabled=True))
             enabled_providers = [
                 {"name": provider.name, "get_name_display": provider.get_name_display()} for provider in providers
             ]
@@ -240,8 +243,14 @@ class ChatMessageView(GenericView):
 
             logger.error(f"Chat message error: {e!s}\n{traceback.format_exc()}")
 
-            # Return technical error for POC
-            return JsonResponse({"response": None, "error": f"Error processing message: {e!s}"}, status=500)
+            # Only expose exception details in LOCAL environment for security
+            env = get_environment()
+            if env == NautobotEnvironment.LOCAL:
+                error_message = f"Error processing message: {e!s}"
+            else:
+                error_message = ErrorMessages.CHAT_ERROR
+
+            return JsonResponse({"response": None, "error": error_message}, status=500)
 
 
 class ChatClearView(GenericView):
@@ -281,13 +290,26 @@ class ChatClearView(GenericView):
                 )
             else:
                 logger.error(f"Runtime error clearing conversation: {str(e)}")
-                return JsonResponse({"success": False, "error": str(e)}, status=500)
+                # Only expose exception details in LOCAL environment for security
+                env = get_environment()
+                if env == NautobotEnvironment.LOCAL:
+                    error_message = str(e)
+                else:
+                    error_message = ErrorMessages.CLEAR_CHAT_ERROR
+                return JsonResponse({"success": False, "error": error_message}, status=500)
         except Exception as e:
             import traceback
 
             logger.error(f"Failed to clear conversation: {str(e)}\n{traceback.format_exc()}")
 
-            return JsonResponse({"success": False, "error": str(e)}, status=500)
+            # Only expose exception details in LOCAL environment for security
+            env = get_environment()
+            if env == NautobotEnvironment.LOCAL:
+                error_message = str(e)
+            else:
+                error_message = ErrorMessages.CLEAR_CHAT_ERROR
+
+            return JsonResponse({"success": False, "error": error_message}, status=500)
 
 
 class ClearMCPCacheView(GenericView):
@@ -317,7 +339,14 @@ class ClearMCPCacheView(GenericView):
 
             logger.error(f"Failed to clear MCP cache: {str(e)}\n{traceback.format_exc()}")
 
-            return JsonResponse({"success": False, "error": f"Failed to clear cache: {str(e)}"}, status=500)
+            # Only expose exception details in LOCAL environment for security
+            env = get_environment()
+            if env == NautobotEnvironment.LOCAL:
+                error_message = f"Failed to clear cache: {str(e)}"
+            else:
+                error_message = ErrorMessages.CACHE_CLEAR_ERROR
+
+            return JsonResponse({"success": False, "error": error_message}, status=500)
 
 
 # ============================================================================
