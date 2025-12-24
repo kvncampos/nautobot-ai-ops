@@ -7,7 +7,7 @@ repos:
         entry: "poetry run invoke unittest -k"
         language: "system"
         pass_filenames: false
-        files: '^(tests/.*|ai_ops/models\.py)$' # yamllint disable-line rule:quoted-strings
+        files: '^(ai_ops/tests/.*|ai_ops/models\.py)$' # yamllint disable-line rule:quoted-strings
       - id: "invoke-check-migrations"
         name: "Run invoke check-migrations"
         entry: "poetry run invoke check-migrations"

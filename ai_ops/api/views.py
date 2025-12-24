@@ -1,6 +1,7 @@
 """API views for ai_ops."""
 
 import httpx
+from asgiref.sync import sync_to_async
 from nautobot.apps.api import NautobotModelViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -57,9 +58,9 @@ class MCPServerViewSet(NautobotModelViewSet):  # pylint: disable=too-many-ancest
     # http_method_names = ["get", "post", "put", "patch", "delete", "head", "options", "trace"]
 
     @action(detail=True, methods=["post"], url_path="health-check")
-    def health_check(self, request, pk=None):
+    async def health_check(self, request, pk=None):
         """Perform health check on MCP server."""
-        mcp_server = self.get_object()
+        mcp_server = await sync_to_async(self.get_object)()
 
         try:
             # Build health check URL using base URL + health_check path
@@ -70,9 +71,9 @@ class MCPServerViewSet(NautobotModelViewSet):  # pylint: disable=too-many-ancest
             # Only disable SSL verification for internal MCP servers
             verify_ssl = mcp_server.mcp_type != "internal"
 
-            # Perform health check
-            with httpx.Client(verify=verify_ssl, timeout=5.0) as client:
-                response = client.get(health_url)
+            # Perform health check with async client
+            async with httpx.AsyncClient(verify=verify_ssl, timeout=5.0) as client:
+                response = await client.get(health_url)
 
                 if response.status_code == 200:
                     return Response(

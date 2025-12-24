@@ -23,7 +23,7 @@ def banner(context, *args, **kwargs):
         return None
 
     # Check if there's a default LLM model configured
-    has_default_model = models.LLMModel.objects.filter(default=True).exists()
+    has_default_model = models.LLMModel.objects.filter(is_default=True).exists()
 
     if not has_default_model:
         # Show warning banner with link to LLM models configuration

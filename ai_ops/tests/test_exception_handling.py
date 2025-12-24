@@ -1,5 +1,6 @@
 """Tests for exception handling in views."""
 
+import asyncio
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
@@ -204,22 +205,29 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         self.assertEqual(response.status_code, 500)
 
     @patch("ai_ops.api.views.get_environment")
-    @patch("httpx.Client")
-    def test_mcp_server_health_check_exception_in_local(self, mock_client, mock_get_environment):
+    @patch("httpx.AsyncClient")
+    def test_mcp_server_health_check_exception_in_local(self, mock_async_client, mock_get_environment):
         """Test MCPServerViewSet health_check exception handling in LOCAL environment."""
         # Set environment to LOCAL
         mock_get_environment.return_value = NautobotEnvironment.LOCAL
 
-        # Mock httpx.Client to raise an exception
-        mock_client.return_value.__enter__.return_value.get.side_effect = Exception("Connection failed")
+        # Mock httpx.AsyncClient to raise an exception
+        mock_async_client.return_value.__aenter__.return_value.get.side_effect = Exception("Connection failed")
 
         # Create request
         request = self.api_factory.post(f"/api/plugins/ai-ops/mcp-servers/{self.http_server.pk}/health-check/")
         request.user = self.superuser
 
-        # Call view action
-        view = MCPServerViewSet.as_view({"post": "health_check"})
-        response = view(request, pk=self.http_server.pk)
+        # Call the health_check method directly
+        viewset_instance = MCPServerViewSet()
+        viewset_instance.format_kwarg = None
+        viewset_instance.request = request
+        # Mock get_object to return our test server directly
+        viewset_instance.get_object = lambda: self.http_server
+
+        # Since health_check is async, we need to run it properly
+
+        response = asyncio.run(viewset_instance.health_check(request, pk=self.http_server.pk))
 
         # In LOCAL environment, exception details should be exposed
         self.assertIn("Connection failed", response.data["details"])
@@ -227,22 +235,28 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         self.assertIn("health check failed", response.data["message"])
 
     @patch("ai_ops.api.views.get_environment")
-    @patch("httpx.Client")
-    def test_mcp_server_health_check_exception_in_prod(self, mock_client, mock_get_environment):
+    @patch("httpx.AsyncClient")
+    def test_mcp_server_health_check_exception_in_prod(self, mock_async_client, mock_get_environment):
         """Test MCPServerViewSet health_check exception handling in PROD environment."""
         # Set environment to PROD
         mock_get_environment.return_value = NautobotEnvironment.PROD
 
-        # Mock httpx.Client to raise an exception
-        mock_client.return_value.__enter__.return_value.get.side_effect = Exception("Connection failed")
+        # Mock httpx.AsyncClient to raise an exception
+        mock_async_client.return_value.__aenter__.return_value.get.side_effect = Exception("Connection failed")
 
         # Create request
         request = self.api_factory.post(f"/api/plugins/ai-ops/mcp-servers/{self.http_server.pk}/health-check/")
         request.user = self.superuser
 
-        # Call view action
-        view = MCPServerViewSet.as_view({"post": "health_check"})
-        response = view(request, pk=self.http_server.pk)
+        # Call the health_check method directly
+        viewset_instance = MCPServerViewSet()
+        viewset_instance.format_kwarg = None
+        viewset_instance.request = request
+        # Mock get_object to return our test server directly
+        viewset_instance.get_object = lambda: self.http_server
+
+        # Since health_check is async, we need to run it properly
+        response = asyncio.run(viewset_instance.health_check(request, pk=self.http_server.pk))
 
         # In PROD environment, exception details should NOT be exposed
         self.assertNotIn("Connection failed", response.data["details"])

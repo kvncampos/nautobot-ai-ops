@@ -159,7 +159,7 @@ class MCPServerFactory:
 
                 content_type = ContentType.objects.get_for_model(MCPServer)
                 status, _ = Status.objects.get_or_create(
-                    name="Active", defaults={"description": "Active status", "color": "4caf50"}
+                    name="Healthy", defaults={"description": "Healthy status", "color": "4caf50"}
                 )
                 status.content_types.add(content_type)
 
