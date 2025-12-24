@@ -1,8 +1,8 @@
 """Tests for AI Ops views."""
 
-import asyncio
 from unittest.mock import patch
 
+from asgiref.sync import async_to_sync
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sessions.backends.db import SessionStore
@@ -11,8 +11,8 @@ from django.test import RequestFactory
 from nautobot.core.testing import TestCase
 from nautobot.extras.models import Status
 
-from ai_ops.models import LLMModel, LLMProvider, MCPServer
-from ai_ops.tests.factories import LLMModelFactory, LLMProviderFactory, MCPServerFactory, TestDataMixin
+from ai_ops.models import MCPServer
+from ai_ops.tests.factories import TestDataMixin
 from ai_ops.views import AIChatBotGenericView
 
 User = get_user_model()
@@ -119,41 +119,37 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
             }
             mock_render.return_value = mock_response
 
-            # Test the async view
+            # Mock the database queries directly to simulate no models and no MCP servers
+            with patch("ai_ops.models.LLMModel.objects") as mock_llm_manager, patch(
+                "ai_ops.models.MCPServer.objects"
+            ) as mock_mcp_manager:
+                # Mock the specific queries the view makes - no models and no MCP servers
+                mock_llm_manager.filter.return_value.exists.return_value = False  # has_default_model = False
+                mock_mcp_manager.filter.return_value.exists.return_value = False  # has_healthy_mcp = False
+                mock_mcp_manager.exists.return_value = False  # has_any_mcp = False
 
-            async def test_view():
-                return await self.view.get(request)
+                # Test the async view using Django's async_to_sync
+                async_view = async_to_sync(self.view.get)
+                async_view(request)
 
-            asyncio.run(test_view())
+                # Verify render was called with correct template and context
+                mock_render.assert_called_once()
+                call_args = mock_render.call_args
+                self.assertEqual(call_args[0][0], request)
+                self.assertEqual(call_args[0][1], "ai_ops/chat_widget.html")
 
-            # Verify render was called with correct template and context
-            mock_render.assert_called_once()
-            call_args = mock_render.call_args
-            self.assertEqual(call_args[0][0], request)
-            self.assertEqual(call_args[0][1], "ai_ops/chat_widget.html")
-
-            # Verify context data
-            context = call_args[0][2]
-            self.assertEqual(context["title"], "LLM ChatBot")
-            self.assertFalse(context["chat_enabled"])
-            self.assertFalse(context["has_default_model"])
-            self.assertFalse(context["has_healthy_mcp"])
-            self.assertFalse(context["has_any_mcp"])
-            self.assertFalse(context["is_admin"])
-            self.assertEqual(context["enabled_providers"], [])
+                # Verify context data
+                context = call_args[0][2]
+                self.assertEqual(context["title"], "LLM ChatBot")
+                self.assertFalse(context["chat_enabled"])
+                self.assertFalse(context["has_default_model"])
+                self.assertFalse(context["has_healthy_mcp"])
+                self.assertFalse(context["has_any_mcp"])
+                self.assertFalse(context["is_admin"])
+                self.assertEqual(context["enabled_providers"], [])
 
     def test_get_has_default_model_no_healthy_mcp(self):
         """Test GET request when default model exists but no healthy MCP servers."""
-        # Use TestDataMixin models - set one model as default
-        self.llama2_model.refresh_from_db()
-        self.llama2_model.is_default = True
-        self.llama2_model.save()
-
-        # Verify the model is actually set as default
-
-        default_models = LLMModel.objects.filter(is_default=True)
-        self.assertEqual(default_models.count(), 1)
-
         request = self._create_request_with_user(self.regular_user)
 
         # Mock render to avoid template rendering database issues
@@ -170,12 +166,9 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
                 mock_mcp_manager.filter.return_value.exists.return_value = False  # has_healthy_mcp = False
                 mock_mcp_manager.exists.return_value = True  # has_any_mcp = True
 
-                # Test the async view
-
-                async def test_view():
-                    return await self.view.get(request)
-
-                asyncio.run(test_view())
+                # Test the async view using Django's async_to_sync
+                async_view = async_to_sync(self.view.get)
+                async_view(request)
 
                 # Verify context data passed to render
                 context = mock_render.call_args[0][2]
@@ -188,21 +181,6 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
 
     def test_get_has_default_model_and_healthy_mcp(self):
         """Test GET request when both default model and healthy MCP servers exist."""
-        # Set one model as default
-        self.llama2_model.refresh_from_db()
-        self.llama2_model.is_default = True
-        self.llama2_model.save()
-
-        # Set at least one MCP server as healthy
-        self.http_server.refresh_from_db()
-        self.http_server.status = self.status_healthy
-        self.http_server.save()
-
-        # Verify state
-
-        self.assertTrue(LLMModel.objects.filter(is_default=True).exists())
-        self.assertTrue(MCPServer.objects.filter(status__name="Healthy").exists())
-
         request = self._create_request_with_user(self.regular_user)
 
         # Mock render to avoid template rendering database issues
@@ -219,12 +197,9 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
                 mock_mcp_manager.filter.return_value.exists.return_value = True  # has_healthy_mcp = True
                 mock_mcp_manager.exists.return_value = True  # has_any_mcp = True
 
-                # Test the async view
-
-                async def test_view():
-                    return await self.view.get(request)
-
-                asyncio.run(test_view())
+                # Test the async view using Django's async_to_sync
+                async_view = async_to_sync(self.view.get)
+                async_view(request)
 
                 # Verify context data passed to render
                 context = mock_render.call_args[0][2]
@@ -236,23 +211,6 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
 
     def test_get_admin_user_gets_provider_list(self):
         """Test that admin users get the enabled providers list."""
-        # Set one model as default and one MCP server as healthy
-        self.llama2_model.refresh_from_db()
-        self.llama2_model.is_default = True
-        self.llama2_model.save()
-        self.http_server.refresh_from_db()
-        self.http_server.status = self.status_healthy
-        self.http_server.save()
-
-        # Create additional enabled providers using factories
-        # Note: we already have ollama provider from setup (enabled=True)
-        azure_provider, _ = LLMProviderFactory.create_azure_ai(is_enabled=True)
-        anthropic_provider, _ = LLMProviderFactory.create_anthropic(is_enabled=True)
-
-        # Count total enabled providers
-
-        _enabled_count = LLMProvider.objects.filter(is_enabled=True).count()
-
         request = self._create_request_with_user(self.admin_user)
 
         # Mock render to avoid template rendering database issues
@@ -285,12 +243,9 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
                 ]
                 mock_provider_manager.filter.return_value = mock_enabled_providers
 
-                # Test the async view
-
-                async def test_view():
-                    return await self.view.get(request)
-
-                asyncio.run(test_view())
+                # Test the async view using Django's async_to_sync
+                async_view = async_to_sync(self.view.get)
+                async_view(request)
 
                 # Verify context data passed to render
                 context = mock_render.call_args[0][2]
@@ -313,16 +268,6 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
 
     def test_get_admin_user_only_enabled_providers(self):
         """Test that admin users only get enabled providers in the list."""
-        # Create multiple providers with different enabled states
-        azure_provider, _ = LLMProviderFactory.create_azure_ai(is_enabled=True)
-        anthropic_provider, _ = LLMProviderFactory.create_anthropic(is_enabled=False)
-        huggingface_provider, _ = LLMProviderFactory.create_huggingface(is_enabled=True)
-
-        # Count expected enabled providers (ollama from setup + azure + huggingface = 3)
-
-        _enabled_providers = LLMProvider.objects.filter(is_enabled=True)
-        expected_count = 3  # We mock exactly 3 enabled providers
-
         request = self._create_request_with_user(self.admin_user)
 
         # Mock render to avoid template rendering database issues
@@ -355,23 +300,25 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
                 ]
                 mock_provider_manager.filter.return_value = mock_enabled_providers
 
-                # Test the async view
-
-                async def test_view():
-                    return await self.view.get(request)
-
-                asyncio.run(test_view())
+                # Test the async view using Django's async_to_sync
+                async_view = async_to_sync(self.view.get)
+                async_view(request)
 
                 # Verify context data passed to render
                 context = mock_render.call_args[0][2]
                 # Should have all enabled providers
+                expected_count = 3
                 self.assertEqual(len(context["enabled_providers"]), expected_count)
+
+                provider_names = [p["name"] for p in context["enabled_providers"]]
+                self.assertIn("ollama", provider_names)
+                self.assertIn("azure", provider_names)
+                self.assertIn("huggingface", provider_names)
+                # anthropic should not be included (disabled)
+                self.assertNotIn("anthropic", provider_names)
 
     def test_get_regular_user_no_providers_list(self):
         """Test that regular users don't get the providers list."""
-        # Create additional enabled providers using factories
-        azure_provider, _ = LLMProviderFactory.create_azure_ai(is_enabled=True)
-
         request = self._create_request_with_user(self.regular_user)
 
         # Mock render to avoid template rendering database issues
@@ -379,12 +326,9 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
             mock_response = HttpResponse()
             mock_render.return_value = mock_response
 
-            # Test the async view
-
-            async def test_view():
-                return await self.view.get(request)
-
-            asyncio.run(test_view())
+            # Test the async view using Django's async_to_sync
+            async_view = async_to_sync(self.view.get)
+            async_view(request)
 
             # Verify context data passed to render
             context = mock_render.call_args[0][2]
@@ -393,16 +337,6 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
 
     def test_get_no_default_model_with_healthy_mcp(self):
         """Test that chat is disabled when no default model exists even with healthy MCP."""
-        # Set MCP server as healthy but no default model
-        self.http_server.refresh_from_db()
-        self.http_server.status = self.status_healthy
-        self.http_server.save()
-
-        # Verify state - no default model but healthy MCP
-
-        self.assertFalse(LLMModel.objects.filter(is_default=True).exists())
-        self.assertTrue(MCPServer.objects.filter(status__name="Healthy").exists())
-
         request = self._create_request_with_user(self.regular_user)
 
         # Mock render to avoid template rendering database issues
@@ -419,12 +353,9 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
                 mock_mcp_manager.filter.return_value.exists.return_value = True  # has_healthy_mcp = True
                 mock_mcp_manager.exists.return_value = True  # has_any_mcp = True
 
-                # Test the async view
-
-                async def test_view():
-                    return await self.view.get(request)
-
-                asyncio.run(test_view())
+                # Test the async view using Django's async_to_sync
+                async_view = async_to_sync(self.view.get)
+                async_view(request)
 
                 # Verify context data passed to render
                 context = mock_render.call_args[0][2]
@@ -442,12 +373,9 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
             mock_response = HttpResponse()
             mock_render.return_value = mock_response
 
-            # Test the async view
-
-            async def test_view():
-                return await self.view.get(request)
-
-            asyncio.run(test_view())
+            # Test the async view using Django's async_to_sync
+            async_view = async_to_sync(self.view.get)
+            async_view(request)
 
             # Verify render was called with correct template
             mock_render.assert_called_once()
@@ -463,12 +391,9 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
             mock_response = HttpResponse()
             mock_render.return_value = mock_response
 
-            # Test the async view
-
-            async def test_view():
-                return await self.view.get(request)
-
-            asyncio.run(test_view())
+            # Test the async view using Django's async_to_sync
+            async_view = async_to_sync(self.view.get)
+            async_view(request)
 
             # Verify context data passed to render
             context = mock_render.call_args[0][2]
@@ -487,23 +412,6 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
 
     def test_get_multiple_default_models_still_works(self):
         """Test that having multiple default models still enables chat (edge case)."""
-        # Create additional models and set multiple as default using factories
-        gpt4_model, _ = LLMModelFactory.create_gpt4(provider=self.ollama_provider, is_default=True)
-
-        # Set existing model as default too
-        self.llama2_model.refresh_from_db()
-        self.llama2_model.is_default = True
-        self.llama2_model.save()
-
-        # Set MCP server as healthy
-        self.http_server.refresh_from_db()
-        self.http_server.status = self.status_healthy
-        self.http_server.save()
-        # Verify state
-
-        self.assertTrue(LLMModel.objects.filter(is_default=True).exists())
-        self.assertTrue(MCPServer.objects.filter(status__name="Healthy").exists())
-
         request = self._create_request_with_user(self.regular_user)
 
         # Mock render to avoid template rendering database issues
@@ -520,12 +428,9 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
                 mock_mcp_manager.filter.return_value.exists.return_value = True  # has_healthy_mcp = True
                 mock_mcp_manager.exists.return_value = True  # has_any_mcp = True
 
-                # Test the async view
-
-                async def test_view():
-                    return await self.view.get(request)
-
-                asyncio.run(test_view())
+                # Test the async view using Django's async_to_sync
+                async_view = async_to_sync(self.view.get)
+                async_view(request)
 
                 # Verify context data passed to render
                 context = mock_render.call_args[0][2]
@@ -536,20 +441,6 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
 
     def test_sync_to_async_database_operations_work(self):
         """Test that sync_to_async wrapping of database operations works correctly."""
-        # Set up test data using factories
-        azure_provider, _ = LLMProviderFactory.create_azure_ai(is_enabled=True)
-        gpt4_model, _ = LLMModelFactory.create_gpt4(provider=azure_provider, is_default=True)
-
-        # Create an additional MCP server and set as healthy
-        healthy_server, _ = MCPServerFactory.create_http_server(name="healthy-server")
-        healthy_server.status = self.status_healthy
-        healthy_server.save()
-
-        # Verify state
-
-        self.assertTrue(LLMModel.objects.filter(is_default=True).exists())
-        self.assertTrue(MCPServer.objects.filter(status__name="Healthy").exists())
-
         request = self._create_request_with_user(self.regular_user)
 
         # Mock render to avoid template rendering database issues
@@ -566,21 +457,14 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
                 mock_mcp_manager.filter.return_value.exists.return_value = True  # has_healthy_mcp = True
                 mock_mcp_manager.exists.return_value = True  # has_any_mcp = True
 
-                # Test the async view
+                # Test the async view using Django's async_to_sync
+                async_view = async_to_sync(self.view.get)
 
-                async def test_view():
-                    # Verify we're in an async context
-                    self.assertIsNotNone(asyncio.current_task())
+                # Verify we can call this without database connection issues
+                async_view(request)
 
-                    # Call the async view method
-                    response = await self.view.get(request)
-
-                    # Verify the database queries executed correctly in async context
-                    context = mock_render.call_args[0][2]
-                    self.assertTrue(context["has_default_model"])
-                    self.assertTrue(context["has_healthy_mcp"])
-                    self.assertTrue(context["chat_enabled"])
-
-                    return response
-
-                asyncio.run(test_view())
+                # Verify the database queries executed correctly in async context
+                context = mock_render.call_args[0][2]
+                self.assertTrue(context["has_default_model"])
+                self.assertTrue(context["has_healthy_mcp"])
+                self.assertTrue(context["chat_enabled"])
