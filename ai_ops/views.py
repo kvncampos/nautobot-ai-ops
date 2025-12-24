@@ -172,7 +172,7 @@ class AIChatBotGenericView(GenericView):
             "enabled_providers": enabled_providers,
             # Add other context variables as needed
         }
-        return render(request, self.template_name, context)
+        return await sync_to_async(render)(request, self.template_name, context)
 
 
 # ============================================================================
