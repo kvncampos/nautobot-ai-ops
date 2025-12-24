@@ -1,6 +1,18 @@
 """Constants."""
 
 
+class ErrorMessages:
+    """User-facing error messages for production environments."""
+
+    CHAT_ERROR = "Unable to process your message at this time. Please try again or contact your administrator if the issue persists."
+    CLEAR_CHAT_ERROR = (
+        "Failed to clear conversation history. Please try again or contact your administrator if the issue persists."
+    )
+    CACHE_CLEAR_ERROR = (
+        "Failed to clear MCP cache. Please check the logs or contact your administrator if the issue persists."
+    )
+
+
 class Urls:
     """Urls."""
 
