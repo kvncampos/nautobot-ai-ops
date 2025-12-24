@@ -106,14 +106,14 @@ class MCPServerViewSet(NautobotModelViewSet):  # pylint: disable=too-many-ancest
         except Exception as e:
             health_path = getattr(mcp_server, "health_check", "/health")
             health_url = f"{mcp_server.url.rstrip('/')}{health_path}"
-            
+
             # Only expose exception details in LOCAL environment for security
             env = get_environment()
             if env == NautobotEnvironment.LOCAL:
                 error_details = str(e)
             else:
                 error_details = "Connection error. Please check server configuration."
-            
+
             return Response(
                 {
                     "success": False,

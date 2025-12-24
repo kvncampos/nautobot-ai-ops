@@ -1,10 +1,9 @@
 """Tests for exception handling in views."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase
-from django.test.utils import override_settings
 from rest_framework.test import APIRequestFactory
 
 from ai_ops.api.views import MCPServerViewSet
@@ -36,20 +35,20 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         """Test ChatMessageView exception handling in LOCAL environment."""
         # Set environment to LOCAL
         mock_get_environment.return_value = NautobotEnvironment.LOCAL
-        
+
         # Make process_message raise an exception
         mock_process_message.side_effect = Exception("Test error message")
-        
+
         # Create request
         request = self.factory.post("/chat/message", {"message": "test message"})
         request.user = self.user
         request.session = MagicMock()
         request.session.session_key = "test-session-key"
-        
+
         # Call view
         view = ChatMessageView.as_view()
         response = await view(request)
-        
+
         # In LOCAL environment, exception details should be exposed
         response_data = response.content.decode("utf-8")
         self.assertIn("Test error message", response_data)
@@ -61,20 +60,20 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         """Test ChatMessageView exception handling in PROD environment."""
         # Set environment to PROD
         mock_get_environment.return_value = NautobotEnvironment.PROD
-        
+
         # Make process_message raise an exception
         mock_process_message.side_effect = Exception("Test error message")
-        
+
         # Create request
         request = self.factory.post("/chat/message", {"message": "test message"})
         request.user = self.user
         request.session = MagicMock()
         request.session.session_key = "test-session-key"
-        
+
         # Call view
         view = ChatMessageView.as_view()
         response = await view(request)
-        
+
         # In PROD environment, exception details should NOT be exposed
         response_data = response.content.decode("utf-8")
         self.assertNotIn("Test error message", response_data)
@@ -87,20 +86,20 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         """Test ChatClearView RuntimeError handling in LOCAL environment."""
         # Set environment to LOCAL
         mock_get_environment.return_value = NautobotEnvironment.LOCAL
-        
+
         # Make clear raise a RuntimeError
         mock_clear.side_effect = RuntimeError("Some runtime error")
-        
+
         # Create request
         request = self.factory.post("/chat/clear")
         request.user = self.user
         request.session = MagicMock()
         request.session.session_key = "test-session-key"
-        
+
         # Call view
         view = ChatClearView.as_view()
         response = await view(request)
-        
+
         # In LOCAL environment, exception details should be exposed
         response_data = response.content.decode("utf-8")
         self.assertIn("Some runtime error", response_data)
@@ -112,20 +111,20 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         """Test ChatClearView RuntimeError handling in NONPROD environment."""
         # Set environment to NONPROD
         mock_get_environment.return_value = NautobotEnvironment.NONPROD
-        
+
         # Make clear raise a RuntimeError
         mock_clear.side_effect = RuntimeError("Some runtime error")
-        
+
         # Create request
         request = self.factory.post("/chat/clear")
         request.user = self.user
         request.session = MagicMock()
         request.session.session_key = "test-session-key"
-        
+
         # Call view
         view = ChatClearView.as_view()
         response = await view(request)
-        
+
         # In NONPROD environment, exception details should NOT be exposed
         response_data = response.content.decode("utf-8")
         self.assertNotIn("Some runtime error", response_data)
@@ -138,20 +137,20 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         """Test ChatClearView generic Exception handling in LOCAL environment."""
         # Set environment to LOCAL
         mock_get_environment.return_value = NautobotEnvironment.LOCAL
-        
+
         # Make clear raise a generic Exception
         mock_clear.side_effect = Exception("Generic error")
-        
+
         # Create request
         request = self.factory.post("/chat/clear")
         request.user = self.user
         request.session = MagicMock()
         request.session.session_key = "test-session-key"
-        
+
         # Call view
         view = ChatClearView.as_view()
         response = await view(request)
-        
+
         # In LOCAL environment, exception details should be exposed
         response_data = response.content.decode("utf-8")
         self.assertIn("Generic error", response_data)
@@ -163,18 +162,18 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         """Test ClearMCPCacheView exception handling in LOCAL environment."""
         # Set environment to LOCAL
         mock_get_environment.return_value = NautobotEnvironment.LOCAL
-        
+
         # Make clear_mcp_cache raise an exception
         mock_clear_cache.side_effect = Exception("Cache error")
-        
+
         # Create request
         request = self.factory.post("/mcp/clear-cache")
         request.user = self.superuser
-        
+
         # Call view
         view = ClearMCPCacheView.as_view()
         response = await view(request)
-        
+
         # In LOCAL environment, exception details should be exposed
         response_data = response.content.decode("utf-8")
         self.assertIn("Cache error", response_data)
@@ -186,18 +185,18 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         """Test ClearMCPCacheView exception handling in LAB environment."""
         # Set environment to LAB
         mock_get_environment.return_value = NautobotEnvironment.LAB
-        
+
         # Make clear_mcp_cache raise an exception
         mock_clear_cache.side_effect = Exception("Cache error")
-        
+
         # Create request
         request = self.factory.post("/mcp/clear-cache")
         request.user = self.superuser
-        
+
         # Call view
         view = ClearMCPCacheView.as_view()
         response = await view(request)
-        
+
         # In LAB environment, exception details should NOT be exposed
         response_data = response.content.decode("utf-8")
         self.assertNotIn("Cache error", response_data)
@@ -210,18 +209,18 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         """Test MCPServerViewSet health_check exception handling in LOCAL environment."""
         # Set environment to LOCAL
         mock_get_environment.return_value = NautobotEnvironment.LOCAL
-        
+
         # Mock httpx.Client to raise an exception
         mock_client.return_value.__enter__.return_value.get.side_effect = Exception("Connection failed")
-        
+
         # Create request
         request = self.api_factory.post(f"/api/plugins/ai-ops/mcp-servers/{self.mcp_server.pk}/health-check/")
         request.user = self.user
-        
+
         # Call view action
         view = MCPServerViewSet.as_view({"post": "health_check"})
         response = view(request, pk=self.mcp_server.pk)
-        
+
         # In LOCAL environment, exception details should be exposed
         self.assertIn("Connection failed", response.data["details"])
         self.assertFalse(response.data["success"])
@@ -232,18 +231,18 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         """Test MCPServerViewSet health_check exception handling in PROD environment."""
         # Set environment to PROD
         mock_get_environment.return_value = NautobotEnvironment.PROD
-        
+
         # Mock httpx.Client to raise an exception
         mock_client.return_value.__enter__.return_value.get.side_effect = Exception("Connection failed")
-        
+
         # Create request
         request = self.api_factory.post(f"/api/plugins/ai-ops/mcp-servers/{self.mcp_server.pk}/health-check/")
         request.user = self.user
-        
+
         # Call view action
         view = MCPServerViewSet.as_view({"post": "health_check"})
         response = view(request, pk=self.mcp_server.pk)
-        
+
         # In PROD environment, exception details should NOT be exposed
         self.assertNotIn("Connection failed", response.data["details"])
         self.assertIn("Connection error", response.data["details"])
