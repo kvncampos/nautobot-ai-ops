@@ -77,11 +77,11 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         # In PROD environment, exception details should NOT be exposed
         response_data = response.content.decode("utf-8")
         self.assertNotIn("Test error message", response_data)
-        self.assertIn("Please contact your administrator", response_data)
+        self.assertIn("Unable to process your message at this time", response_data)
         self.assertEqual(response.status_code, 500)
 
     @patch("ai_ops.views.get_environment")
-    @patch("ai_ops.views.clear_checkpointer_for_thread")
+    @patch("ai_ops.checkpointer.clear_checkpointer_for_thread")
     async def test_chat_clear_view_runtime_exception_in_local(self, mock_clear, mock_get_environment):
         """Test ChatClearView RuntimeError handling in LOCAL environment."""
         # Set environment to LOCAL
@@ -106,7 +106,7 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         self.assertEqual(response.status_code, 500)
 
     @patch("ai_ops.views.get_environment")
-    @patch("ai_ops.views.clear_checkpointer_for_thread")
+    @patch("ai_ops.checkpointer.clear_checkpointer_for_thread")
     async def test_chat_clear_view_runtime_exception_in_nonprod(self, mock_clear, mock_get_environment):
         """Test ChatClearView RuntimeError handling in NONPROD environment."""
         # Set environment to NONPROD
@@ -128,11 +128,11 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         # In NONPROD environment, exception details should NOT be exposed
         response_data = response.content.decode("utf-8")
         self.assertNotIn("Some runtime error", response_data)
-        self.assertIn("Please contact your administrator", response_data)
+        self.assertIn("Failed to clear conversation history", response_data)
         self.assertEqual(response.status_code, 500)
 
     @patch("ai_ops.views.get_environment")
-    @patch("ai_ops.views.clear_checkpointer_for_thread")
+    @patch("ai_ops.checkpointer.clear_checkpointer_for_thread")
     async def test_chat_clear_view_generic_exception_in_local(self, mock_clear, mock_get_environment):
         """Test ChatClearView generic Exception handling in LOCAL environment."""
         # Set environment to LOCAL
@@ -157,7 +157,7 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         self.assertEqual(response.status_code, 500)
 
     @patch("ai_ops.views.get_environment")
-    @patch("ai_ops.views.clear_mcp_cache")
+    @patch("ai_ops.agents.multi_mcp_agent.clear_mcp_cache")
     async def test_clear_mcp_cache_view_exception_in_local(self, mock_clear_cache, mock_get_environment):
         """Test ClearMCPCacheView exception handling in LOCAL environment."""
         # Set environment to LOCAL
@@ -180,7 +180,7 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         self.assertEqual(response.status_code, 500)
 
     @patch("ai_ops.views.get_environment")
-    @patch("ai_ops.views.clear_mcp_cache")
+    @patch("ai_ops.agents.multi_mcp_agent.clear_mcp_cache")
     async def test_clear_mcp_cache_view_exception_in_lab(self, mock_clear_cache, mock_get_environment):
         """Test ClearMCPCacheView exception handling in LAB environment."""
         # Set environment to LAB
@@ -200,7 +200,7 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         # In LAB environment, exception details should NOT be exposed
         response_data = response.content.decode("utf-8")
         self.assertNotIn("Cache error", response_data)
-        self.assertIn("Please contact your administrator", response_data)
+        self.assertIn("Failed to clear MCP cache", response_data)
         self.assertEqual(response.status_code, 500)
 
     @patch("ai_ops.api.views.get_environment")
@@ -214,16 +214,17 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         mock_client.return_value.__enter__.return_value.get.side_effect = Exception("Connection failed")
 
         # Create request
-        request = self.api_factory.post(f"/api/plugins/ai-ops/mcp-servers/{self.mcp_server.pk}/health-check/")
-        request.user = self.user
+        request = self.api_factory.post(f"/api/plugins/ai-ops/mcp-servers/{self.http_server.pk}/health-check/")
+        request.user = self.superuser
 
         # Call view action
         view = MCPServerViewSet.as_view({"post": "health_check"})
-        response = view(request, pk=self.mcp_server.pk)
+        response = view(request, pk=self.http_server.pk)
 
         # In LOCAL environment, exception details should be exposed
         self.assertIn("Connection failed", response.data["details"])
         self.assertFalse(response.data["success"])
+        self.assertIn("health check failed", response.data["message"])
 
     @patch("ai_ops.api.views.get_environment")
     @patch("httpx.Client")
@@ -236,14 +237,15 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         mock_client.return_value.__enter__.return_value.get.side_effect = Exception("Connection failed")
 
         # Create request
-        request = self.api_factory.post(f"/api/plugins/ai-ops/mcp-servers/{self.mcp_server.pk}/health-check/")
-        request.user = self.user
+        request = self.api_factory.post(f"/api/plugins/ai-ops/mcp-servers/{self.http_server.pk}/health-check/")
+        request.user = self.superuser
 
         # Call view action
         view = MCPServerViewSet.as_view({"post": "health_check"})
-        response = view(request, pk=self.mcp_server.pk)
+        response = view(request, pk=self.http_server.pk)
 
         # In PROD environment, exception details should NOT be exposed
         self.assertNotIn("Connection failed", response.data["details"])
         self.assertIn("Connection error", response.data["details"])
         self.assertFalse(response.data["success"])
+        self.assertIn("health check failed", response.data["message"])
