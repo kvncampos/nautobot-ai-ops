@@ -13,13 +13,11 @@ from nautobot.apps.views import GenericView, NautobotUIViewSet
 from ai_ops import filters, forms, models, tables
 from ai_ops.agents.multi_mcp_agent import process_message
 from ai_ops.api import serializers
+from ai_ops.helpers.common.constants import ErrorMessages
 from ai_ops.helpers.common.enums import NautobotEnvironment
 from ai_ops.helpers.common.helpers import get_environment
 
 logger = logging.getLogger(__name__)
-
-# Generic error message for production environments
-GENERIC_ERROR_MESSAGE = "Please contact your administrator."
 
 
 class LLMProviderUIViewSet(NautobotUIViewSet):
@@ -250,7 +248,7 @@ class ChatMessageView(GenericView):
             if env == NautobotEnvironment.LOCAL:
                 error_message = f"Error processing message: {e!s}"
             else:
-                error_message = f"Error processing message. {GENERIC_ERROR_MESSAGE}"
+                error_message = ErrorMessages.CHAT_ERROR
 
             return JsonResponse({"response": None, "error": error_message}, status=500)
 
@@ -297,7 +295,7 @@ class ChatClearView(GenericView):
                 if env == NautobotEnvironment.LOCAL:
                     error_message = str(e)
                 else:
-                    error_message = f"Failed to clear conversation. {GENERIC_ERROR_MESSAGE}"
+                    error_message = ErrorMessages.CLEAR_CHAT_ERROR
                 return JsonResponse({"success": False, "error": error_message}, status=500)
         except Exception as e:
             import traceback
@@ -309,7 +307,7 @@ class ChatClearView(GenericView):
             if env == NautobotEnvironment.LOCAL:
                 error_message = str(e)
             else:
-                error_message = f"Failed to clear conversation. {GENERIC_ERROR_MESSAGE}"
+                error_message = ErrorMessages.CLEAR_CHAT_ERROR
 
             return JsonResponse({"success": False, "error": error_message}, status=500)
 
@@ -346,7 +344,7 @@ class ClearMCPCacheView(GenericView):
             if env == NautobotEnvironment.LOCAL:
                 error_message = f"Failed to clear cache: {str(e)}"
             else:
-                error_message = f"Failed to clear cache. {GENERIC_ERROR_MESSAGE}"
+                error_message = ErrorMessages.CACHE_CLEAR_ERROR
 
             return JsonResponse({"success": False, "error": error_message}, status=500)
 
