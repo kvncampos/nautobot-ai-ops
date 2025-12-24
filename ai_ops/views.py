@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 # Generic error message for production environments
 GENERIC_ERROR_MESSAGE = "Please contact your administrator."
 
+
 class LLMProviderUIViewSet(NautobotUIViewSet):
     """ViewSet for Provider views."""
 
@@ -250,7 +251,7 @@ class ChatMessageView(GenericView):
                 error_message = f"Error processing message: {e!s}"
             else:
                 error_message = f"Error processing message. {GENERIC_ERROR_MESSAGE}"
-            
+
             return JsonResponse({"response": None, "error": error_message}, status=500)
 
 
@@ -309,7 +310,7 @@ class ChatClearView(GenericView):
                 error_message = str(e)
             else:
                 error_message = f"Failed to clear conversation. {GENERIC_ERROR_MESSAGE}"
-            
+
             return JsonResponse({"success": False, "error": error_message}, status=500)
 
 
@@ -346,7 +347,7 @@ class ClearMCPCacheView(GenericView):
                 error_message = f"Failed to clear cache: {str(e)}"
             else:
                 error_message = f"Failed to clear cache. {GENERIC_ERROR_MESSAGE}"
-            
+
             return JsonResponse({"success": False, "error": error_message}, status=500)
 
 
