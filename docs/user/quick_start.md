@@ -13,7 +13,7 @@ Get the AI Ops App up and running in 5 minutes!
 
 ```bash
 # Install from PyPI
-pip install ai-ops
+pip install nautobot-ai-ops
 
 # Add to nautobot_config.py
 PLUGINS = ["ai_ops"]
