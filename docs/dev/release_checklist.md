@@ -158,6 +158,9 @@ The release notes should look as follows:
 
 Publish the release!
 
+!!! note "PyPI Publishing"
+    Once the GitHub release is published, the `Publish to PyPI` workflow will automatically trigger and publish the package to PyPI. You can monitor the progress in the [Actions tab](https://github.com/kvncampos/nautobot-ai-ops/actions/workflows/publish-pypi.yml).
+
 ### Create a PR from `main` back to `develop`
 
 First, sync your `main` branch with upstream changes: `git switch main && git pull`.
@@ -185,7 +188,13 @@ Open a new PR from `release-1.4.2-to-develop` against `develop`, wait for CI to 
 
 ### Final checks
 
-At this stage, the CI should be running or finished for the `v1.4.2` tag and a package successfully published to PyPI and added into the GitHub Release. Double check that's the case.
+At this stage, the CI should be running or finished for the `v1.4.2` tag. The `Publish to PyPI` workflow should automatically trigger when the GitHub release is published, building and publishing the package to PyPI.
+
+Verify the following:
+
+1. The [Publish to PyPI workflow](https://github.com/kvncampos/nautobot-ai-ops/actions/workflows/publish-pypi.yml) has completed successfully
+2. The package appears on [PyPI](https://pypi.org/project/nautobot-ai-ops/)
+3. The GitHub release was created with the correct tag and notes
 
 Documentation should also have been built for the tag on ReadTheDocs and if you're reading this page online, refresh it and look for the new version in the little version fly-out menu down at the bottom right of the page.
 
