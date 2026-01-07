@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.nautobot.com/projects/ai-ops/en/latest/admin/release_notes/">
+        <link rel="canonical" href="https://docs.nautobot.com/projects/ai-ops/en/latest/dev/pypi_publishing/">
       
       
-        <link rel="prev" href="../health_checks/">
+        <link rel="prev" href="../release_checklist/">
       
       
-        <link rel="next" href="version_1.0/">
+        <link rel="next" href="../arch_decision/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Release Notes - AI Ops Documentation</title>
+        <title>PyPI Publishing Setup - AI Ops Documentation</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-notes" class="md-skip">
+        <a href="#pypi-publishing-setup" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Release Notes
+              PyPI Publishing Setup
             
           </span>
         </div>
@@ -266,13 +266,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../install/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../admin/install/" class="md-tabs__link">
           
   
   
@@ -290,11 +288,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../dev/architecture/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../architecture/" class="md-tabs__link">
           
   
   
@@ -647,10 +647,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -670,20 +668,17 @@
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -701,7 +696,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -719,7 +714,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../install/" class="md-nav__link">
+      <a href="../../admin/install/" class="md-nav__link">
         
   
   
@@ -747,7 +742,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../upgrade/" class="md-nav__link">
+      <a href="../../admin/upgrade/" class="md-nav__link">
         
   
   
@@ -775,7 +770,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../uninstall/" class="md-nav__link">
+      <a href="../../admin/uninstall/" class="md-nav__link">
         
   
   
@@ -803,7 +798,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../compatibility_matrix/" class="md-nav__link">
+      <a href="../../admin/compatibility_matrix/" class="md-nav__link">
         
   
   
@@ -831,7 +826,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../health_checks/" class="md-nav__link">
+      <a href="../../admin/health_checks/" class="md-nav__link">
         
   
   
@@ -856,8 +851,6 @@
                 
   
   
-    
-  
   
   
     
@@ -876,15 +869,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../../admin/release_notes/" class="md-nav__link ">
               
   
   
@@ -902,13 +895,13 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_3_6" id="__nav_3_6_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_6" id="__nav_3_6_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -928,7 +921,7 @@
   
   
     <li class="md-nav__item">
-      <a href="version_1.0/" class="md-nav__link">
+      <a href="../../admin/release_notes/version_1.0/" class="md-nav__link">
         
   
   
@@ -968,8 +961,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -993,17 +988,20 @@
     
     
       
+        
+        
+      
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -1021,7 +1019,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1039,7 +1037,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dev/architecture/" class="md-nav__link">
+      <a href="../architecture/" class="md-nav__link">
         
   
   
@@ -1067,7 +1065,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dev/extending/" class="md-nav__link">
+      <a href="../extending/" class="md-nav__link">
         
   
   
@@ -1095,7 +1093,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dev/contributing/" class="md-nav__link">
+      <a href="../contributing/" class="md-nav__link">
         
   
   
@@ -1123,7 +1121,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dev/dev_environment/" class="md-nav__link">
+      <a href="../dev_environment/" class="md-nav__link">
         
   
   
@@ -1151,7 +1149,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dev/release_checklist/" class="md-nav__link">
+      <a href="../release_checklist/" class="md-nav__link">
         
   
   
@@ -1176,10 +1174,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../dev/pypi_publishing/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PyPI Publishing Setup
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1195,6 +1220,287 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automated-publishing-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automated Publishing Workflow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Automated Publishing Workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workflow-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow Triggers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflow-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow Jobs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Workflow Jobs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-build-distribution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Build Distribution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-publish-to-pypi-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Publish to PyPI (Production)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-publish-to-testpypi-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Publish to TestPyPI (Testing)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-update-github-release-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Update GitHub Release Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pypi-trusted-publishing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PyPI Trusted Publishing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PyPI Trusted Publishing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-trusted-publishing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting Up Trusted Publishing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#package-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package Metadata
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Package Metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#best-practices-implemented" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices Implemented
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-the-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing the Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#release-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release Process
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#build-failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build Failures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#publishing-failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Publishing Failures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#package-not-found-after-publishing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package Not Found After Publishing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manual-publishing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manual Publishing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Considerations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Additional Resources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1207,7 +1513,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dev/arch_decision/" class="md-nav__link">
+      <a href="../arch_decision/" class="md-nav__link">
         
   
   
@@ -1268,7 +1574,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../dev/code_reference/" class="md-nav__link ">
+            <a href="../code_reference/" class="md-nav__link ">
               
   
   
@@ -1312,7 +1618,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dev/code_reference/models/" class="md-nav__link">
+      <a href="../code_reference/models/" class="md-nav__link">
         
   
   
@@ -1340,7 +1646,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dev/code_reference/agents/" class="md-nav__link">
+      <a href="../code_reference/agents/" class="md-nav__link">
         
   
   
@@ -1368,7 +1674,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dev/code_reference/helpers/" class="md-nav__link">
+      <a href="../code_reference/helpers/" class="md-nav__link">
         
   
   
@@ -1396,7 +1702,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dev/code_reference/jobs/" class="md-nav__link">
+      <a href="../code_reference/jobs/" class="md-nav__link">
         
   
   
@@ -1424,7 +1730,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dev/code_reference/package/" class="md-nav__link">
+      <a href="../code_reference/package/" class="md-nav__link">
         
   
   
@@ -1452,7 +1758,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dev/code_reference/api/" class="md-nav__link">
+      <a href="../code_reference/api/" class="md-nav__link">
         
   
   
@@ -1535,6 +1841,275 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automated-publishing-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automated Publishing Workflow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Automated Publishing Workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workflow-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow Triggers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflow-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow Jobs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Workflow Jobs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-build-distribution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Build Distribution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-publish-to-pypi-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Publish to PyPI (Production)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-publish-to-testpypi-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Publish to TestPyPI (Testing)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-update-github-release-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Update GitHub Release Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pypi-trusted-publishing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PyPI Trusted Publishing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PyPI Trusted Publishing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-trusted-publishing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting Up Trusted Publishing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#package-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package Metadata
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Package Metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#best-practices-implemented" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices Implemented
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-the-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing the Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#release-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release Process
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#build-failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build Failures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#publishing-failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Publishing Failures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#package-not-found-after-publishing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package Not Found After Publishing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manual-publishing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manual Publishing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Considerations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Additional Resources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1550,7 +2125,7 @@
 
 
   
-    <a href="https://github.com/kvncampos/nautobot-ai-ops/edit/main/docs/admin/release_notes/index.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/kvncampos/nautobot-ai-ops/edit/main/docs/dev/pypi_publishing.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1559,15 +2134,199 @@
     
       
     
-    <a href="https://github.com/kvncampos/nautobot-ai-ops/raw/main/docs/admin/release_notes/index.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/kvncampos/nautobot-ai-ops/raw/main/docs/dev/pypi_publishing.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="release-notes">Release Notes<a class="headerlink" href="#release-notes" title="Permanent link">&para;</a></h1>
-<p>All the published release notes can be found via the navigation menu. All patch releases are included in the same minor release (e.g. <code>v1.2</code>) document.</p>
+<h1 id="pypi-publishing-setup">PyPI Publishing Setup<a class="headerlink" href="#pypi-publishing-setup" title="Permanent link">&para;</a></h1>
+<p>This document describes how the AI Ops app is published to PyPI using GitHub Actions and trusted publishing.</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>The project uses GitHub Actions with PyPI's Trusted Publishing feature to automatically publish releases. This approach follows Python packaging best practices and eliminates the need for long-lived PyPI API tokens.</p>
+<h2 id="automated-publishing-workflow">Automated Publishing Workflow<a class="headerlink" href="#automated-publishing-workflow" title="Permanent link">&para;</a></h2>
+<p>The <a href="https://github.com/kvncampos/nautobot-ai-ops/blob/main/.github/workflows/publish-pypi.yml"><code>publish-pypi.yml</code></a> workflow handles all aspects of building and publishing the package:</p>
+<h3 id="workflow-triggers">Workflow Triggers<a class="headerlink" href="#workflow-triggers" title="Permanent link">&para;</a></h3>
+<p>The workflow runs in the following scenarios:</p>
+<ol>
+<li><strong>Automatic Publishing to PyPI</strong>: When a GitHub release is published</li>
+<li><strong>Manual Testing</strong>: Via workflow dispatch with option to publish to TestPyPI</li>
+</ol>
+<h3 id="workflow-jobs">Workflow Jobs<a class="headerlink" href="#workflow-jobs" title="Permanent link">&para;</a></h3>
+<h4 id="1-build-distribution">1. Build Distribution<a class="headerlink" href="#1-build-distribution" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Checks out the repository code</li>
+<li>Sets up Python 3.11 and Poetry</li>
+<li>Builds both wheel and source distributions</li>
+<li>Validates package metadata using <code>twine check</code></li>
+<li>Uploads build artifacts for downstream jobs</li>
+</ul>
+<h4 id="2-publish-to-pypi-production">2. Publish to PyPI (Production)<a class="headerlink" href="#2-publish-to-pypi-production" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Triggers only when a GitHub release is published</li>
+<li>Downloads the built distributions</li>
+<li>Uses PyPI's Trusted Publishing to upload packages</li>
+<li>Requires no API tokens (uses OIDC)</li>
+</ul>
+<h4 id="3-publish-to-testpypi-testing">3. Publish to TestPyPI (Testing)<a class="headerlink" href="#3-publish-to-testpypi-testing" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Triggers only via manual workflow dispatch</li>
+<li>Allows testing the publishing process before production releases</li>
+<li>Uses TestPyPI's Trusted Publishing</li>
+</ul>
+<h4 id="4-update-github-release-notes">4. Update GitHub Release Notes<a class="headerlink" href="#4-update-github-release-notes" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Automatically appends installation instructions to the GitHub release notes</li>
+<li>Runs after successful PyPI publication</li>
+</ul>
+<h2 id="pypi-trusted-publishing">PyPI Trusted Publishing<a class="headerlink" href="#pypi-trusted-publishing" title="Permanent link">&para;</a></h2>
+<p>The workflow uses <a href="https://docs.pypi.org/trusted-publishers/">Trusted Publishing</a> (OpenID Connect) instead of API tokens. This provides:</p>
+<ul>
+<li><strong>Enhanced Security</strong>: No long-lived credentials to manage or leak</li>
+<li><strong>Automatic Rotation</strong>: Authentication tokens are short-lived and automatically managed</li>
+<li><strong>Audit Trail</strong>: All publishing actions are logged with clear attribution</li>
+</ul>
+<h3 id="setting-up-trusted-publishing">Setting Up Trusted Publishing<a class="headerlink" href="#setting-up-trusted-publishing" title="Permanent link">&para;</a></h3>
+<p>Repository maintainers need to configure Trusted Publishing on PyPI:</p>
+<ol>
+<li><strong>Create the PyPI project</strong> (first release only):</li>
+<li>Register the package name on PyPI: <code>nautobot-ai-ops</code></li>
+<li>
+<p>Or publish the first version manually using <code>poetry publish</code></p>
+</li>
+<li>
+<p><strong>Configure Trusted Publishing on PyPI</strong>:</p>
+</li>
+<li>Go to <a href="https://pypi.org/manage/project/nautobot-ai-ops/settings/">PyPI project settings</a></li>
+<li>Navigate to "Publishing" section</li>
+<li>Click "Add a new publisher"</li>
+<li>
+<p>Enter the following details:</p>
+<ul>
+<li><strong>PyPI Project Name</strong>: <code>nautobot-ai-ops</code></li>
+<li><strong>Owner</strong>: <code>kvncampos</code></li>
+<li><strong>Repository name</strong>: <code>nautobot-ai-ops</code></li>
+<li><strong>Workflow name</strong>: <code>publish-pypi.yml</code></li>
+<li><strong>Environment name</strong>: <code>pypi</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Configure Trusted Publishing on TestPyPI</strong> (optional, for testing):</p>
+</li>
+<li>Go to <a href="https://test.pypi.org/manage/project/nautobot-ai-ops/settings/">TestPyPI project settings</a></li>
+<li>
+<p>Follow the same steps as above, but use environment name: <code>testpypi</code></p>
+</li>
+<li>
+<p><strong>Configure GitHub Environments</strong>:</p>
+</li>
+<li>In the repository settings, go to "Environments"</li>
+<li>Create two environments: <code>pypi</code> and <code>testpypi</code></li>
+<li>Optionally add protection rules (e.g., required reviewers)</li>
+</ol>
+<h2 id="package-metadata">Package Metadata<a class="headerlink" href="#package-metadata" title="Permanent link">&para;</a></h2>
+<p>The package metadata is defined in <code>pyproject.toml</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">[tool.poetry]</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;nautobot-ai-ops&quot;</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;1.0.0&quot;</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;AI Ops - Advanced artificial intelligence capabilities for Nautobot&quot;</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">authors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Kevin Campos &lt;kvncampos@duck.com&gt;&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">readme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;README.md&quot;</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">license</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Apache-2.0&quot;</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># ... additional metadata</span>
+</code></pre></div>
+<h3 id="best-practices-implemented">Best Practices Implemented<a class="headerlink" href="#best-practices-implemented" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Clear Package Name</strong>: Uses <code>nautobot-ai-ops</code> for PyPI (follows Nautobot app naming convention)</li>
+<li><strong>Comprehensive Metadata</strong>: Includes description, authors, license, homepage, repository, and documentation URLs</li>
+<li><strong>Keywords</strong>: Relevant keywords for discoverability on PyPI</li>
+<li><strong>Classifiers</strong>: Proper Python version classifiers and development status</li>
+<li><strong>README</strong>: Includes detailed README.md with badges and documentation links</li>
+<li><strong>License</strong>: Apache-2.0 license properly declared</li>
+<li><strong>Version Management</strong>: Uses semantic versioning via Poetry</li>
+</ol>
+<h2 id="testing-the-workflow">Testing the Workflow<a class="headerlink" href="#testing-the-workflow" title="Permanent link">&para;</a></h2>
+<p>Before publishing to production PyPI, you can test the workflow:</p>
+<ol>
+<li><strong>Trigger TestPyPI publishing</strong>:</li>
+<li>Go to Actions tab</li>
+<li>Select "Publish to PyPI" workflow</li>
+<li>Click "Run workflow"</li>
+<li>Check "Publish to TestPyPI"</li>
+<li>
+<p>Click "Run workflow"</p>
+</li>
+<li>
+<p><strong>Verify the test package</strong>:</p>
+</li>
+<li>Check <a href="https://test.pypi.org/project/nautobot-ai-ops/">TestPyPI project page</a></li>
+<li>Try installing: <code>pip install --index-url https://test.pypi.org/simple/ nautobot-ai-ops</code></li>
+</ol>
+<h2 id="release-process">Release Process<a class="headerlink" href="#release-process" title="Permanent link">&para;</a></h2>
+<p>For maintainers publishing a new release:</p>
+<ol>
+<li>Follow the <a href="../release_checklist/">Release Checklist</a></li>
+<li>Create and publish a GitHub release with a version tag (e.g., <code>v1.0.0</code>)</li>
+<li>The workflow automatically triggers and publishes to PyPI</li>
+<li>Monitor the workflow in the <a href="https://github.com/kvncampos/nautobot-ai-ops/actions/workflows/publish-pypi.yml">Actions tab</a></li>
+<li>Verify the package on <a href="https://pypi.org/project/nautobot-ai-ops/">PyPI</a></li>
+</ol>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="build-failures">Build Failures<a class="headerlink" href="#build-failures" title="Permanent link">&para;</a></h3>
+<p>If the build step fails:</p>
+<ul>
+<li>Check that all dependencies are properly specified in <code>pyproject.toml</code></li>
+<li>Ensure the version in <code>pyproject.toml</code> matches the release tag</li>
+<li>Verify that <code>poetry.lock</code> is up to date (<code>poetry lock --no-update</code>)</li>
+</ul>
+<h3 id="publishing-failures">Publishing Failures<a class="headerlink" href="#publishing-failures" title="Permanent link">&para;</a></h3>
+<p>If publishing to PyPI fails:</p>
+<ul>
+<li>Verify Trusted Publishing is configured correctly on PyPI</li>
+<li>Check that the GitHub environment name matches (<code>pypi</code> or <code>testpypi</code>)</li>
+<li>Ensure the workflow has <code>id-token: write</code> permission</li>
+<li>Verify the version doesn't already exist on PyPI (versions cannot be re-uploaded)</li>
+</ul>
+<h3 id="package-not-found-after-publishing">Package Not Found After Publishing<a class="headerlink" href="#package-not-found-after-publishing" title="Permanent link">&para;</a></h3>
+<ul>
+<li>PyPI can take a few minutes to index new packages</li>
+<li>Check the package appears on <a href="https://pypi.org/project/nautobot-ai-ops/">PyPI</a></li>
+<li>Clear pip cache if testing installation: <code>pip cache purge</code></li>
+</ul>
+<h2 id="manual-publishing">Manual Publishing<a class="headerlink" href="#manual-publishing" title="Permanent link">&para;</a></h2>
+<p>In case automated publishing fails, maintainers can publish manually:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Build the package</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>poetry<span class="w"> </span>build
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Verify the package</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>poetry<span class="w"> </span>run<span class="w"> </span>twine<span class="w"> </span>check<span class="w"> </span>dist/*
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Publish to TestPyPI (testing)</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>poetry<span class="w"> </span>run<span class="w"> </span>twine<span class="w"> </span>upload<span class="w"> </span>--repository<span class="w"> </span>testpypi<span class="w"> </span>dist/*
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># Publish to PyPI (production)</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>poetry<span class="w"> </span>publish
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Manual publishing requires PyPI credentials. Using the automated workflow with Trusted Publishing is strongly recommended.</p>
+</div>
+<h2 id="security-considerations">Security Considerations<a class="headerlink" href="#security-considerations" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Never commit PyPI API tokens or credentials to the repository</li>
+<li>Use Trusted Publishing instead of API tokens whenever possible</li>
+<li>Protect the <code>pypi</code> GitHub environment with required reviewers</li>
+<li>Monitor the Actions workflow logs for suspicious activity</li>
+<li>Review and approve any changes to the publishing workflow</li>
+</ul>
+<h2 id="additional-resources">Additional Resources<a class="headerlink" href="#additional-resources" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://packaging.python.org/">Python Packaging User Guide</a></li>
+<li><a href="https://python-poetry.org/docs/">Poetry Documentation</a></li>
+<li><a href="https://docs.pypi.org/trusted-publishers/">PyPI Trusted Publishing Guide</a></li>
+<li><a href="https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions">GitHub Actions Security</a></li>
+</ul>
 
 
 
@@ -1597,7 +2356,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../health_checks/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Health Checks">
+          <a href="../release_checklist/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Release Checklist">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1607,20 +2366,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Health Checks
+                Release Checklist
               </div>
             </div>
           </a>
         
         
           
-          <a href="version_1.0/" class="md-footer__link md-footer__link--next" aria-label="Next: v1.0">
+          <a href="../arch_decision/" class="md-footer__link md-footer__link--next" aria-label="Next: Architecture Decision Records">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                v1.0
+                Architecture Decision Records
               </div>
             </div>
             <div class="md-footer__button md-icon">
