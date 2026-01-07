@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.nautobot.com/projects/ai-ops/en/latest/admin/release_notes/">
+        <link rel="canonical" href="https://docs.nautobot.com/projects/ai-ops/en/latest/admin/install/">
       
       
-        <link rel="prev" href="../health_checks/">
+        <link rel="prev" href="../../user/external_interactions/">
       
       
-        <link rel="next" href="version_1.0/">
+        <link rel="next" href="../upgrade/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Release Notes - AI Ops Documentation</title>
+        <title>Install and Configure - AI Ops Documentation</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-notes" class="md-skip">
+        <a href="#installing-the-app-in-nautobot" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Release Notes
+              Install and Configure
             
           </span>
         </div>
@@ -272,7 +272,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../install/" class="md-tabs__link">
+        <a href="./" class="md-tabs__link">
           
   
   
@@ -716,10 +716,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../install/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install and Configure
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -735,6 +762,259 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#access-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Access Requirements
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install Guide
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#app-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        App Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="App Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#redis-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Redis Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment Variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lab-environment-variables-development-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LAB Environment Variables (Development Only)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-installation-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-Installation Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Post-Installation Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-create-llm-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Create LLM Provider
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-create-llm-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Create LLM Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-create-secrets-production-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Create Secrets (Production Only)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-configure-middleware-types-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Configure Middleware Types (Optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-apply-llm-middleware-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Apply LLM Middleware (Optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-configure-mcp-servers-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Configure MCP Servers (Optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-schedule-cleanup-job-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Schedule Cleanup Job (Recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#local-development-lab-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Development (LAB Environment)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#production-nonprodprod-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production (NONPROD/PROD Environment)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -856,8 +1136,6 @@
                 
   
   
-    
-  
   
   
     
@@ -876,15 +1154,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../release_notes/" class="md-nav__link ">
               
   
   
@@ -902,13 +1180,13 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_3_6" id="__nav_3_6_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_6" id="__nav_3_6_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -928,7 +1206,7 @@
   
   
     <li class="md-nav__item">
-      <a href="version_1.0/" class="md-nav__link">
+      <a href="../release_notes/version_1.0/" class="md-nav__link">
         
   
   
@@ -1535,6 +1813,247 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#access-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Access Requirements
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install Guide
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#app-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        App Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="App Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#redis-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Redis Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment Variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lab-environment-variables-development-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LAB Environment Variables (Development Only)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-installation-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-Installation Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Post-Installation Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-create-llm-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Create LLM Provider
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-create-llm-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Create LLM Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-create-secrets-production-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Create Secrets (Production Only)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-configure-middleware-types-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Configure Middleware Types (Optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-apply-llm-middleware-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Apply LLM Middleware (Optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-configure-mcp-servers-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Configure MCP Servers (Optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-schedule-cleanup-job-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Schedule Cleanup Job (Recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#local-development-lab-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Development (LAB Environment)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#production-nonprodprod-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production (NONPROD/PROD Environment)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1550,7 +2069,7 @@
 
 
   
-    <a href="https://github.com/kvncampos/nautobot-ai-ops/edit/main/docs/admin/release_notes/index.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/kvncampos/nautobot-ai-ops/edit/main/docs/admin/install.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1559,15 +2078,302 @@
     
       
     
-    <a href="https://github.com/kvncampos/nautobot-ai-ops/raw/main/docs/admin/release_notes/index.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/kvncampos/nautobot-ai-ops/raw/main/docs/admin/install.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="release-notes">Release Notes<a class="headerlink" href="#release-notes" title="Permanent link">&para;</a></h1>
-<p>All the published release notes can be found via the navigation menu. All patch releases are included in the same minor release (e.g. <code>v1.2</code>) document.</p>
+<h1 id="installing-the-app-in-nautobot">Installing the App in Nautobot<a class="headerlink" href="#installing-the-app-in-nautobot" title="Permanent link">&para;</a></h1>
+<p>Here you will find detailed instructions on how to <strong>install</strong> and <strong>configure</strong> the AI Ops App within your Nautobot environment.</p>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The app is compatible with Nautobot 2.4.0 and higher (tested up to 3.x.x).</li>
+<li>Databases supported: PostgreSQL, MySQL</li>
+<li>Redis instance required for conversation checkpointing and LangGraph integration</li>
+<li>At least one LLM provider configured (Ollama, OpenAI, Azure AI, Anthropic, HuggingFace, or Custom)</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Please check the <a href="../compatibility_matrix/">dedicated page</a> for a full compatibility matrix and the deprecation policy.</p>
+</div>
+<h3 id="access-requirements">Access Requirements<a class="headerlink" href="#access-requirements" title="Permanent link">&para;</a></h3>
+<p>The app requires external access to:</p>
+<ul>
+<li><strong>LLM Providers</strong>: Depending on your configured provider</li>
+<li>Azure OpenAI: <code>*.openai.azure.com</code> (HTTPS)</li>
+<li>OpenAI: <code>api.openai.com</code> (HTTPS)</li>
+<li>Anthropic: <code>api.anthropic.com</code> (HTTPS)</li>
+<li>HuggingFace: <code>api-inference.huggingface.co</code> (HTTPS)</li>
+<li>Ollama: Local or network-accessible Ollama instance</li>
+<li>
+<p>Custom: Your custom LLM provider endpoint</p>
+</li>
+<li>
+<p><strong>MCP Servers</strong> (if configured): Depends on your MCP server setup</p>
+</li>
+<li>HTTP/STDIO based servers as configured</li>
+</ul>
+<h2 id="install-guide">Install Guide<a class="headerlink" href="#install-guide" title="Permanent link">&para;</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Apps can be installed from the <a href="https://pypi.org/">Python Package Index</a> or locally. See the <a href="https://docs.nautobot.com/projects/core/en/stable/user-guide/administration/installation/app-install/">Nautobot documentation</a> for more details. The pip package name for this app is <a href="https://pypi.org/project/ai-ops/"><code>ai-ops</code></a>.</p>
+</div>
+<p>The app is available as a Python package via PyPI and can be installed with <code>pip</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>ai-ops
+</code></pre></div>
+<p>To ensure AI Ops is automatically re-installed during future upgrades, create a file named <code>local_requirements.txt</code> (if not already existing) in the Nautobot root directory (alongside <code>requirements.txt</code>) and list the <code>ai-ops</code> package:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">echo</span><span class="w"> </span>ai-ops<span class="w"> </span>&gt;&gt;<span class="w"> </span>local_requirements.txt
+</code></pre></div>
+<p>Once installed, the app needs to be enabled in your Nautobot configuration. The following block of code below shows the additional configuration required to be added to your <code>nautobot_config.py</code> file:</p>
+<ul>
+<li>Append <code>"ai_ops"</code> to the <code>PLUGINS</code> list.</li>
+<li>Append the <code>"ai_ops"</code> dictionary to the <code>PLUGINS_CONFIG</code> dictionary and override any defaults.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># In your nautobot_config.py</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">PLUGINS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ai_ops&quot;</span><span class="p">]</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># PLUGINS_CONFIG = {</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1">#   &quot;ai_ops&quot;: {</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1">#     ADD YOUR SETTINGS HERE</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1">#   }</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># }</span>
+</code></pre></div>
+<p>Once the Nautobot configuration is updated, run the Post Upgrade command (<code>nautobot-server post_upgrade</code>) to run migrations and clear any cache:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>nautobot-server<span class="w"> </span>post_upgrade
+</code></pre></div>
+<p>Then restart (if necessary) the Nautobot services which may include:</p>
+<ul>
+<li>Nautobot</li>
+<li>Nautobot Workers</li>
+<li>Nautobot Scheduler</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>nautobot<span class="w"> </span>nautobot-worker<span class="w"> </span>nautobot-scheduler
+</code></pre></div>
+<h2 id="app-configuration">App Configuration<a class="headerlink" href="#app-configuration" title="Permanent link">&para;</a></h2>
+<p>The AI Ops App requires minimal configuration in <code>nautobot_config.py</code>. The app uses Nautobot's existing infrastructure (PostgreSQL, Redis) and doesn't require additional plugin settings.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># In your nautobot_config.py</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">PLUGINS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ai_ops&quot;</span><span class="p">]</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># PLUGINS_CONFIG = {</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1">#   &quot;ai_ops&quot;: {</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1">#     # No additional configuration required</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1">#   }</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="c1"># }</span>
+</code></pre></div>
+<h3 id="database-configuration">Database Configuration<a class="headerlink" href="#database-configuration" title="Permanent link">&para;</a></h3>
+<p>The app automatically creates all required tables during the migration process. No manual database configuration is needed beyond Nautobot's standard setup.</p>
+<h3 id="redis-configuration">Redis Configuration<a class="headerlink" href="#redis-configuration" title="Permanent link">&para;</a></h3>
+<p>The app uses Redis for conversation checkpointing through LangGraph. Ensure Redis is configured in your <code>nautobot_config.py</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Redis configuration (shared with Nautobot)</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">CACHES</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>        <span class="s2">&quot;BACKEND&quot;</span><span class="p">:</span> <span class="s2">&quot;django_redis.cache.RedisCache&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>        <span class="s2">&quot;LOCATION&quot;</span><span class="p">:</span> <span class="s2">&quot;redis://localhost:6379/0&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>        <span class="s2">&quot;OPTIONS&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>            <span class="s2">&quot;CLIENT_CLASS&quot;</span><span class="p">:</span> <span class="s2">&quot;django_redis.client.DefaultClient&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>        <span class="p">},</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="p">}</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="p">}</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="c1"># Celery configuration (uses Redis)</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="n">CELERY_BROKER_URL</span> <span class="o">=</span> <span class="s2">&quot;redis://localhost:6379/1&quot;</span>
+</code></pre></div>
+<h3 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
+<p>For production deployments, configure the following environment variables:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NAUTOBOT_REDIS_HOST</code></td>
+<td>Yes</td>
+<td>Redis server hostname</td>
+<td><code>localhost</code> or <code>redis.internal.com</code></td>
+</tr>
+<tr>
+<td><code>NAUTOBOT_REDIS_PORT</code></td>
+<td>Yes</td>
+<td>Redis server port</td>
+<td><code>6379</code></td>
+</tr>
+<tr>
+<td><code>NAUTOBOT_REDIS_PASSWORD</code></td>
+<td>No</td>
+<td>Redis password (if required)</td>
+<td><code>your-secure-password</code></td>
+</tr>
+<tr>
+<td><code>LANGGRAPH_REDIS_DB</code></td>
+<td>No</td>
+<td>Redis database number for checkpoints</td>
+<td><code>2</code> (default)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="lab-environment-variables-development-only">LAB Environment Variables (Development Only)<a class="headerlink" href="#lab-environment-variables-development-only" title="Permanent link">&para;</a></h3>
+<p>For local development (LAB environment), you can use environment variables instead of database configuration:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AZURE_OPENAI_API_KEY</code></td>
+<td>Yes (LAB)</td>
+<td>Azure OpenAI API key</td>
+<td><code>your-api-key</code></td>
+</tr>
+<tr>
+<td><code>AZURE_OPENAI_ENDPOINT</code></td>
+<td>Yes (LAB)</td>
+<td>Azure OpenAI endpoint URL</td>
+<td><code>https://your-resource.openai.azure.com/</code></td>
+</tr>
+<tr>
+<td><code>AZURE_OPENAI_DEPLOYMENT_NAME</code></td>
+<td>Yes (LAB)</td>
+<td>Model deployment name</td>
+<td><code>gpt-4o</code></td>
+</tr>
+<tr>
+<td><code>AZURE_OPENAI_API_VERSION</code></td>
+<td>No</td>
+<td>API version</td>
+<td><code>2024-02-15-preview</code></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Production Configuration</p>
+<p>In production (NONPROD/PROD environments), LLM models should be configured through the Nautobot UI rather than environment variables. See <a href="#post-installation-configuration">Post-Installation Configuration</a> for configuration steps.</p>
+</div>
+<h2 id="post-installation-configuration">Post-Installation Configuration<a class="headerlink" href="#post-installation-configuration" title="Permanent link">&para;</a></h2>
+<p>After installing the app, you need to configure the LLM providers and models. The configuration follows this hierarchy:</p>
+<ol>
+<li><strong>LLM Providers</strong> - Define available provider types (Ollama, OpenAI, Azure AI, Anthropic, HuggingFace, Custom)</li>
+<li><strong>LLM Models</strong> - Create specific model deployments using a provider</li>
+<li><strong>Middleware Types</strong> (Optional) - Define middleware for request/response processing</li>
+<li><strong>LLM Middleware</strong> (Optional) - Apply middleware to specific models</li>
+<li><strong>MCP Servers</strong> (Optional) - Configure Model Context Protocol servers for extended capabilities</li>
+</ol>
+<h3 id="1-create-llm-provider">1. Create LLM Provider<a class="headerlink" href="#1-create-llm-provider" title="Permanent link">&para;</a></h3>
+<p>First, define which LLM provider you'll use:</p>
+<ol>
+<li>Navigate to <strong>AI Platform &gt; LLM &gt; LLM Providers</strong></li>
+<li>Click <strong>+ Add</strong></li>
+<li>Select a provider:</li>
+<li><strong>Name</strong>: Choose from Ollama, OpenAI, Azure AI, Anthropic, HuggingFace, or Custom</li>
+<li><strong>Description</strong>: Optional description of the provider setup</li>
+<li><strong>Documentation URL</strong>: Optional link to provider documentation</li>
+<li><strong>Config Schema</strong>: Provider-specific configuration (e.g., Azure API version, base URL)</li>
+<li><strong>Is Enabled</strong>: Check to enable this provider</li>
+</ol>
+<h3 id="2-create-llm-model">2. Create LLM Model<a class="headerlink" href="#2-create-llm-model" title="Permanent link">&para;</a></h3>
+<p>Create at least one LLM Model for your selected provider:</p>
+<ol>
+<li>Navigate to <strong>AI Platform &gt; LLM &gt; LLM Models</strong></li>
+<li>Click <strong>+ Add</strong></li>
+<li>Configure:</li>
+<li><strong>LLM Provider</strong>: Select the provider created in step 1</li>
+<li><strong>Name</strong>: Model name (e.g., <code>gpt-4o</code>, <code>llama2</code>, or your Azure deployment name)</li>
+<li><strong>Description</strong>: Optional description of the model's capabilities</li>
+<li><strong>Model Secret Key</strong>: (Production only) Name of Nautobot Secret containing API key</li>
+<li><strong>Endpoint</strong>: Model endpoint URL (required for some providers)</li>
+<li><strong>API Version</strong>: API version string (e.g., <code>2024-02-15-preview</code> for Azure)</li>
+<li><strong>Is Default</strong>: Check to make this the default model</li>
+<li><strong>Temperature</strong>: Model temperature setting (0.0-2.0, default 0.0)</li>
+<li><strong>Cache TTL</strong>: Cache duration in seconds (minimum 60)</li>
+</ol>
+<h3 id="3-create-secrets-production-only">3. Create Secrets (Production Only)<a class="headerlink" href="#3-create-secrets-production-only" title="Permanent link">&para;</a></h3>
+<p>For production deployments, store API keys securely in Nautobot Secrets:</p>
+<ol>
+<li>Navigate to <strong>Secrets &gt; Secrets</strong></li>
+<li>Click <strong>+ Add</strong></li>
+<li>Create a new Secret:</li>
+<li><strong>Name</strong>: <code>azure_gpt4_api_key</code> (or your chosen name - must match Model Secret Key)</li>
+<li><strong>Provider</strong>: Choose appropriate provider</li>
+<li><strong>Value</strong>: Your Azure OpenAI API key (or other provider credentials)</li>
+<li>Reference this Secret name in your LLM Model's <strong>Model Secret Key</strong> field</li>
+</ol>
+<h3 id="4-configure-middleware-types-optional">4. Configure Middleware Types (Optional)<a class="headerlink" href="#4-configure-middleware-types-optional" title="Permanent link">&para;</a></h3>
+<p>To add request/response processing capabilities:</p>
+<ol>
+<li>Navigate to <strong>AI Platform &gt; Middleware &gt; Middleware Types</strong></li>
+<li>Click <strong>+ Add</strong></li>
+<li>Define middleware:</li>
+<li><strong>Name</strong>: Middleware class name (e.g., <code>SummarizationMiddleware</code>, auto-suffixed with "Middleware")</li>
+<li><strong>Is Custom</strong>: Check if this is a custom middleware (unchecked for built-in LangChain middleware)</li>
+<li><strong>Description</strong>: What this middleware does</li>
+</ol>
+<h3 id="5-apply-llm-middleware-optional">5. Apply LLM Middleware (Optional)<a class="headerlink" href="#5-apply-llm-middleware-optional" title="Permanent link">&para;</a></h3>
+<p>Apply middleware to specific models:</p>
+<ol>
+<li>Navigate to <strong>AI Platform &gt; Middleware &gt; LLM Middleware</strong></li>
+<li>Click <strong>+ Add</strong></li>
+<li>Configure:</li>
+<li><strong>LLM Model</strong>: Select the model to apply middleware to</li>
+<li><strong>Middleware</strong>: Select the middleware type</li>
+<li><strong>Config</strong>: JSON configuration for the middleware</li>
+<li><strong>Config Version</strong>: LangChain version compatibility (default: 1.1.0)</li>
+<li><strong>Is Active</strong>: Check to enable this middleware</li>
+<li><strong>Is Critical</strong>: Check if initialization should fail if this middleware fails</li>
+<li><strong>Priority</strong>: Execution order (1-100, lower executes first)</li>
+<li><strong>TTL</strong>: Time-to-live for middleware data in seconds</li>
+</ol>
+<h3 id="6-configure-mcp-servers-optional">6. Configure MCP Servers (Optional)<a class="headerlink" href="#6-configure-mcp-servers-optional" title="Permanent link">&para;</a></h3>
+<p>To extend agent capabilities with Model Context Protocol servers:</p>
+<ol>
+<li>Navigate to <strong>AI Platform &gt; Middleware &gt; MCP Servers</strong></li>
+<li>Click <strong>+ Add</strong></li>
+<li>Configure:</li>
+<li><strong>Name</strong>: Unique name for the server</li>
+<li><strong>Status</strong>: Set to Active (or use other status options)</li>
+<li><strong>Protocol</strong>: STDIO or HTTP</li>
+<li><strong>URL</strong>: Base URL for the MCP server</li>
+<li><strong>MCP Endpoint</strong>: Path to MCP endpoint (default: <code>/mcp</code>)</li>
+<li><strong>Health Check</strong>: Path to health check endpoint (default: <code>/health</code>)</li>
+<li><strong>Description</strong>: Optional description</li>
+<li><strong>MCP Type</strong>: Internal or External</li>
+<li>Click the health check button to verify server connectivity</li>
+</ol>
+<h3 id="7-schedule-cleanup-job-recommended">7. Schedule Cleanup Job (Recommended)<a class="headerlink" href="#7-schedule-cleanup-job-recommended" title="Permanent link">&para;</a></h3>
+<p>To prevent Redis checkpoint storage from growing indefinitely:</p>
+<ol>
+<li>Navigate to <strong>Jobs &gt; Jobs</strong></li>
+<li>Find <strong>AI Agents &gt; Cleanup Old Checkpoints</strong></li>
+<li>Click <strong>Schedule Job</strong></li>
+<li>Configure to run daily or weekly</li>
+</ol>
+<h2 id="configuration-examples">Configuration Examples<a class="headerlink" href="#configuration-examples" title="Permanent link">&para;</a></h2>
+<h3 id="local-development-lab-environment">Local Development (LAB Environment)<a class="headerlink" href="#local-development-lab-environment" title="Permanent link">&para;</a></h3>
+<p>For local development, you can skip database configuration and use environment variables:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># .env file</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nv">AZURE_OPENAI_API_KEY</span><span class="o">=</span>your-api-key
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nv">AZURE_OPENAI_ENDPOINT</span><span class="o">=</span>https://your-resource.openai.azure.com/
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nv">AZURE_OPENAI_DEPLOYMENT_NAME</span><span class="o">=</span>gpt-4o
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nv">AZURE_OPENAI_API_VERSION</span><span class="o">=</span><span class="m">2024</span>-02-15-preview
+</code></pre></div>
+<p>The app automatically detects LAB environment based on hostname and uses these variables.</p>
+<h3 id="production-nonprodprod-environment">Production (NONPROD/PROD Environment)<a class="headerlink" href="#production-nonprodprod-environment" title="Permanent link">&para;</a></h3>
+<p>For production deployments:
+- Configure LLM Providers and Models through the Nautobot UI
+- Store API keys in Nautobot Secrets (not environment variables)
+- Configure Redis for conversation checkpointing
+- Set up multiple models for redundancy</p>
+<p>See <a href="../../user/app_getting_started/">Getting Started</a> for additional configuration instructions and best practices.</p>
 
 
 
@@ -1597,7 +2403,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../health_checks/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Health Checks">
+          <a href="../../user/external_interactions/" class="md-footer__link md-footer__link--prev" aria-label="Previous: External Interactions">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1607,20 +2413,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Health Checks
+                External Interactions
               </div>
             </div>
           </a>
         
         
           
-          <a href="version_1.0/" class="md-footer__link md-footer__link--next" aria-label="Next: v1.0">
+          <a href="../upgrade/" class="md-footer__link md-footer__link--next" aria-label="Next: Upgrade">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                v1.0
+                Upgrade
               </div>
             </div>
             <div class="md-footer__button md-icon">
