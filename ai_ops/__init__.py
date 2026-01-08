@@ -5,7 +5,7 @@ from importlib import metadata
 
 from nautobot.apps import NautobotAppConfig, nautobot_database_ready
 
-__version__ = metadata.version(__name__)
+__version__ = metadata.version("nautobot-ai-ops")
 
 
 class AiOpsConfig(NautobotAppConfig):
