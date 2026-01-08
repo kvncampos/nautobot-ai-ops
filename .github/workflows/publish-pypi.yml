@@ -82,7 +82,7 @@ jobs:
     runs-on: "ubuntu-22.04"
     environment:
       name: "testpypi"
-      url: "https://test.pypi.org/project/nautobot-ai-ops/"
+      url: "https://test.pypi.org/project/ai-ops/"
     steps:
       - name: "Download artifacts"
         uses: "actions/download-artifact@v4.1.3"
