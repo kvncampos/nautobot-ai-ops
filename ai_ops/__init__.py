@@ -1,11 +1,36 @@
 """App declaration for ai_ops."""
 
 # Metadata is inherited from Nautobot. If not including Nautobot in the environment, this should be added
+import sys
 from importlib import metadata
+from pathlib import Path
 
 from nautobot.apps import NautobotAppConfig, nautobot_database_ready
 
-__version__ = metadata.version("nautobot-ai-ops")
+try:
+    __version__ = metadata.version("nautobot-ai-ops")
+except metadata.PackageNotFoundError:
+    # Fall back to reading from pyproject.toml for development environments
+    try:
+        # Python 3.11+ has tomllib in stdlib, earlier versions need tomli
+        if sys.version_info >= (3, 11):
+            import tomllib as tomli_lib
+
+            open_mode = "rb"
+        else:
+            import tomli as tomli_lib
+
+            open_mode = "rb"
+
+        pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
+        if pyproject_path.exists():
+            with open(pyproject_path, open_mode) as f:
+                pyproject_data = tomli_lib.load(f)
+            __version__ = pyproject_data["tool"]["poetry"]["version"]
+        else:
+            __version__ = "1.0.1"  # Ultimate fallback
+    except (ImportError, KeyError, FileNotFoundError):
+        __version__ = "1.0.1"  # Ultimate fallback
 
 
 class AiOpsConfig(NautobotAppConfig):
