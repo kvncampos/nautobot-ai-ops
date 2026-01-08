@@ -1,1 +1,0 @@
-Fixed event loop blocking by converting synchronous database and HTTP calls to async in view methods (AIChatBotGenericView.get(), ChatMessageView.post(), MCPServerViewSet.health_check()).
