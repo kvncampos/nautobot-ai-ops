@@ -2146,7 +2146,7 @@
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>The project uses GitHub Actions with PyPI's Trusted Publishing feature to automatically publish releases. This approach follows Python packaging best practices and eliminates the need for long-lived PyPI API tokens.</p>
 <h2 id="automated-publishing-workflow">Automated Publishing Workflow<a class="headerlink" href="#automated-publishing-workflow" title="Permanent link">&para;</a></h2>
-<p>The <a href="https://github.com/kvncampos/ai-ops/blob/main/.github/workflows/publish-pypi.yml"><code>publish-pypi.yml</code></a> workflow handles all aspects of building and publishing the package:</p>
+<p>The <a href="https://github.com/kvncampos/nautobot-ai-ops/blob/main/.github/workflows/publish-pypi.yml"><code>publish-pypi.yml</code></a> workflow handles all aspects of building and publishing the package:</p>
 <h3 id="workflow-triggers">Workflow Triggers<a class="headerlink" href="#workflow-triggers" title="Permanent link">&para;</a></h3>
 <p>The workflow runs in the following scenarios:</p>
 <ol>
@@ -2191,22 +2191,22 @@
 <p>Repository maintainers need to configure Trusted Publishing on PyPI:</p>
 <ol>
 <li><strong>Create the PyPI project</strong> (first release only):</li>
-<li>Register the package name on PyPI: <code>ai-ops</code></li>
+<li>Register the package name on PyPI: <code>nautobot-ai-ops</code></li>
 <li>
 <p>Or publish the first version manually using <code>poetry publish</code></p>
 </li>
 <li>
 <p><strong>Configure Trusted Publishing on PyPI</strong>:</p>
 </li>
-<li>Go to <a href="https://pypi.org/manage/project/ai-ops/settings/">PyPI project settings</a></li>
+<li>Go to <a href="https://pypi.org/manage/project/nautobot-ai-ops/settings/">PyPI project settings</a></li>
 <li>Navigate to "Publishing" section</li>
 <li>Click "Add a new publisher"</li>
 <li>
 <p>Enter the following details:</p>
 <ul>
-<li><strong>PyPI Project Name</strong>: <code>ai-ops</code></li>
+<li><strong>PyPI Project Name</strong>: <code>nautobot-ai-ops</code></li>
 <li><strong>Owner</strong>: <code>kvncampos</code></li>
-<li><strong>Repository name</strong>: <code>ai-ops</code></li>
+<li><strong>Repository name</strong>: <code>nautobot-ai-ops</code></li>
 <li><strong>Workflow name</strong>: <code>publish-pypi.yml</code></li>
 <li><strong>Environment name</strong>: <code>pypi</code></li>
 </ul>
@@ -2214,7 +2214,7 @@
 <li>
 <p><strong>Configure Trusted Publishing on TestPyPI</strong> (optional, for testing):</p>
 </li>
-<li>Go to <a href="https://test.pypi.org/manage/project/ai-ops/settings/">TestPyPI project settings</a></li>
+<li>Go to <a href="https://test.pypi.org/manage/project/nautobot-ai-ops/settings/">TestPyPI project settings</a></li>
 <li>
 <p>Follow the same steps as above, but use environment name: <code>testpypi</code></p>
 </li>
@@ -2228,7 +2228,7 @@
 <h2 id="package-metadata">Package Metadata<a class="headerlink" href="#package-metadata" title="Permanent link">&para;</a></h2>
 <p>The package metadata is defined in <code>pyproject.toml</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">[tool.poetry]</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ai-ops&quot;</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;nautobot-ai-ops&quot;</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;1.0.0&quot;</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;AI Ops - Advanced artificial intelligence capabilities for Nautobot&quot;</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">authors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Kevin Campos &lt;kvncampos@duck.com&gt;&quot;</span><span class="p">]</span>
@@ -2238,7 +2238,7 @@
 </code></pre></div>
 <h3 id="best-practices-implemented">Best Practices Implemented<a class="headerlink" href="#best-practices-implemented" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>Clear Package Name</strong>: Uses <code>ai-ops</code> for PyPI (follows Nautobot app naming convention)</li>
+<li><strong>Clear Package Name</strong>: Uses <code>nautobot-ai-ops</code> for PyPI (follows Nautobot app naming convention)</li>
 <li><strong>Comprehensive Metadata</strong>: Includes description, authors, license, homepage, repository, and documentation URLs</li>
 <li><strong>Keywords</strong>: Relevant keywords for discoverability on PyPI</li>
 <li><strong>Classifiers</strong>: Proper Python version classifiers and development status</li>
@@ -2260,8 +2260,8 @@
 <li>
 <p><strong>Verify the test package</strong>:</p>
 </li>
-<li>Check <a href="https://test.pypi.org/project/ai-ops/">TestPyPI project page</a></li>
-<li>Try installing: <code>pip install --index-url https://test.pypi.org/simple/ ai-ops</code></li>
+<li>Check <a href="https://test.pypi.org/project/nautobot-ai-ops/">TestPyPI project page</a></li>
+<li>Try installing: <code>pip install --index-url https://test.pypi.org/simple/ nautobot-ai-ops</code></li>
 </ol>
 <h2 id="release-process">Release Process<a class="headerlink" href="#release-process" title="Permanent link">&para;</a></h2>
 <p>For maintainers publishing a new release:</p>
@@ -2269,8 +2269,8 @@
 <li>Follow the <a href="../release_checklist/">Release Checklist</a></li>
 <li>Create and publish a GitHub release with a version tag (e.g., <code>v1.0.0</code>)</li>
 <li>The workflow automatically triggers and publishes to PyPI</li>
-<li>Monitor the workflow in the <a href="https://github.com/kvncampos/ai-ops/actions/workflows/publish-pypi.yml">Actions tab</a></li>
-<li>Verify the package on <a href="https://pypi.org/project/ai-ops/">PyPI</a></li>
+<li>Monitor the workflow in the <a href="https://github.com/kvncampos/nautobot-ai-ops/actions/workflows/publish-pypi.yml">Actions tab</a></li>
+<li>Verify the package on <a href="https://pypi.org/project/nautobot-ai-ops/">PyPI</a></li>
 </ol>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="build-failures">Build Failures<a class="headerlink" href="#build-failures" title="Permanent link">&para;</a></h3>
@@ -2291,7 +2291,7 @@
 <h3 id="package-not-found-after-publishing">Package Not Found After Publishing<a class="headerlink" href="#package-not-found-after-publishing" title="Permanent link">&para;</a></h3>
 <ul>
 <li>PyPI can take a few minutes to index new packages</li>
-<li>Check the package appears on <a href="https://pypi.org/project/ai-ops/">PyPI</a></li>
+<li>Check the package appears on <a href="https://pypi.org/project/nautobot-ai-ops/">PyPI</a></li>
 <li>Clear pip cache if testing installation: <code>pip cache purge</code></li>
 </ul>
 <h2 id="manual-publishing">Manual Publishing<a class="headerlink" href="#manual-publishing" title="Permanent link">&para;</a></h2>

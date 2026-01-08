@@ -30,18 +30,18 @@ The app requires external access to:
 ## Install Guide
 
 !!! note
-    Apps can be installed from the [Python Package Index](https://pypi.org/) or locally. See the [Nautobot documentation](https://docs.nautobot.com/projects/core/en/stable/user-guide/administration/installation/app-install/) for more details. The pip package name for this app is [`ai-ops`](https://pypi.org/project/ai-ops/).
+    Apps can be installed from the [Python Package Index](https://pypi.org/) or locally. See the [Nautobot documentation](https://docs.nautobot.com/projects/core/en/stable/user-guide/administration/installation/app-install/) for more details. The pip package name for this app is [`nautobot-ai-ops`](https://pypi.org/project/nautobot-ai-ops/).
 
 The app is available as a Python package via PyPI and can be installed with `pip`:
 
 ```shell
-pip install ai-ops
+pip install nautobot-ai-ops
 ```
 
-To ensure AI Ops is automatically re-installed during future upgrades, create a file named `local_requirements.txt` (if not already existing) in the Nautobot root directory (alongside `requirements.txt`) and list the `ai-ops` package:
+To ensure AI Ops is automatically re-installed during future upgrades, create a file named `local_requirements.txt` (if not already existing) in the Nautobot root directory (alongside `requirements.txt`) and list the `nautobot-ai-ops` package:
 
 ```shell
-echo ai-ops >> local_requirements.txt
+echo nautobot-ai-ops >> local_requirements.txt
 ```
 
 Once installed, the app needs to be enabled in your Nautobot configuration. The following block of code below shows the additional configuration required to be added to your `nautobot_config.py` file:

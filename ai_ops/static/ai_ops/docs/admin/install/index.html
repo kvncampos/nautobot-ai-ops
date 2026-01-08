@@ -2118,13 +2118,13 @@
 <h2 id="install-guide">Install Guide<a class="headerlink" href="#install-guide" title="Permanent link">&para;</a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Apps can be installed from the <a href="https://pypi.org/">Python Package Index</a> or locally. See the <a href="https://docs.nautobot.com/projects/core/en/stable/user-guide/administration/installation/app-install/">Nautobot documentation</a> for more details. The pip package name for this app is <a href="https://pypi.org/project/ai-ops/"><code>ai-ops</code></a>.</p>
+<p>Apps can be installed from the <a href="https://pypi.org/">Python Package Index</a> or locally. See the <a href="https://docs.nautobot.com/projects/core/en/stable/user-guide/administration/installation/app-install/">Nautobot documentation</a> for more details. The pip package name for this app is <a href="https://pypi.org/project/nautobot-ai-ops/"><code>nautobot-ai-ops</code></a>.</p>
 </div>
 <p>The app is available as a Python package via PyPI and can be installed with <code>pip</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>ai-ops
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>nautobot-ai-ops
 </code></pre></div>
-<p>To ensure AI Ops is automatically re-installed during future upgrades, create a file named <code>local_requirements.txt</code> (if not already existing) in the Nautobot root directory (alongside <code>requirements.txt</code>) and list the <code>ai-ops</code> package:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">echo</span><span class="w"> </span>ai-ops<span class="w"> </span>&gt;&gt;<span class="w"> </span>local_requirements.txt
+<p>To ensure AI Ops is automatically re-installed during future upgrades, create a file named <code>local_requirements.txt</code> (if not already existing) in the Nautobot root directory (alongside <code>requirements.txt</code>) and list the <code>nautobot-ai-ops</code> package:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">echo</span><span class="w"> </span>nautobot-ai-ops<span class="w"> </span>&gt;&gt;<span class="w"> </span>local_requirements.txt
 </code></pre></div>
 <p>Once installed, the app needs to be enabled in your Nautobot configuration. The following block of code below shows the additional configuration required to be added to your <code>nautobot_config.py</code> file:</p>
 <ul>
