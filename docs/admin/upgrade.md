@@ -8,10 +8,10 @@ When a new release of the AI Ops app is available, follow these steps to upgrade
 
 ### 1. Update the Package
 
-Upgrade the `nautobot-ai-ops` package using pip:
+Upgrade the `ai-ops` package using pip:
 
 ```shell
-pip install --upgrade nautobot-ai-ops
+pip install --upgrade ai-ops
 ```
 
 ### 2. Run Migrations

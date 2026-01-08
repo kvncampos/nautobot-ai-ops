@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "nautobot-ai-ops"
+name = "ai-ops"
 version = "1.0.0"
 description = "AI Ops - Advanced artificial intelligence capabilities for Nautobot through multi-provider LLM architecture and Model Context Protocol"
 authors = ["Kevin Campos <kvncampos@duck.com>"]
