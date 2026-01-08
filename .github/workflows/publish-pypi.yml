@@ -61,7 +61,7 @@ jobs:
     runs-on: "ubuntu-22.04"
     environment:
       name: "pypi"
-      url: "https://pypi.org/project/nautobot-ai-ops/"
+      url: "https://pypi.org/project/ai-ops/"
     steps:
       - name: "Download artifacts"
         uses: "actions/download-artifact@v4.1.3"
@@ -117,12 +117,12 @@ jobs:
 
             Install from PyPI:
             ```bash
-            pip install nautobot-ai-ops
+            pip install ai-ops
             ```
 
             Or with Poetry:
             ```bash
-            poetry add nautobot-ai-ops
+            poetry add ai-ops
             ```
 
             ## What's Changed

@@ -31,7 +31,7 @@ MCP servers are optional but extend the agent's capabilities beyond basic conver
 
 ### How do I get started with the app?
 
-1. Install the app via pip: `pip install nautobot-ai-ops`
+1. Install the app via pip: `pip install ai-ops`
 2. Add `"ai_ops"` to the `PLUGINS` list in `nautobot_config.py`
 3. Run `nautobot-server post_upgrade`
 4. Restart Nautobot services

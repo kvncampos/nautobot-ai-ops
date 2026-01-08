@@ -8,7 +8,7 @@ The project uses GitHub Actions with PyPI's Trusted Publishing feature to automa
 
 ## Automated Publishing Workflow
 
-The [`publish-pypi.yml`](https://github.com/kvncampos/nautobot-ai-ops/blob/main/.github/workflows/publish-pypi.yml) workflow handles all aspects of building and publishing the package:
+The [`publish-pypi.yml`](https://github.com/kvncampos/ai-ops/blob/main/.github/workflows/publish-pypi.yml) workflow handles all aspects of building and publishing the package:
 
 ### Workflow Triggers
 
@@ -58,22 +58,22 @@ The workflow uses [Trusted Publishing](https://docs.pypi.org/trusted-publishers/
 Repository maintainers need to configure Trusted Publishing on PyPI:
 
 1. **Create the PyPI project** (first release only):
-   - Register the package name on PyPI: `nautobot-ai-ops`
+   - Register the package name on PyPI: `ai-ops`
    - Or publish the first version manually using `poetry publish`
 
 2. **Configure Trusted Publishing on PyPI**:
-   - Go to [PyPI project settings](https://pypi.org/manage/project/nautobot-ai-ops/settings/)
+   - Go to [PyPI project settings](https://pypi.org/manage/project/ai-ops/settings/)
    - Navigate to "Publishing" section
    - Click "Add a new publisher"
    - Enter the following details:
-     - **PyPI Project Name**: `nautobot-ai-ops`
+     - **PyPI Project Name**: `ai-ops`
      - **Owner**: `kvncampos`
-     - **Repository name**: `nautobot-ai-ops`
+     - **Repository name**: `ai-ops`
      - **Workflow name**: `publish-pypi.yml`
      - **Environment name**: `pypi`
 
 3. **Configure Trusted Publishing on TestPyPI** (optional, for testing):
-   - Go to [TestPyPI project settings](https://test.pypi.org/manage/project/nautobot-ai-ops/settings/)
+   - Go to [TestPyPI project settings](https://test.pypi.org/manage/project/ai-ops/settings/)
    - Follow the same steps as above, but use environment name: `testpypi`
 
 4. **Configure GitHub Environments**:
@@ -87,7 +87,7 @@ The package metadata is defined in `pyproject.toml`:
 
 ```toml
 [tool.poetry]
-name = "nautobot-ai-ops"
+name = "ai-ops"
 version = "1.0.0"
 description = "AI Ops - Advanced artificial intelligence capabilities for Nautobot"
 authors = ["Kevin Campos <kvncampos@duck.com>"]
@@ -98,7 +98,7 @@ license = "Apache-2.0"
 
 ### Best Practices Implemented
 
-1. **Clear Package Name**: Uses `nautobot-ai-ops` for PyPI (follows Nautobot app naming convention)
+1. **Clear Package Name**: Uses `ai-ops` for PyPI (follows Nautobot app naming convention)
 2. **Comprehensive Metadata**: Includes description, authors, license, homepage, repository, and documentation URLs
 3. **Keywords**: Relevant keywords for discoverability on PyPI
 4. **Classifiers**: Proper Python version classifiers and development status
@@ -118,8 +118,8 @@ Before publishing to production PyPI, you can test the workflow:
    - Click "Run workflow"
 
 2. **Verify the test package**:
-   - Check [TestPyPI project page](https://test.pypi.org/project/nautobot-ai-ops/)
-   - Try installing: `pip install --index-url https://test.pypi.org/simple/ nautobot-ai-ops`
+   - Check [TestPyPI project page](https://test.pypi.org/project/ai-ops/)
+   - Try installing: `pip install --index-url https://test.pypi.org/simple/ ai-ops`
 
 ## Release Process
 
@@ -128,8 +128,8 @@ For maintainers publishing a new release:
 1. Follow the [Release Checklist](release_checklist.md)
 2. Create and publish a GitHub release with a version tag (e.g., `v1.0.0`)
 3. The workflow automatically triggers and publishes to PyPI
-4. Monitor the workflow in the [Actions tab](https://github.com/kvncampos/nautobot-ai-ops/actions/workflows/publish-pypi.yml)
-5. Verify the package on [PyPI](https://pypi.org/project/nautobot-ai-ops/)
+4. Monitor the workflow in the [Actions tab](https://github.com/kvncampos/ai-ops/actions/workflows/publish-pypi.yml)
+5. Verify the package on [PyPI](https://pypi.org/project/ai-ops/)
 
 ## Troubleshooting
 
@@ -153,7 +153,7 @@ If publishing to PyPI fails:
 ### Package Not Found After Publishing
 
 - PyPI can take a few minutes to index new packages
-- Check the package appears on [PyPI](https://pypi.org/project/nautobot-ai-ops/)
+- Check the package appears on [PyPI](https://pypi.org/project/ai-ops/)
 - Clear pip cache if testing installation: `pip cache purge`
 
 ## Manual Publishing
