@@ -25,6 +25,13 @@ This document describes all new features and changes in the release. The format 
 <!-- towncrier release notes start -->
 
 
+## [v1.0.1 (2026-01-08)](https://github.com/kvncampos/nautobot-ai-ops/releases/tag/v1.0.1)
+
+### Added
+
+- [#pypi-publish](https://github.com/kvncampos/nautobot-ai-ops/issues/pypi-publish) - Added automated PyPI publishing workflow using GitHub Actions with trusted publishing for secure package distribution following Python best practices.
+- [#8](https://github.com/kvncampos/nautobot-ai-ops/issues/8) - Fixed event loop blocking by converting synchronous database and HTTP calls to async in view methods (AIChatBotGenericView.get(), ChatMessageView.post(), MCPServerViewSet.health_check()).
+
 ## [v1.0.0 (2025-12-19)](https://github.com/kvncampos/nautobot-ai-ops/releases/tag/v1.0.0)
 
 No significant changes.
