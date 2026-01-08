@@ -1,0 +1,130 @@
+---
+name: "Publish to PyPI"
+
+on:  # yamllint disable-line rule:truthy rule:comments
+  release:
+    types: ["published"]
+  workflow_dispatch:
+    inputs:
+      test_pypi:
+        description: "Publish to TestPyPI instead of PyPI"
+        required: false
+        type: "boolean"
+        default: true
+
+permissions:
+  contents: "read"
+  id-token: "write"  # Required for trusted publishing
+
+env:
+  POETRY_VERSION: "2.1.3"
+
+jobs:
+  build:
+    name: "Build distribution"
+    runs-on: "ubuntu-22.04"
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v4"
+
+      - name: "Setup Python"
+        uses: "actions/setup-python@v5"
+        with:
+          python-version: "3.11"
+
+      - name: "Install Poetry"
+        uses: "snok/install-poetry@v1"
+        with:
+          version: "${{ env.POETRY_VERSION }}"
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: "Build package"
+        run: "poetry build"
+
+      - name: "Verify package metadata"
+        run: |
+          poetry run pip install twine
+          poetry run twine check dist/*
+
+      - name: "Upload artifacts"
+        uses: "actions/upload-artifact@v4"
+        with:
+          name: "python-package-distributions"
+          path: "dist/"
+          retention-days: 5
+
+  publish-to-pypi:
+    name: "Publish to PyPI"
+    if: "github.event_name == 'release' && github.event.action == 'published'"
+    needs: "build"
+    runs-on: "ubuntu-22.04"
+    environment:
+      name: "pypi"
+      url: "https://pypi.org/project/nautobot-ai-ops/"
+    steps:
+      - name: "Download artifacts"
+        uses: "actions/download-artifact@v4.1.3"
+        with:
+          name: "python-package-distributions"
+          path: "dist/"
+
+      - name: "Publish to PyPI"
+        uses: "pypa/gh-action-pypi-publish@release/v1"
+        with:
+          verbose: true
+          print-hash: true
+
+  publish-to-testpypi:
+    name: "Publish to TestPyPI"
+    if: "github.event_name == 'workflow_dispatch' && inputs.test_pypi"
+    needs: "build"
+    runs-on: "ubuntu-22.04"
+    environment:
+      name: "testpypi"
+      url: "https://test.pypi.org/project/nautobot-ai-ops/"
+    steps:
+      - name: "Download artifacts"
+        uses: "actions/download-artifact@v4.1.3"
+        with:
+          name: "python-package-distributions"
+          path: "dist/"
+
+      - name: "Publish to TestPyPI"
+        uses: "pypa/gh-action-pypi-publish@release/v1"
+        with:
+          repository-url: "https://test.pypi.org/legacy/"
+          verbose: true
+          print-hash: true
+
+  github-release-notes:
+    name: "Update GitHub Release notes"
+    if: "github.event_name == 'release' && github.event.action == 'published'"
+    needs: "publish-to-pypi"
+    runs-on: "ubuntu-22.04"
+    permissions:
+      contents: "write"
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v4"
+
+      - name: "Update release notes"
+        uses: "softprops/action-gh-release@v2"
+        with:
+          tag_name: "${{ github.ref }}"
+          body: |
+            ## Installation
+
+            Install from PyPI:
+            ```bash
+            pip install nautobot-ai-ops
+            ```
+
+            Or with Poetry:
+            ```bash
+            poetry add nautobot-ai-ops
+            ```
+
+            ## What's Changed
+            See the [Release Notes](https://kvncampos.github.io/nautobot-ai-ops/admin/release_notes/) for detailed information.
+          append_body: true

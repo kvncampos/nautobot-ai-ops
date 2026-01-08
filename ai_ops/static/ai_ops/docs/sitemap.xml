@@ -1,138 +1,115 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/index.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/admin/compatibility_matrix.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/admin/compatibility_matrix/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/admin/health_checks.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/admin/health_checks/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/admin/install.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/admin/install/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/admin/uninstall.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/admin/uninstall/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/admin/upgrade.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/admin/upgrade/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/admin/release_notes/index.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/admin/release_notes/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/admin/release_notes/version_1.0.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/admin/release_notes/version_1.0/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/arch_decision.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/arch_decision/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/architecture.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/architecture/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/contributing.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/contributing/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/dev_environment.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/dev_environment/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/extending.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/extending/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/release_checklist.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/pypi_publishing/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/code_reference/index.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/release_checklist/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/code_reference/agents.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/code_reference/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/code_reference/api.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/code_reference/agents/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/code_reference/helpers.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/code_reference/api/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/code_reference/jobs.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/code_reference/helpers/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/code_reference/models.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/code_reference/jobs/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/code_reference/package.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/code_reference/models/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/user/app_getting_started.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/dev/code_reference/package/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/user/app_overview.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/user/app_getting_started/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/user/app_use_cases.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/user/app_overview/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/user/external_interactions.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/user/app_use_cases/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/user/faq.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/user/external_interactions/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
     <url>
-         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/user/quick_start.html</loc>
-         <lastmod>2025-12-19</lastmod>
-         <changefreq>daily</changefreq>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/user/faq/</loc>
+         <lastmod>2026-01-08</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.nautobot.com/projects/ai-ops/en/latest/user/quick_start/</loc>
+         <lastmod>2026-01-08</lastmod>
     </url>
 </urlset>

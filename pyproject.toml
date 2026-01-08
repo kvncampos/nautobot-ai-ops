@@ -1,14 +1,14 @@
 [tool.poetry]
-name = "ai-ops"
+name = "nautobot-ai-ops"
 version = "1.0.0"
-description = "AI Ops"
+description = "AI Ops - Advanced artificial intelligence capabilities for Nautobot through multi-provider LLM architecture and Model Context Protocol"
 authors = ["Kevin Campos <kvncampos@duck.com>"]
 readme = "README.md"
 license = "Apache-2.0"
 homepage = "https://github.com/kvncampos/nautobot-ai-ops"
 repository = "https://github.com/kvncampos/nautobot-ai-ops"
 documentation = "https://kvncampos.github.io/nautobot-ai-ops/"
-keywords = ["nautobot", "nautobot-app", "nautobot-plugin"]
+keywords = ["nautobot", "nautobot-app", "nautobot-plugin", "ai", "llm", "langchain", "langgraph", "mcp"]
 classifiers = [
     "Intended Audience :: Developers",
     "Development Status :: 5 - Production/Stable",
@@ -16,14 +16,16 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: Apache Software License",
+    "Framework :: Django",
+    "Topic :: System :: Networking",
 ]
 packages = [
     { include = "ai_ops" },
 ]
 include = [
-    "ai_ops/static/ai_ops/docs/**/*"
+    "ai_ops/static/ai_ops/docs/**/*",
+    "ai_ops/templates/**/*",
 ]
 
 [tool.poetry.dependencies]
@@ -33,7 +35,7 @@ nautobot = ">=2.4.22,<2.4.23"
 
 langgraph = "^1.0.4"
 langchain = "^1.1.0"
-langchain-core = "^1.1.0"
+langchain-core = "^1.2.5"
 langchain-openai = "^1.1.0"
 langchain-mcp-adapters = "^0.1.14"
 langgraph-checkpoint-redis = "^0.2.1"
