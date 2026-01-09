@@ -14,7 +14,7 @@ Documentation is built using [mkdocs](https://www.mkdocs.org/). The [Docker base
 
 ## Creating Changelog Fragments
 
-All pull requests to `next` or `develop` must include a changelog fragment file in the `./changes` directory. To create a fragment, use your GitHub issue number and fragment type as the filename. For example, `2362.added`. Valid fragment types are `added`, `changed`, `deprecated`, `fixed`, `removed`, and `security`. The change summary is added to the file in plain text. Change summaries should be complete sentences, starting with a capital letter and ending with a period, and be in past tense. Each line of the change fragment will generate a single change entry in the release notes. Use multiple lines in the same file if your change needs to generate multiple release notes in the same category. If the change needs to create multiple entries in separate categories, create multiple files.
+All pull requests to `main` must include a changelog fragment file in the `./changes` directory. To create a fragment, use your GitHub issue number and fragment type as the filename. For example, `2362.added`. Valid fragment types are `added`, `changed`, `deprecated`, `fixed`, `removed`, and `security`. The change summary is added to the file in plain text. Change summaries should be complete sentences, starting with a capital letter and ending with a period, and be in past tense. Each line of the change fragment will generate a single change entry in the release notes. Use multiple lines in the same file if your change needs to generate multiple release notes in the same category. If the change needs to create multiple entries in separate categories, create multiple files.
 
 !!! example
 
@@ -43,13 +43,21 @@ All pull requests to `next` or `develop` must include a changelog fragment file 
 
 ## Branching Policy
 
-The branching policy includes the following tenets:
+This project uses a simplified single-branch strategy:
 
-- The `develop` branch is the branch of the next major and minor paired version planned.
-- PRs intended to add new features should be sourced from the `develop` branch.
-- PRs intended to fix issues in the Nautobot LTM compatible release should be sourced from the latest `ltm-<major.minor>` branch instead of `develop`.
+- **Main branch**: `main` is the primary development branch and always represents the latest code
+- **Feature branches**: All new features and bug fixes should be developed in feature branches created from `main`
+- **Pull requests**: All changes must go through pull requests that will be squash-merged into `main`
+- **Release strategy**: We use beta releases (e.g., `v1.0.0b1`, `v1.0.0b2`) for testing before stable releases
 
 AI Ops will observe semantic versioning, as of 1.0. This may result in a quick turnaround in minor versions to keep pace with an ever-growing feature set.
+
+### Release Workflow
+
+1. Feature branches are merged to `main` via squash merge (one commit per PR)
+2. Beta releases are tagged from `main` (e.g., `v1.0.0b1`) for early testing
+3. After beta testing, stable releases are tagged (e.g., `v1.0.0`)
+4. Users can install beta releases with `pip install --pre nautobot-ai-ops`
 
 ### Backporting to Older Releases
 
@@ -59,6 +67,13 @@ We will create a `release-X.Y` branch for you to open your PR against and cut a 
 
 ## Release Policy
 
-AI Ops has currently no intended scheduled release schedule, and will release new features in minor versions.
+AI Ops follows a flexible release schedule:
+
+- **Beta releases**: Tagged as `v1.0.0b1`, `v1.0.0b2`, etc. for early testing and feedback
+- **Stable releases**: Tagged as `v1.0.0` after beta testing completes
+- **Pre-release testing**: Beta releases allow users to test new features before they reach stable
+- **Semantic versioning**: Major.minor.patch versioning with clear changelog documentation
+
+New features are released in minor versions. Critical bug fixes may be released as patch versions.
 
 The steps taken by maintainers when creating a new release are documented in the [release checklist](./release_checklist.md).

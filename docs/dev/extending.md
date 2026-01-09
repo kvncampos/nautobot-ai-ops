@@ -357,6 +357,9 @@ Follow the [Development Environment](dev_environment.md) guide to set up your en
 ### 2. Create Feature Branch
 
 ```bash
+# Create feature branch from main
+git checkout main
+git pull
 git checkout -b feature/my-extension
 ```
 

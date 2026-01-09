@@ -3,216 +3,306 @@
 This document is intended for app maintainers and outlines the steps to perform when releasing a new version of the app.
 
 !!! important
-    Before starting, make sure your **local** `develop`, `main`, and (if applicable) the current LTM branch are all up to date with upstream!
+    This project uses a **main-only branching strategy** with **beta releases** for testing before stable releases.
 
-    ```
+    Before starting, make sure your **local** `main` branch is up to date:
+
+    ```bash
     git fetch
-    git switch develop && git pull # and repeat for main/ltm
+    git switch main && git pull
     ```
 
-Choose your own adventure:
+## Release Strategy
 
-- LTM release? Jump [here](#ltm-releases).
-- Patch release from `develop`? Jump [here](#all-releases-from-develop).
-- Minor release? Continue with [Minor Version Bumps](#minor-version-bumps) and then [All Releases from `develop`](#all-releases-from-develop).
+This project follows a streamlined release process:
 
-## Minor Version Bumps
+1. **Feature development** → Merge to `main` via squash merge (PR required)
+2. **Beta release** → Tag `v1.0.0b1`, `v1.0.0b2`, etc. from `main`
+3. **Testing period** → Let beta "cook" with real-world usage
+4. **Stable release** → Tag `v1.0.0` from `main`
 
-### Update Requirements
+Choose your path:
 
-Every minor version release should refresh `poetry.lock`, so that it lists the most recent stable release of each package. To do this:
-
-0. Run `poetry update --dry-run` to have Poetry automatically tell you what package updates are available and the versions it would upgrade to. This requires an existing environment created from the lock file (i.e. via `poetry install`).
-1. Review each requirement's release notes for any breaking or otherwise noteworthy changes.
-2. Run `poetry update <package>` to update the package versions in `poetry.lock` as appropriate.
-3. If a required package requires updating to a new release not covered in the version constraints for a package as defined in `pyproject.toml`, (e.g. `Django ~3.1.7` would never install `Django >=4.0.0`), update it manually in `pyproject.toml`.
-4. Run `poetry install` to install the refreshed versions of all required packages.
-5. Run all tests (`poetry run invoke tests`) and check that the UI and API function as expected.
-
-### Update Documentation
-
-If there are any changes to the compatibility matrix (such as a bump in the minimum supported Nautobot version), update it accordingly.
-
-Commit any resulting changes from the following sections to the documentation before proceeding with the release.
-
-!!! tip
-    Fire up the documentation server in your development environment with `poetry run mkdocs serve`! This allows you to view the documentation site locally (the link is in the output of the command) and automatically rebuilds it as you make changes.
-
-### Verify the Installation and Upgrade Steps
-
-Follow the [installation instructions](../admin/install.md) to perform a new production installation of the app. If possible, also test the [upgrade process](../admin/upgrade.md) from the previous released version.
-
-The goal of this step is to walk through the entire install process *as documented* to make sure nothing there needs to be changed or updated, to catch any errors or omissions in the documentation, and to ensure that it is current with each release.
+- **Beta release** (for testing)? Continue with [Beta Releases](#beta-releases)
+- **Stable release** (production-ready)? Continue with [Stable Releases](#stable-releases)
+- **LTM/Backport release**? Jump to [LTM Releases](#ltm-releases)
 
 ---
 
-## All Releases from `develop`
+## Beta Releases
 
-### Verify CI Build Status
+Beta releases allow early adopters to test new features before they reach stable. Users can install with `pip install --pre nautobot-ai-ops`.
 
-Ensure that continuous integration testing on the `develop` branch is completing successfully.
+### 1. Verify CI Build Status
 
-### Bump the Version
+Ensure that continuous integration testing on the `main` branch is completing successfully.
 
-Update the package version using `poetry version` if necessary ([poetry docs](https://python-poetry.org/docs/cli/#version)). This command shows the current version of the project or bumps the version of the project and writes the new version back to `pyproject.toml` if a valid bump rule is provided.
+### 2. Update Version to Beta
 
-The new version must be a valid semver string or a valid bump rule: `patch`, `minor`, `major`, `prepatch`, `preminor`, `premajor`, `prerelease`. Always try to use a bump rule when you can.
+Update the package version to a beta version using `poetry version`:
 
-!!! warning
-    This guide uses `1.4.2` as the new version in its examples, so change it to match the version you bumped to in the previous step! Every. single. time. you. copy/paste commands!
+```bash
+# First beta of version 1.0.0
+poetry version 1.0.0b1
 
-Display the current version with no arguments:
-
-```no-highlight
-> poetry version
-ai-ops 1.0.0-beta.2
+# Or bump from current beta
+poetry version prerelease  # e.g., 1.0.0b1 → 1.0.0b2
 ```
 
-Bump pre-release versions using `prerelease`:
+### 3. Commit Version Bump
 
-```no-highlight
-> poetry version prerelease
-Bumping version from 1.0.0-beta.2 to 1.0.0-beta.3
+```bash
+git add pyproject.toml
+git commit -m "chore: bump version to v1.0.0b1"
 ```
 
-For major versions, use `major`:
+### 4. Tag and Push
 
-```no-highlight
-> poetry version major
-Bumping version from 1.0.0-beta.2 to 1.0.0
+```bash
+git tag v1.0.0b1
+git push origin main --tags
 ```
 
-For patch versions, use `minor`:
+!!! success "Automatic Deployment"
+    Once the tag is pushed, the GitHub Actions workflow will automatically:
+    
+    - Build the package
+    - Publish to PyPI (as a pre-release)
+    - Create a GitHub pre-release with auto-generated notes
 
-```no-highlight
-> poetry version minor
-Bumping version from 1.0.0 to 1.1.0
+### 5. Monitor Deployment
+
+Check the [Publish to PyPI workflow](https://github.com/kvncampos/nautobot-ai-ops/actions/workflows/publish-pypi.yml) to ensure it completes successfully.
+
+### 6. Test Beta Release
+
+Install and test the beta in a non-production environment:
+
+```bash
+pip install --pre nautobot-ai-ops
 ```
 
-And lastly, for patch versions, you guessed it, use `patch`:
+### 7. Iterate If Needed
 
-```no-highlight
-> poetry version patch
-Bumping version from 1.1.0 to 1.1.1
+If issues are found, fix them, merge to `main`, and release another beta:
+
+```bash
+poetry version prerelease  # 1.0.0b1 → 1.0.0b2
+git add pyproject.toml
+git commit -m "chore: bump version to v1.0.0b2"
+git tag v1.0.0b2
+git push origin main --tags
 ```
 
-### Update the Changelog
+---
+
+## Stable Releases
+
+Stable releases should only be created after adequate beta testing.
+
+### 1. Verify CI Build Status
+
+Ensure that continuous integration testing on the `main` branch is completing successfully.
+
+### 2. Update Requirements (Minor/Major Releases Only)
+
+For minor or major version releases, refresh `poetry.lock`:
+
+```bash
+# Review available updates
+poetry update --dry-run
+
+# Update specific packages
+poetry update <package>
+
+# Install and test
+poetry install
+poetry run invoke tests
+```
+
+If a package requires updating to a new version outside current constraints in `pyproject.toml`, update it manually.
+
+### 3. Update Documentation (Minor/Major Releases Only)
+
+- Update the compatibility matrix if needed
+- Verify installation and upgrade steps still accurate
+- Update any new configuration examples
+
+### 4. Consolidate Changelog Fragments
+
+Run towncrier to consolidate all changelog fragments:
+
+```bash
+# Towncrier will use the version from pyproject.toml
+invoke generate-release-notes --version 1.0.0
+```
+
+This will:
+- Generate/update `docs/admin/release_notes/version_1.0.md`
+- Delete all processed fragments from `changes/`
+- Stage the changes in git
 
 !!! note
-    - This project uses `towncrier` to track human readable changes, so all merged PRs will have one or more entries in the release notes.
-    - The changelog must adhere to the [Keep a Changelog](https://keepachangelog.com/) style guide for any manual changes you may need to make.
-    - You will need to have the project's poetry environment built at this stage, as the towncrier command runs **locally only**. If you don't have it, run `poetry install` first.
-    - You can also set the version explicitly with `invoke generate-release-notes --version 1.4.2` if it needs to be different from what's in `pyproject.toml`.
+    For new major/minor versions, manually add a `Release Overview` section to the generated release notes file with a user-friendly summary of notable changes.
 
-First, create a release branch off of `develop` (`git switch -c release-1.4.2 develop`) and automatically generate release notes with `invoke generate-release-notes`.
+### 5. Update Version to Stable
 
-If you're releasing a new major or minor version, this will create a new `docs/admin/release_notes/version_{major}.{minor}.md` file. Please fill in the `Release Overview` section in that file manually with a user-friendly summary of the most notable changes!
-
-Stage any remaining files (e.g. `git add mkdocs.yml pyproject.toml`) and check the diffs to verify all of the changes are correct (`git diff --cached`). For a new release of `1.4.2`, this will update the release notes in `docs/admin/release_notes/version_1.4.md`, stage that file in git, and `git rm` all the fragments that have now been incorporated into the release notes.
-
-Commit `git commit -m "Release v1.4.2"` and `git push` the staged changes.
-
-### Submit Release Pull Request
-
-Submit a pull request titled `Release v1.4.2` to merge your release branch into `main`. Copy the documented release notes into the pull request's body.
-
-!!! important
-    Do not squash merge this branch into `main`. Make sure to select `Create a merge commit` when merging in GitHub.
-
-Once CI has completed on the PR, merge it.
-
-### Create a New Release in GitHub
-
-Draft a [new release](https://github.com/kvncampos/nautobot-ai-ops/releases/new) with the following parameters.
-
-* **Tag:** Input current version (e.g. `v1.4.2`) and select `Create new tag: v1.4.2 on publish`
-* **Target:** `main`
-* **Title:** Version and date (e.g. `v1.4.2 - 2024-04-02`)
-
-Click "Generate Release Notes" and edit the auto-generated content as follows:
-
-- Change the entries generated by GitHub to only the usernames of the contributors. e.g. `* Updated dockerfile by @nautobot_user in https://github.com/kvncampos/nautobot-ai-ops/pull/123` -> `* @nautobot_user`.
-    - This should give you the list for the new `Contributors` section.
-    - Make sure there are no duplicated entries.
-- Replace the content of the `What's Changed` section with the description of changes from the release PR (what towncrier generated).
-- If it exists, leave the `New Contributors` list as it is.
-
-The release notes should look as follows:
-
-```markdown
-## What's Changed
-
-**Towncrier generated Changed/Fixed/Housekeeping etc. sections here**
-
-## Contributors
-
-* @alice
-* @bob
-
-## New Contributors
-
-* @bob
-
-**Full Changelog**: https://github.com/kvncampos/nautobot-ai-ops/compare/v1.4.1...v1.4.2
+```bash
+poetry version 1.0.0
 ```
 
-Publish the release!
+### 6. Commit Release Changes
 
-!!! note "PyPI Publishing"
-    Once the GitHub release is published, the `Publish to PyPI` workflow will automatically trigger and publish the package to PyPI. You can monitor the progress in the [Actions tab](https://github.com/kvncampos/nautobot-ai-ops/actions/workflows/publish-pypi.yml).
-
-### Create a PR from `main` back to `develop`
-
-First, sync your `main` branch with upstream changes: `git switch main && git pull`.
-
-Create a new branch from `main` called `release-1.4.2-to-develop` and use `poetry version prepatch` to bump the development version to the next release.
-
-For example, if you just released `v1.4.2`:
-
-```no-highlight
-> git switch -c release-1.4.2-to-develop main
-Switched to a new branch 'release-1.4.2-to-develop'
-
-> poetry version prepatch
-Bumping version from 1.4.2 to 1.4.3a1
-
-> git add pyproject.toml && git commit -m "Bump version"
-
-> git push
+```bash
+git add .
+git commit -m "chore: release v1.0.0"
 ```
 
-!!! important
-    Do not squash merge this branch into `develop`. Make sure to select `Create a merge commit` when merging in GitHub.
+### 7. Tag and Push
 
-Open a new PR from `release-1.4.2-to-develop` against `develop`, wait for CI to pass, and merge it.
+```bash
+git tag v1.0.0
+git push origin main --tags
+```
 
-### Final checks
+!!! success "Automatic Deployment"
+    Once the tag is pushed, the GitHub Actions workflow will automatically:
+    
+    - Verify changelog fragments are cleared
+    - Build the package
+    - Publish to PyPI (as a stable release)
+    - Create a GitHub release with auto-generated notes
 
-At this stage, the CI should be running or finished for the `v1.4.2` tag. The `Publish to PyPI` workflow should automatically trigger when the GitHub release is published, building and publishing the package to PyPI.
+### 8. Verify Deployment
 
-Verify the following:
+Check the following:
 
-1. The [Publish to PyPI workflow](https://github.com/kvncampos/nautobot-ai-ops/actions/workflows/publish-pypi.yml) has completed successfully
-2. The package appears on [PyPI](https://pypi.org/project/nautobot-ai-ops/)
-3. The GitHub release was created with the correct tag and notes
+1. [Publish to PyPI workflow](https://github.com/kvncampos/nautobot-ai-ops/actions/workflows/publish-pypi.yml) completed successfully
+2. Package appears on [PyPI](https://pypi.org/project/nautobot-ai-ops/) as a stable release
+3. GitHub release created with correct tag and notes
+4. Documentation built and deployed
 
-Documentation should also have been built for the tag on ReadTheDocs and if you're reading this page online, refresh it and look for the new version in the little version fly-out menu down at the bottom right of the page.
+---
 
-All done!
+## Poetry Version Commands Quick Reference
 
+```bash
+# Display current version
+poetry version
 
+# Beta releases
+poetry version 1.0.0b1           # Set specific beta version
+poetry version prerelease        # Bump beta: 1.0.0b1 → 1.0.0b2
+
+# Stable releases
+poetry version patch             # 1.0.0 → 1.0.1
+poetry version minor             # 1.0.1 → 1.1.0
+poetry version major             # 1.1.0 → 2.0.0
+
+# Convert beta to stable
+poetry version 1.0.0             # 1.0.0b2 → 1.0.0
+```
+
+---
 ## LTM Releases
 
 For projects maintaining a Nautobot LTM compatible release, all development and release management is done through the `ltm-x.y` branch. The `x.y` relates to the LTM version of Nautobot it's compatible with, for example `1.6`.
 
-The process is similar to releasing from `develop`, but there is no need for post-release branch syncing because you'll release directly from the LTM branch:
+The process is similar to stable releases, but you release directly from the LTM branch:
 
-1. Make sure your `ltm-1.6` branch is passing CI.
-2. Create a release branch from the `ltm-1.6` branch: `git switch -c release-1.2.3 ltm-1.6`.
-3. Bump up the patch version `poetry version patch`. If you're backporting a feature instead of bugfixes, bump the minor version instead with `poetry version minor`.
-4. Generate the release notes: `invoke generate-release-notes --version 1.2.3`.
-5. Move the release notes from the generated `docs/admin/release_notes/version_X.Y.md` to `docs/admin/release_notes/version_1.2.md`.
-6. Add all the changes and `git commit -m "Release v1.2.3"`, then `git push`.
-7. Open a new PR against `ltm-1.6`. Once CI is passing in the PR, `Create a merge commit` (don't squash!).
-8. Create a New Release in GitHub - use the same steps documented [here](#create-a-new-release-in-github).
-9. Open a separate PR against `develop` to synchronize all LTM release changelogs into the latest version of the docs for visibility.
+### 1. Verify CI Status
+
+Make sure your `ltm-1.6` branch is passing CI.
+
+### 2. Create Release Branch
+
+```bash
+git switch -c release-1.2.3 ltm-1.6
+```
+
+### 3. Update Version
+
+```bash
+# For bug fixes
+poetry version patch
+
+# For backported features
+poetry version minor
+```
+
+### 4. Generate Release Notes
+
+```bash
+invoke generate-release-notes --version 1.2.3
+```
+
+Move the release notes from `docs/admin/release_notes/version_X.Y.md` to `docs/admin/release_notes/version_1.2.md`.
+
+### 5. Commit and Tag
+
+```bash
+git add .
+git commit -m "chore: release v1.2.3"
+git tag v1.2.3
+git push origin release-1.2.3 --tags
+```
+
+### 6. Create PR to LTM Branch
+
+Open a PR against `ltm-1.6`. Once CI is passing:
+
+!!! important
+    Select `Create a merge commit` when merging (don't squash!).
+
+### 7. Create GitHub Release
+
+Follow the same steps as [Stable Releases - Verify Deployment](#8-verify-deployment).
+
+### 8. Sync to Main (Optional)
+
+Open a separate PR against `main` to synchronize LTM release changelogs for visibility in the latest docs.
+
+---
+
+## Troubleshooting
+
+### Deleting a Bad Tag
+
+If you tagged the wrong version:
+
+```bash
+# Delete local tag
+git tag -d v1.0.0
+
+# Delete remote tag
+git push origin :refs/tags/v1.0.0
+```
+
+### Changelog Fragments Still Exist
+
+The workflow will fail for stable releases if fragments remain in `changes/`. This is intentional - run `towncrier build` first.
+
+### Failed PyPI Deployment
+
+Check the [Actions tab](https://github.com/kvncampos/nautobot-ai-ops/actions/workflows/publish-pypi.yml) for error details. Common issues:
+
+- Version already exists on PyPI (can't republish same version)
+- Authentication issues (check repository secrets)
+- Build failures (check package integrity)
+
+---
+
+## Summary
+
+**For Beta Releases:**
+1. `poetry version 1.0.0b1` → `git commit` → `git tag v1.0.0b1` → `git push --tags`
+
+**For Stable Releases:**
+1. `invoke generate-release-notes --version 1.0.0`
+2. `poetry version 1.0.0` → `git commit` → `git tag v1.0.0` → `git push --tags`
+
+**Key Points:**
+- All PRs must include changelog fragments in `changes/`
+- Beta releases keep fragments; stable releases consolidate them
+- All merges to `main` use squash merge
+- GitHub Actions handles PyPI publishing automatically

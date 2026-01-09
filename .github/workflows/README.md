@@ -17,7 +17,7 @@ Runs continuous integration tests on every push and pull request:
 - Validates changelog entries on PRs
 
 **Triggers:**
-- Push to `main` or `develop` branches
+- Push to `main` branch
 - Push tags starting with `v*`
 - Pull requests
 
@@ -54,7 +54,7 @@ Builds and publishes the package to PyPI or TestPyPI:
 
 ```mermaid
 graph TD
-    A[Push to main/develop] --> B[CI Workflow]
+    A[Push to main] --> B[CI Workflow]
     C[GitHub Release] --> D[Publish to PyPI]
     E[Push to main] --> F[Deploy Documentation]
     G[Manual Trigger] --> H[Publish to TestPyPI]

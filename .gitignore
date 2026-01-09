@@ -301,6 +301,7 @@ fabric.properties
 creds.env
 development/*.txt
 .dockerignore
+.github/NOTES.md
 
 # Invoke overrides
 invoke.yml
