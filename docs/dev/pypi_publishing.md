@@ -126,7 +126,7 @@ Before publishing to production PyPI, you can test the workflow:
 For maintainers publishing a new release:
 
 1. Follow the [Release Checklist](release_checklist.md)
-2. Create and publish a GitHub release with a version tag (e.g., `v1.0.0`)
+2. Create and publish a GitHub release with a version tag (e.g., `1.0.0`)
 3. The workflow automatically triggers and publishes to PyPI
 4. Monitor the workflow in the [Actions tab](https://github.com/kvncampos/nautobot-ai-ops/actions/workflows/publish-pypi.yml)
 5. Verify the package on [PyPI](https://pypi.org/project/nautobot-ai-ops/)

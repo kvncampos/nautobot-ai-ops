@@ -3,7 +3,7 @@
 <!--
 Developer Note - Remove Me!
 
-The README will have certain links/images broken until the PR is merged into `develop`. Update the GitHub links with whichever branch you're using (main etc.) if different.
+The README will have certain links/images broken until the PR is merged into `main`. Update the GitHub links with whichever branch you're using if different.
 
 The logo of the project is a placeholder (docs/images/icon-ai-ops.png) - please replace it with your app icon, making sure it's at least 200x200px and has a transparent background!
 
@@ -47,7 +47,7 @@ At its core, AI Ops leverages LangGraph and LangChain to orchestrate conversatio
 - **RESTful API**: Full API support for programmatic access to all models (providers, models, middleware, MCP servers)
 - **Environment-Aware**: Supports LAB (local development with Ollama), NONPROD, and PROD environments
 
-More screenshots and detailed use cases can be found in the [Using the App](https://docs.nautobot.com/projects/ai-ops/en/latest/user/app_use_cases/) page in the documentation.
+More screenshots and detailed use cases can be found in the [Using the App](https://kvncampos.github.io/nautobot-ai-ops/user/app_use_cases/) page in the documentation.
 
 ## Requirements
 
@@ -65,22 +65,22 @@ More screenshots and detailed use cases can be found in the [Using the App](http
 
 ## Documentation
 
-Full documentation for this App can be found over on the [Nautobot Docs](https://docs.nautobot.com) website:
+Full documentation for this App can be found at [kvncampos.github.io/nautobot-ai-ops](https://kvncampos.github.io/nautobot-ai-ops/):
 
-- [User Guide](https://docs.nautobot.com/projects/ai-ops/en/latest/user/app_overview/) - Overview, Using the App, Getting Started.
-- [Administrator Guide](https://docs.nautobot.com/projects/ai-ops/en/latest/admin/install/) - How to Install, Configure, Upgrade, or Uninstall the App.
-- [Developer Guide](https://docs.nautobot.com/projects/ai-ops/en/latest/dev/contributing/) - Extending the App, Code Reference, Contribution Guide.
-- [Release Notes / Changelog](https://docs.nautobot.com/projects/ai-ops/en/latest/admin/release_notes/).
-- [Frequently Asked Questions](https://docs.nautobot.com/projects/ai-ops/en/latest/user/faq/).
+- [User Guide](https://kvncampos.github.io/nautobot-ai-ops/user/app_overview/) - Overview, Using the App, Getting Started.
+- [Administrator Guide](https://kvncampos.github.io/nautobot-ai-ops/admin/install/) - How to Install, Configure, Upgrade, or Uninstall the App.
+- [Developer Guide](https://kvncampos.github.io/nautobot-ai-ops/dev/contributing/) - Extending the App, Code Reference, Contribution Guide.
+- [Release Notes / Changelog](https://kvncampos.github.io/nautobot-ai-ops/admin/release_notes/).
+- [Frequently Asked Questions](https://kvncampos.github.io/nautobot-ai-ops/user/faq/).
 
 ### Contributing to the Documentation
 
-You can find all the Markdown source for the App documentation under the [`docs`](https://github.com/kvncampos/nautobot-ai-ops/tree/develop/docs) folder in this repository. For simple edits, a Markdown capable editor is sufficient: clone the repository and edit away.
+You can find all the Markdown source for the App documentation under the [`docs`](https://github.com/kvncampos/nautobot-ai-ops/tree/main/docs) folder in this repository. For simple edits, a Markdown capable editor is sufficient: clone the repository and edit away.
 
-If you need to view the fully-generated documentation site, you can build it with [MkDocs](https://www.mkdocs.org/). A container hosting the documentation can be started using the `invoke` commands (details in the [Development Environment Guide](https://docs.nautobot.com/projects/ai-ops/en/latest/dev/dev_environment/#docker-development-environment)) on [http://localhost:8001](http://localhost:8001). Using this container, as your changes to the documentation are saved, they will be automatically rebuilt and any pages currently being viewed will be reloaded in your browser.
+If you need to view the fully-generated documentation site, you can build it with [MkDocs](https://www.mkdocs.org/). A container hosting the documentation can be started using the `invoke` commands (details in the [Development Environment Guide](https://kvncampos.github.io/nautobot-ai-ops/dev/dev_environment/#docker-development-environment)) on [http://localhost:8001](http://localhost:8001). Using this container, as your changes to the documentation are saved, they will be automatically rebuilt and any pages currently being viewed will be reloaded in your browser.
 
 Any PRs with fixes or improvements are very welcome!
 
 ## Questions
 
-For any questions or comments, please check the [FAQ](https://docs.nautobot.com/projects/ai-ops/en/latest/user/faq/) first. Feel free to also swing by the [Network to Code Slack](https://networktocode.slack.com/) (channel `#nautobot`), sign up [here](http://slack.networktocode.com/) if you don't have an account.
+For any questions or comments, please check the [FAQ](https://kvncampos.github.io/nautobot-ai-ops/user/faq/) first. Feel free to also swing by the [Network to Code Slack](https://networktocode.slack.com/) (channel `#nautobot`), sign up [here](http://slack.networktocode.com/) if you don't have an account.

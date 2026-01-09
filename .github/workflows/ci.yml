@@ -10,11 +10,9 @@ permissions:
 
 on:  # yamllint disable-line rule:truthy rule:comments
   push:
-    branches:
-      - "main"
-      - "develop"
     tags:
-      - "v*"
+      - "*.*.*"
+      - "*.*.*b*"
   pull_request: ~
 
 env:
@@ -223,8 +221,8 @@ jobs:
 
   changelog:
     if: >
-      contains(fromJson('["develop","ltm-1.6"]'), github.base_ref) &&
-      (github.head_ref != 'main') && (!startsWith(github.head_ref, 'release'))
+      github.base_ref == 'main' &&
+      (!startsWith(github.head_ref, 'release'))
     runs-on: "ubuntu-22.04"
     steps:
       - name: "Check out repository code"
