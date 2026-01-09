@@ -21,7 +21,15 @@ def update_fallback_version(version):
     
     Args:
         version: The version string to set (e.g., '1.0.2')
+    
+    Returns:
+        bool: True if the update was successful or version was already correct, False otherwise.
     """
+    # Validate version format (semantic versioning: X.Y.Z or X.Y.ZbN for beta)
+    if not re.match(r'^\d+\.\d+\.\d+([ab]\d+)?$', version):
+        print(f"Error: Invalid version format '{version}'. Expected format: X.Y.Z or X.Y.ZbN")
+        return False
+    
     init_file = Path(__file__).parent.parent.parent / "ai_ops" / "__init__.py"
     if not init_file.exists():
         print(f"Error: {init_file} not found")
@@ -31,7 +39,9 @@ def update_fallback_version(version):
     
     # Pattern to match the fallback version assignments
     # Matches lines like: __version__ = "1.0.1"  # Ultimate fallback
-    pattern = r'(__version__ = )"(\d+\.\d+\.\d+)"(\s+# Ultimate fallback)'
+    # The comment is required to ensure we only match the fallback assignments
+    # and not other version assignments in the file
+    pattern = r'(__version__ = )"(\d+\.\d+\.\d+(?:[ab]\d+)?)"(\s*# Ultimate fallback)'
     
     # Count how many replacements we'll make
     matches = list(re.finditer(pattern, content))
@@ -39,7 +49,7 @@ def update_fallback_version(version):
         print(f"Warning: No fallback version patterns found in {init_file}")
         return False
     
-    # Replace all occurrences
+    # Replace all occurrences - group 1 is prefix, group 2 is old version, group 3 is comment
     updated_content = re.sub(pattern, rf'\1"{version}"\3', content)
     
     if updated_content == content:
