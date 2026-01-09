@@ -11,6 +11,9 @@ import json
 import logging
 from datetime import datetime, timedelta
 
+from asgiref.sync import sync_to_async
+from nautobot.apps.config import get_app_settings_or_config
+
 from ai_ops.helpers.common.enums import NautobotEnvironment
 from ai_ops.helpers.common.helpers import get_environment
 
@@ -29,7 +32,6 @@ _middleware_cache: dict = {
     "config_hash": None,
 }
 _cache_lock = asyncio.Lock()
-CACHE_TTL_SECONDS = 300  # 5 minutes
 
 
 def _import_middleware_class(middleware_name: str):
@@ -95,7 +97,7 @@ def _calculate_config_hash(middlewares_qs) -> str:
     return hashlib.sha256(config_json.encode()).hexdigest()
 
 
-def _is_cache_valid(llm_model_id: int, config_hash: str) -> bool:
+async def _is_cache_valid(llm_model_id: int, config_hash: str) -> bool:
     """Check if the cache is still valid.
 
     Args:
@@ -114,8 +116,11 @@ def _is_cache_valid(llm_model_id: int, config_hash: str) -> bool:
     if _middleware_cache["timestamp"] is None:
         return False
 
+    # Get TTL from Constance config (in minutes) and convert to seconds
+    cache_ttl_minutes = await sync_to_async(get_app_settings_or_config)("ai_ops", "middleware_cache_ttl_minutes")
+    cache_ttl_seconds = cache_ttl_minutes * 60
     age = datetime.now() - _middleware_cache["timestamp"]
-    return age < timedelta(seconds=CACHE_TTL_SECONDS)
+    return age < timedelta(seconds=cache_ttl_seconds)
 
 
 async def get_middleware(llm_model, force_refresh: bool = False) -> list:
@@ -151,7 +156,7 @@ async def get_middleware(llm_model, force_refresh: bool = False) -> list:
         config_hash = _calculate_config_hash(middlewares_qs)
 
         # Check if cache is valid
-        if not force_refresh and _is_cache_valid(llm_model.id, config_hash):
+        if not force_refresh and await _is_cache_valid(llm_model.id, config_hash):
             logger.debug(f"Using cached middleware for model {llm_model.name}")
             return _middleware_cache["middlewares"]
 
@@ -201,9 +206,10 @@ async def get_middleware(llm_model, force_refresh: bool = False) -> list:
             }
         )
 
+        cache_ttl_minutes = await sync_to_async(get_app_settings_or_config)("ai_ops", "middleware_cache_ttl_minutes")
         logger.info(
             f"Cached {len(middlewares)} middleware instances for model {llm_model.name} "
-            f"(expires in {CACHE_TTL_SECONDS}s)"
+            f"(expires in {cache_ttl_minutes} minutes)"
         )
 
         return middlewares
@@ -270,10 +276,14 @@ async def get_middleware_cache_stats() -> dict:
         }
 
         if _middleware_cache["timestamp"]:
+            cache_ttl_minutes = await sync_to_async(get_app_settings_or_config)(
+                "ai_ops", "middleware_cache_ttl_minutes"
+            )
+            cache_ttl_seconds = cache_ttl_minutes * 60
             age = datetime.now() - _middleware_cache["timestamp"]
             stats["age_seconds"] = age.total_seconds()
-            stats["expires_in_seconds"] = max(0, CACHE_TTL_SECONDS - age.total_seconds())
-            stats["is_expired"] = age >= timedelta(seconds=CACHE_TTL_SECONDS)
+            stats["expires_in_seconds"] = max(0, cache_ttl_seconds - age.total_seconds())
+            stats["is_expired"] = age >= timedelta(seconds=cache_ttl_seconds)
         else:
             stats["age_seconds"] = None
             stats["expires_in_seconds"] = None

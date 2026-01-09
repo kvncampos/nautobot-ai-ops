@@ -1,13 +1,17 @@
 """API views for ai_ops."""
 
+from typing import Optional
+
 import httpx
 from asgiref.sync import sync_to_async
 from nautobot.apps.api import NautobotModelViewSet
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from ai_ops import filters, models
 from ai_ops.api import serializers
+from ai_ops.constants.middleware_schemas import get_default_config_for_middleware
 from ai_ops.helpers.common.enums import NautobotEnvironment
 from ai_ops.helpers.common.helpers import get_environment
 
@@ -37,6 +41,27 @@ class MiddlewareTypeViewSet(NautobotModelViewSet):  # pylint: disable=too-many-a
     queryset = models.MiddlewareType.objects.all()
     serializer_class = serializers.MiddlewareTypeSerializer
     filterset_class = filters.MiddlewareTypeFilterSet
+
+    @action(detail=True, methods=["get"], url_path="default-config")
+    def default_config(self, request: Request, pk: Optional[str] = None) -> Response:
+        """Get the default configuration for a specific middleware type.
+
+        Args:
+            request: HTTP request object
+            pk: Primary key of the middleware type
+
+        Returns:
+            Response: JSON response with default configuration for the middleware type
+        """
+        middleware_type = self.get_object()
+        default_config = get_default_config_for_middleware(middleware_type.name)
+
+        return Response(
+            {
+                "middleware_type": middleware_type.name,
+                "default_config": default_config,
+            }
+        )
 
 
 class LLMMiddlewareViewSet(NautobotModelViewSet):  # pylint: disable=too-many-ancestors

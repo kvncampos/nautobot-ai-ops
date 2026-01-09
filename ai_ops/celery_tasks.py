@@ -15,10 +15,49 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 import httpx
-from django.conf import settings
+from nautobot.apps.config import get_app_settings_or_config
 from nautobot.core.celery import app
 
 logger = logging.getLogger(__name__)
+
+
+@app.task
+def cleanup_expired_chat_sessions():
+    """Clean up expired chat sessions from MemorySaver based on TTL configuration.
+
+    Runs periodically to remove chat sessions older than the configured
+    chat_session_ttl_minutes (default: 5 minutes) plus a 30-second grace period.
+
+    The grace period prevents race conditions where the frontend and backend
+    might have slightly different clocks or timing.
+
+    Returns:
+        dict: Cleanup results with processed/deleted counts and TTL configuration
+    """
+    try:
+        from ai_ops.checkpointer import cleanup_expired_checkpoints
+
+        # Get TTL from Constance config
+        ttl_minutes = get_app_settings_or_config("ai_ops", "chat_session_ttl_minutes")
+
+        logger.info(f"Starting chat session cleanup (TTL: {ttl_minutes} minutes)")
+
+        # Perform cleanup
+        result = cleanup_expired_checkpoints(ttl_minutes=ttl_minutes)
+
+        if result.get("success"):
+            logger.info(
+                f"Chat session cleanup completed: processed {result['processed_count']} sessions, "
+                f"deleted {result['deleted_count']} expired sessions (TTL: {ttl_minutes} minutes)"
+            )
+        else:
+            logger.error(f"Chat session cleanup failed: {result.get('error')}")
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Failed to cleanup expired chat sessions: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
 
 
 @app.task
@@ -45,9 +84,8 @@ def cleanup_old_checkpoints():
     try:
         from ai_ops.checkpointer import get_redis_connection
 
-        # Get retention days from plugin config
-        app_config = settings.PLUGINS_CONFIG.get("ai_ops", {})
-        retention_days = app_config.get("checkpoint_retention_days", 7)
+        # Get retention days from Constance config
+        retention_days = get_app_settings_or_config("ai_ops", "checkpoint_retention_days")
 
         # Calculate retention period in seconds
         retention_seconds = retention_days * 86400

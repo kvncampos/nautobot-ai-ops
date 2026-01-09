@@ -61,9 +61,93 @@ MCP (Model Context Protocol) servers extend the capabilities of your AI agent by
 4. Click **Create** to save the server
 
 !!! info
-    MCP servers are optional. The AI Chat Assistant will work without them, but MCP servers can provide additional capabilities like code execution, file access, or integration with external systems.
+    MCP servers are **optional**. The AI Chat Assistant works with just a default LLM model configured. MCP servers provide additional capabilities like code execution, file access, or integration with external systems when needed.
 
-### Step 4: Use the AI Chat Assistant
+### Step 4: Configure Middleware (Optional)
+
+Middleware can be applied to LLM models to add capabilities like PII redaction, logging, retries, or custom processing. Each middleware type has a pre-configured default configuration that you can customize.
+
+#### Adding Middleware to a Model
+
+1. Navigate to **AI Platform > Configuration > LLM Middleware**
+2. Click **+ Add** to create a new middleware instance
+3. Fill in the required fields:
+   - **LLM Model**: Select the model to apply this middleware to
+   - **Middleware Type**: Choose from available middleware types (PIIMiddleware, RetryMiddleware, etc.)
+   - **Priority**: Set execution order (lower numbers execute first, default: 100)
+   - **Enabled**: Check to enable the middleware
+   - **Config**: JSON configuration for the middleware
+
+4. Click **Create** to save the middleware
+
+#### Understanding the Config Field
+
+When you select a **Middleware Type**, an **Example Config** appears showing all available configuration parameters:
+
+```json
+{
+  "parameter1": "default_value",
+  "parameter2": false,
+  "parameter3": 10
+}
+```
+
+**You can:**
+
+- Leave **Config** empty to use default values
+- Copy the example and modify only the parameters you need
+- Start with an empty object `{}` and add only the parameters you want to customize
+
+!!! tip "Configuration Best Practices"
+    - The example config shows **all available parameters** for reference
+    - You don't need to specify parameters if you're happy with the defaults
+    - Only include parameters you want to override
+    - Invalid JSON will be rejected with a helpful error message
+
+#### Common Middleware Examples
+
+**PIIMiddleware** - Redact sensitive information:
+```json
+{
+  "pii_type": "email",
+  "strategy": "redact",
+  "detector": "builtin",
+  "apply_to_input": true,
+  "apply_to_output": false,
+  "apply_to_tool_results": false
+}
+```
+
+**ModelRetryMiddleware** - Add retry logic:
+```json
+{
+  "max_attempts": 3,
+  "initial_interval": 1.0,
+  "backoff_factor": 2.0,
+  "max_interval": 10.0
+}
+```
+
+**SummarizationMiddleware** - Automatic conversation summarization:
+```json
+{
+  "token_limit": 1000,
+  "summary_model": "gpt-4o-mini"
+}
+```
+
+#### Middleware Execution Order
+
+Middleware executes in priority order (lowest to highest):
+
+1. Priority 10: Input validation
+2. Priority 20: PII redaction
+3. Priority 30: Logging
+4. Priority 40: Retry logic
+
+Multiple middleware instances can have the same priority.
+
+### Step 5: Use the AI Chat Assistant
 
 Now you're ready to use the AI Chat Assistant:
 
@@ -72,9 +156,25 @@ Now you're ready to use the AI Chat Assistant:
 3. Press **Enter** or click the **Send** button
 4. The AI agent will process your message and respond
 
-The chat interface maintains conversation history, allowing for contextual multi-turn conversations.
+**Chat Session Behavior:**
 
-### Step 5: Monitor and Maintain
+- **Conversation History**: The chat maintains context within a session for multi-turn conversations
+- **Session Expiry**: Chat sessions automatically expire after a period of inactivity (default: 5 minutes)
+- **Storage**: Messages are stored in your browser's localStorage for continuity across page refreshes
+- **Privacy**: Chat history is session-based and automatically cleaned up - nothing is permanently stored
+- **Manual Clear**: Click the "Clear History" button to immediately clear the conversation
+
+!!! tip "Session TTL Configuration"
+    Administrators can adjust the chat session timeout in `nautobot_config.py`:
+    ```python
+    PLUGINS_CONFIG = {
+        "ai_ops": {
+            "chat_session_ttl_minutes": 10,  # Extend to 10 minutes
+        }
+    }
+    ```
+
+### Step 6: Monitor and Maintain
 
 #### Check MCP Server Health
 
@@ -85,17 +185,28 @@ MCP server health is automatically monitored. You can view the status:
 3. Servers with "Healthy" status are actively used by the agent
 4. Failed servers will be automatically excluded from agent operations
 
-#### Schedule Checkpoint Cleanup
+#### Automatic Cleanup Jobs
 
-To prevent Redis from accumulating old conversation data:
+The app automatically schedules background jobs to maintain system health:
+
+**Chat Session Cleanup** (Runs every 5 minutes)
+- Removes expired chat sessions from memory based on configured TTL
+- Prevents memory accumulation from inactive sessions
+- No user action required - fully automatic
+
+**Checkpoint Cleanup** (Runs hourly)
+- Cleans up old Redis checkpoints if using persistent storage
+- Only applies when migrated from MemorySaver to Redis/PostgreSQL
+- Configurable retention period (default: 7 days)
+
+You can view and manually trigger these jobs:
 
 1. Navigate to **Jobs > Jobs**
-2. Find the job **AI Agents > Cleanup Old Checkpoints**
-3. Click **Run Job Now** to run it manually, or
-4. Click **Schedule Job** to set up automatic recurring execution
-
-!!! tip
-    Schedule the cleanup job to run daily or weekly depending on your usage patterns and storage constraints.
+2. Look for jobs under **AI Agents**:
+   - **Cleanup Expired Chat Sessions**
+   - **Cleanup Old Checkpoints**
+3. Click **Run Job Now** to run manually
+4. Jobs are automatically scheduled - no additional configuration needed
 
 ## What are the next steps?
 

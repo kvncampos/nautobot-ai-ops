@@ -78,18 +78,83 @@ sudo systemctl restart nautobot nautobot-worker nautobot-scheduler
 
 ## App Configuration
 
-The AI Ops App requires minimal configuration in `nautobot_config.py`. The app uses Nautobot's existing infrastructure (PostgreSQL, Redis) and doesn't require additional plugin settings.
+The AI Ops App requires minimal configuration in `nautobot_config.py`. The app uses Nautobot's existing infrastructure (PostgreSQL, Redis) and supports optional configuration for chat session management.
 
 ```python
 # In your nautobot_config.py
 PLUGINS = ["ai_ops"]
 
-# PLUGINS_CONFIG = {
-#   "ai_ops": {
-#     # No additional configuration required
-#   }
-# }
+PLUGINS_CONFIG = {
+    "ai_ops": {
+        # Optional: Configure chat session TTL (Time-To-Live) in minutes
+        # Chat sessions expire after this period of inactivity or message age
+        # Default: 5 minutes
+        "chat_session_ttl_minutes": 5,
+        
+        # Optional: Configure checkpoint retention for cleanup jobs
+        # Used by Redis/PostgreSQL checkpoint cleanup (if migrated from MemorySaver)
+        # Default: 7 days
+        "checkpoint_retention_days": 7,
+    }
+}
 ```
+
+### Configuration Options
+
+#### chat_session_ttl_minutes
+
+Controls how long chat sessions persist before automatic cleanup:
+
+- **Frontend**: Messages in browser localStorage are filtered on page load
+- **Backend**: MemorySaver checkpoints are cleaned up every 5 minutes via scheduled job
+- **Inactivity Timer**: Frontend auto-clears chat after this period of no user activity
+- **Default**: 5 minutes
+- **Grace Period**: Adds 30 seconds to prevent race conditions between frontend/backend
+
+**Example Use Cases:**
+- Development/Testing: Set to 1-2 minutes for faster cleanup
+- Production: Set to 10-15 minutes for better user experience
+- High-security environments: Set to 5 minutes or less
+
+```python
+# Example: Extend session to 15 minutes for production
+PLUGINS_CONFIG = {
+    "ai_ops": {
+        "chat_session_ttl_minutes": 15,
+    }
+}
+```
+
+#### checkpoint_retention_days
+
+Controls retention for persistent checkpoint storage (Redis/PostgreSQL):
+
+- **Current Implementation**: Uses MemorySaver (in-memory, session-based)
+- **Future Use**: When migrated to Redis Stack or PostgreSQL checkpointing
+- **Default**: 7 days
+- **Note**: Not currently enforced with MemorySaver implementation
+
+### Adjusting Cleanup Schedule
+
+The chat session cleanup job runs **every 5 minutes by default**. This is separate from the TTL configuration:
+
+- **Cleanup Schedule**: How often the job checks for expired sessions
+- **TTL (chat_session_ttl_minutes)**: What age of sessions to delete
+
+**When to Adjust:**
+
+If you increase `chat_session_ttl_minutes` significantly (e.g., 1+ hours), you should adjust the cleanup schedule to avoid unnecessary checks:
+
+1. Navigate to **Jobs > Scheduled Jobs**
+2. Find **"Chat Session Cleanup"**
+3. Click **Edit**
+4. Update the **Crontab** schedule:
+   - For 1-hour TTL: `0 * * * *` (hourly)
+   - For 6-hour TTL: `0 */6 * * *` (every 6 hours)
+   - For 24-hour TTL: `0 0 * * *` (daily)
+5. Click **Update**
+
+**Recommendation**: Keep cleanup frequency at or below your TTL value for optimal memory management.
 
 ### Database Configuration
 

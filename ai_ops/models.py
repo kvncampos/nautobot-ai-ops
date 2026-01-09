@@ -144,7 +144,7 @@ class LLMModel(PrimaryModel):  # pylint: disable=too-many-ancestors
         help_text="LLM Endpoint URL (e.g., https://your-resource.openai.azure.com/, https://openai.com/api/v1/)",
     )
     api_version = models.CharField(
-        max_length=50, blank=True, default="2024-02-15-preview", help_text="Azure OpenAI API version"
+        max_length=50, blank=True, default="", help_text="Azure OpenAI API version (e.g., 2024-02-15-preview)"
     )
     is_default = models.BooleanField(
         default=False, help_text="Whether this is the default model to use when no model is specified"
@@ -270,6 +270,12 @@ class MiddlewareType(PrimaryModel):  # pylint: disable=too-many-ancestors
         blank=True,
         help_text="Description of what this middleware does",
     )
+    default_config = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Default JSON configuration template for this middleware type. "
+        "This will be used as a starting point when creating new middleware instances.",
+    )
 
     class Meta(PrimaryModel.Meta):
         """Meta class."""
@@ -350,11 +356,6 @@ class LLMMiddleware(PrimaryModel):  # pylint: disable=too-many-ancestors
         default=10,
         validators=[MinValueValidator(1), MaxValueValidator(100)],
         help_text="Execution priority (1-100). Lower values execute first. Ties are broken alphabetically.",
-    )
-    ttl = models.IntegerField(
-        default=300,
-        help_text="Time-to-live for middleware data in seconds (e.g., cache duration)",
-        validators=[MinValueValidator(60)],
     )
 
     class Meta(PrimaryModel.Meta):
@@ -450,4 +451,6 @@ class MCPServer(PrimaryModel):  # pylint: disable=too-many-ancestors
             self.health_check = f"/{self.health_check}"
 
 
-# TODO Add Model that stores AI Agents Conversations upon Button Click or TTL Reached/Cache Cleared.
+# TODO: Explore Redis vs localStorage for multi-session support. Current localStorage approach works for
+# single-session chat but consider Redis/PostgreSQL for persistent multi-user conversations with proper TTL
+# and data retention policies.

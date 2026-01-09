@@ -10,6 +10,7 @@ For persistent storage in production, use langgraph-checkpoint-postgres.
 import logging
 import os
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
 
 import redis
 
@@ -18,6 +19,8 @@ logger = logging.getLogger(__name__)
 # Global singleton MemorySaver instance for conversation persistence
 _memory_saver_instance = None
 _memory_saver_lock = None
+# Global dict to track checkpoint creation timestamps for TTL enforcement
+_checkpoint_timestamps = {}
 
 
 def get_redis_uri() -> str:
@@ -138,7 +141,7 @@ async def clear_checkpointer_for_thread(thread_id: str) -> bool:
     Returns:
         bool: True if thread was cleared, False if thread not found or error occurred
     """
-    global _memory_saver_instance
+    global _memory_saver_instance, _checkpoint_timestamps
 
     if _memory_saver_instance is None:
         logger.warning("No MemorySaver instance exists to clear")
@@ -162,6 +165,9 @@ async def clear_checkpointer_for_thread(thread_id: str) -> bool:
             thread_key = (thread_id,)  # MemorySaver uses tuple key
             if thread_key in _memory_saver_instance.storage:
                 del _memory_saver_instance.storage[thread_key]
+                # Also remove timestamp tracking
+                if thread_key in _checkpoint_timestamps:
+                    del _checkpoint_timestamps[thread_key]
                 logger.info(f"Cleared conversation history for thread {thread_id}")
                 return True
 
@@ -176,6 +182,8 @@ async def clear_checkpointer_for_thread(thread_id: str) -> bool:
                 thread_key = (thread_id,)
                 if thread_key in _memory_saver_instance.storage:
                     del _memory_saver_instance.storage[thread_key]
+                    if thread_key in _checkpoint_timestamps:
+                        del _checkpoint_timestamps[thread_key]
                     logger.info(f"Force-cleared conversation history for thread {thread_id} during shutdown")
                     return True
             return False
@@ -198,7 +206,7 @@ async def reset_checkpointer() -> int:
     """
     import asyncio
 
-    global _memory_saver_instance, _memory_saver_lock
+    global _memory_saver_instance, _memory_saver_lock, _checkpoint_timestamps
 
     if _memory_saver_lock is None:
         _memory_saver_lock = asyncio.Lock()
@@ -217,8 +225,104 @@ async def reset_checkpointer() -> int:
         from langgraph.checkpoint.memory import MemorySaver
 
         _memory_saver_instance = MemorySaver()
+        _checkpoint_timestamps.clear()
         logger.info(f"Reset MemorySaver checkpointer, cleared {thread_count} thread(s)")
         return thread_count
+
+
+def track_checkpoint_creation(thread_id: str):
+    """Track when a checkpoint is created for TTL enforcement.
+
+    Args:
+        thread_id: The thread identifier being tracked
+    """
+    global _checkpoint_timestamps
+    thread_key = (thread_id,)
+    _checkpoint_timestamps[thread_key] = datetime.now()
+    logger.debug(f"Tracked checkpoint creation for thread {thread_id}")
+
+
+def cleanup_expired_checkpoints(ttl_minutes: int = 5) -> dict:
+    """Clean up checkpoints older than the specified TTL.
+
+    This function scans all checkpoints and removes those older than the TTL
+    plus a 30-second grace period to prevent race conditions with the frontend.
+
+    Args:
+        ttl_minutes: Time-to-live in minutes (default: 5)
+
+    Returns:
+        dict: Cleanup results with processed/deleted counts
+    """
+    global _memory_saver_instance, _checkpoint_timestamps
+
+    if _memory_saver_instance is None:
+        logger.warning("No MemorySaver instance exists for cleanup")
+        return {
+            "success": False,
+            "processed_count": 0,
+            "deleted_count": 0,
+            "error": "No MemorySaver instance",
+        }
+
+    try:
+        now = datetime.now()
+        grace_period = timedelta(seconds=30)
+        ttl_threshold = timedelta(minutes=ttl_minutes) + grace_period
+
+        deleted_count = 0
+        processed_count = 0
+
+        if not hasattr(_memory_saver_instance, "storage"):
+            logger.warning("MemorySaver instance has no storage attribute")
+            return {
+                "success": False,
+                "processed_count": 0,
+                "deleted_count": 0,
+                "error": "No storage attribute",
+            }
+
+        # Get list of thread keys to process (copy to avoid modification during iteration)
+        thread_keys = list(_memory_saver_instance.storage.keys())
+
+        for thread_key in thread_keys:
+            processed_count += 1
+
+            # Check if we have timestamp for this thread
+            if thread_key in _checkpoint_timestamps:
+                checkpoint_age = now - _checkpoint_timestamps[thread_key]
+
+                if checkpoint_age > ttl_threshold:
+                    # Remove expired checkpoint
+                    del _memory_saver_instance.storage[thread_key]
+                    del _checkpoint_timestamps[thread_key]
+                    deleted_count += 1
+                    logger.info(f"Removed expired checkpoint {thread_key} (age: {checkpoint_age})")
+            else:
+                # No timestamp - assume it was created now to give it full TTL
+                _checkpoint_timestamps[thread_key] = now
+                logger.debug(f"Added timestamp for existing checkpoint {thread_key}")
+
+        logger.info(
+            f"Checkpoint cleanup completed: processed {processed_count} checkpoints, "
+            f"deleted {deleted_count} expired checkpoints (TTL: {ttl_minutes} minutes)"
+        )
+
+        return {
+            "success": True,
+            "processed_count": processed_count,
+            "deleted_count": deleted_count,
+            "ttl_minutes": ttl_minutes,
+        }
+
+    except Exception as e:
+        logger.error(f"Error during checkpoint cleanup: {e}", exc_info=True)
+        return {
+            "success": False,
+            "processed_count": 0,
+            "deleted_count": 0,
+            "error": str(e),
+        }
 
 
 # TODO: Migrate to persistent checkpointing for production

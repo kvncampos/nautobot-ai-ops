@@ -267,3 +267,113 @@ def get_recommended_priority(middleware_name: str) -> int:
         KeyError: If middleware_name is not recognized
     """
     return MIDDLEWARE_SCHEMAS[middleware_name]["recommended_priority"]
+
+
+# Mapping from middleware type names to their default configurations
+# Based on LangChain middleware documentation
+# Each config includes ALL available parameters with type hints to serve as a complete template
+# Type indicators: "string", "number", "boolean", "array", "object", "null" (for optional fields)
+MIDDLEWARE_TYPE_DEFAULTS = {
+    "SummarizationMiddleware": {
+        "model": "string",  # Required: Model to use for summarization (e.g., "openai:gpt-4o-mini")
+        "trigger": ["string", "number"],  # When to trigger summarization [unit, value]
+        "keep": ["string", "number"],  # How many recent messages to keep
+        "token_counter": "callable|null",  # Optional: Custom token counter function
+        "summary_prompt": "string|null",  # Optional: Custom summarization prompt
+        "trim_tokens_to_summarize": "number|null",  # Optional: Max tokens to include in summary
+    },
+    "HumanInTheLoopMiddleware": {
+        "interrupt_on": "object",  # Dict mapping event types to interrupt conditions
+        "description_prefix": "string",  # Prefix for interrupt descriptions
+    },
+    "ModelCallLimitMiddleware": {
+        "thread_limit": "number|null",  # Max model calls per thread (null = unlimited)
+        "run_limit": "number|null",  # Max model calls per run (null = unlimited)
+        "exit_behavior": "string",  # What to do when limit reached: "end" or "continue"
+    },
+    "ToolCallLimitMiddleware": {
+        "tool_name": "string|null",  # Specific tool to limit (null = all tools)
+        "thread_limit": "number|null",  # Max tool calls per thread (null = unlimited)
+        "run_limit": "number|null",  # Max tool calls per run (null = unlimited)
+        "exit_behavior": "string",  # What to do when limit reached: "end" or "continue"
+    },
+    "ModelFallbackMiddleware": {
+        "first_model": "string",  # Required: Primary model to try first
+        "fallback_models": "array",  # List of fallback models to try in order
+    },
+    "PIIMiddleware": {
+        "pii_type": "string",  # Required: Type of PII (email, credit_card, ip, mac_address, url, or custom)
+        "strategy": "string",  # How to handle PII: block, redact, mask, hash
+        "detector": "string|callable|null",  # Optional: Custom detector function or regex pattern
+        "apply_to_input": "boolean",  # Check user messages before model call
+        "apply_to_output": "boolean",  # Check AI messages after model call
+        "apply_to_tool_results": "boolean",  # Check tool results after execution
+    },
+    "TodoListMiddleware": {
+        "system_prompt": "string|null",  # Optional: Custom system prompt for todo management
+        "tool_description": "string|null",  # Optional: Custom tool description
+    },
+    "LLMToolSelectorMiddleware": {
+        "model": "string|null",  # Optional: Model to use for tool selection (defaults to agent's model)
+        "system_prompt": "string|null",  # Optional: Custom system prompt for tool selection
+        "max_tools": "number|null",  # Max number of tools to select (null = no limit)
+        "always_include": "array",  # List of tool names to always include
+    },
+    "ToolRetryMiddleware": {
+        "max_retries": "number",  # Maximum number of retry attempts
+        "tools": "array|null",  # Specific tools to retry (null = all tools)
+        "retry_on": "array|null",  # Optional: List of exception types to retry on
+        "on_failure": "string",  # What to do after max retries: "continue", "raise", "end"
+        "backoff_factor": "number",  # Exponential backoff multiplier
+        "initial_delay": "number",  # Initial delay in seconds before first retry
+        "max_delay": "number",  # Maximum delay between retries in seconds
+        "jitter": "boolean",  # Add random jitter to delay to avoid thundering herd
+    },
+    "ModelRetryMiddleware": {
+        "max_retries": "number",  # Maximum number of retry attempts
+        "retry_on": "array|null",  # Optional: List of exception types to retry on
+        "on_failure": "string",  # What to do after max retries: "continue", "raise", "end"
+        "backoff_factor": "number",  # Exponential backoff multiplier
+        "initial_delay": "number",  # Initial delay in seconds before first retry
+        "max_delay": "number",  # Maximum delay between retries in seconds
+        "jitter": "boolean",  # Add random jitter to delay to avoid thundering herd
+    },
+    "LLMToolEmulator": {
+        "tools": "array|null",  # Required: Tools to emulate (null = emulate all available tools)
+        "model": "string",  # Required: Model to use for emulation (e.g., "anthropic:claude-sonnet-4-5")
+    },
+    "ContextEditingMiddleware": {
+        "edits": "array",  # List of edit configurations with structure: [{"trigger": number, "clear_at_least": number, "keep": number, "clear_tool_inputs": boolean, "exclude_tools": array, "placeholder": string}]
+        "token_count_method": "string|callable",  # Method to count tokens: "approximate" or custom function
+    },
+    "ShellToolMiddleware": {
+        "workspace_root": "string|null",  # Root directory for shell commands (null = temp directory)
+        "startup_commands": "array",  # List of commands to run on startup
+        "shutdown_commands": "array",  # List of commands to run on shutdown
+        "execution_policy": "callable|null",  # Optional: Policy controlling which commands can be executed
+        "redaction_rules": "array|null",  # Optional: Rules for redacting sensitive info from output
+        "tool_name": "string",  # Name of the shell tool
+        "shell": "string|null",  # Optional: Shell to use (defaults to system shell)
+        "timeout": "number|null",  # Optional: Command timeout in seconds
+        "max_output_length": "number|null",  # Optional: Max length of command output to return
+    },
+    "FilesystemFileSearchMiddleware": {
+        "root_path": "string",  # Required: Root directory path for file searches
+        "use_ripgrep": "boolean",  # Use ripgrep for faster searches if available
+        "max_file_size_mb": "number",  # Maximum file size to search (in MB)
+        "excluded_dirs": "array|null",  # Optional: List of directory patterns to exclude
+        "excluded_files": "array|null",  # Optional: List of file patterns to exclude
+    },
+}
+
+
+def get_default_config_for_middleware(middleware_type_name: str) -> dict:
+    """Get the default configuration for a middleware type to pre-populate forms.
+
+    Args:
+        middleware_type_name: Name of the middleware type (e.g., 'SummarizationMiddleware')
+
+    Returns:
+        dict: Default configuration dictionary for the middleware
+    """
+    return MIDDLEWARE_TYPE_DEFAULTS.get(middleware_type_name, {})

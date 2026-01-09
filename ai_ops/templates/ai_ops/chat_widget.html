@@ -37,7 +37,7 @@
                                     <input type="text"
                                            id="chat-input"
                                            class="form-control"
-                                           placeholder="{% if chat_enabled %}Type your message here...{% elif not has_default_model and not has_healthy_mcp %}Chat disabled - configure default LLM model and healthy MCP server{% elif not has_default_model %}Chat disabled - configure default LLM model first{% elif not has_healthy_mcp %}Chat disabled - no healthy MCP servers available{% else %}Chat disabled{% endif %}"
+                                           placeholder="{% if chat_enabled %}Type your message here...{% elif not has_default_model %}Chat disabled - configure default LLM model first{% else %}Chat disabled{% endif %}"
                                            style="height: 45px;"
                                            {% if not chat_enabled %}disabled{% endif %}>
                                     <span class="input-group-btn">
@@ -68,6 +68,7 @@
         window.HAS_DEFAULT_MODEL = {{ has_default_model|yesno:"true,false" }};
         window.HAS_HEALTHY_MCP = {{ has_healthy_mcp|yesno:"true,false" }};
         window.HAS_ANY_MCP = {{ has_any_mcp|yesno:"true,false" }};
+        window.CHAT_TTL_MINUTES = {{ chat_session_ttl_minutes }};
     </script>
     <script src="{% static 'ai_ops/js/chat_widget.js' %}"></script>
 {% endblock %}
