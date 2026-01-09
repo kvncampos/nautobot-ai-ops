@@ -241,24 +241,27 @@ class LLMMiddlewareForm(NautobotModelForm):  # pylint: disable=too-many-ancestor
         """Initialize form and populate default config display."""
         super().__init__(*args, **kwargs)
 
-        # Always show default_config_display field
-        # Remove and re-add default_config_display to control field order
-        default_config_field = self.fields.pop("default_config_display")
+        # Reorder fields to place default_config_display after middleware field
+        # Using OrderedDict pattern for explicit field ordering
+        if "default_config_display" in self.fields and "middleware" in self.fields:
+            # Extract the default_config_display field
+            default_config_field = self.fields.pop("default_config_display")
 
-        # Update label and help text
-        default_config_field.label = "Example Configuration (Read-Only)"
-        default_config_field.help_text = (
-            "This shows the recommended configuration template for the selected middleware type. "
-            "You can copy this to the Config field below, or leave Config empty and populate it when editing."
-        )
+            # Update label and help text
+            default_config_field.label = "Example Configuration (Read-Only)"
+            default_config_field.help_text = (
+                "This shows the recommended configuration template for the selected middleware type. "
+                "You can copy this to the Config field below, or leave Config empty and populate it when editing."
+            )
 
-        # Re-insert it after the middleware field
-        new_fields = {}
-        for name, field in self.fields.items():
-            new_fields[name] = field
-            if name == "middleware":
-                new_fields["default_config_display"] = default_config_field
-        self.fields = new_fields
+            # Rebuild fields dict with default_config_display inserted after middleware
+            ordered_fields = {}
+            for field_name, field in self.fields.items():
+                ordered_fields[field_name] = field
+                if field_name == "middleware":
+                    ordered_fields["default_config_display"] = default_config_field
+
+            self.fields = ordered_fields
 
         # Update config help text
         self.fields["config"].help_text = (
