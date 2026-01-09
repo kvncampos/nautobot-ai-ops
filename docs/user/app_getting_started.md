@@ -10,38 +10,72 @@ To install the App, please follow the instructions detailed in the [Installation
 
 After installing the app, follow these steps to get started:
 
-### Step 1: Configure an LLM Model
+### Step 1: Configure an LLM Provider and Model
 
-Before you can use the AI Chat Assistant, you need to configure at least one LLM model.
+Before you can use the AI Chat Assistant, you need to configure at least one LLM provider and model.
 
-1. Navigate to **AI Platform > Configuration > LLM Models** in the Nautobot menu
-2. Click the **+ Add** button to create a new model
-3. Fill in the required fields:
-   - **Name**: Azure deployment name (e.g., `gpt-4o`, `gpt-4-turbo`)
+**Quick Start Options:**
+
+**Option A: Local Development with Ollama (Recommended for testing)**
+1. Install Ollama: `curl -fsSL https://ollama.com/install.sh | sh`
+2. Pull a model: `ollama pull llama2`
+3. Navigate to **AI Platform > Configuration > LLM Providers** and create an Ollama provider
+4. Navigate to **AI Platform > Configuration > LLM Models** and create a model using the Ollama provider
+5. No API keys needed - completely free!
+
+**Option B: Production with Azure OpenAI**
+1. Create Azure OpenAI resource and deploy a model
+2. Navigate to **AI Platform > Configuration > LLM Providers** and create an Azure AI provider
+3. Create a Secret in Nautobot with your Azure API key
+4. Navigate to **AI Platform > Configuration > LLM Models** and create a model using the Azure AI provider
+
+**Option C: Production with OpenAI**
+1. Get an OpenAI API key from https://platform.openai.com
+2. Navigate to **AI Platform > Configuration > LLM Providers** and create an OpenAI provider
+3. Create a Secret in Nautobot with your OpenAI API key
+4. Navigate to **AI Platform > Configuration > LLM Models** and create a model using the OpenAI provider
+
+For comprehensive configuration instructions for all providers (Ollama, OpenAI, Azure AI, Anthropic, HuggingFace, Custom), see the **[LLM Provider Configuration Guide](provider_configuration.md)**.
+
+### Basic Model Configuration
+
+Navigate to **AI Platform > Configuration > LLM Models** and create a model:
+
+   - **LLM Provider**: Select the provider (Ollama, OpenAI, Azure AI, Anthropic, HuggingFace, Custom)
+   - **Name**: Model name (e.g., `gpt-4o`, `llama2`, `claude-3-opus-20240229`)
    - **Description**: A description of the model's purpose and capabilities
-   - **Model Secret Key**: Name of the Nautobot Secret containing your Azure OpenAI API key
-   - **Azure Endpoint**: Your Azure OpenAI endpoint URL (e.g., `https://your-resource.openai.azure.com/`)
-   - **API Version**: API version (default: `2024-02-15-preview`)
+   - **Model Secret Key**: Name of the Nautobot Secret containing the API key (leave empty for Ollama)
+   - **Endpoint**: LLM endpoint URL (varies by provider)
+   - **API Version**: API version if required (e.g., `2024-02-15-preview` for Azure)
    - **Is Default**: Check this box to make this the default model
-   - **Temperature**: Set the model temperature (0.0 for deterministic, higher for creative)
-
-4. Click **Create** to save the model
+   - **Temperature**: Set the model temperature (0.0 for deterministic, 0.7-1.0 for creative)
+   - **Cache TTL**: Cache time-to-live in seconds (default: 300)
 
 !!! tip
     For your first model, mark it as the default model by checking the "Is Default" checkbox. This ensures the chat assistant knows which model to use.
 
-### Step 2: Create Secrets for API Keys (Production)
+!!! info "Provider-Specific Examples"
+    - **Ollama**: Name: `llama2`, Endpoint: `http://localhost:11434`, No secret needed
+    - **OpenAI**: Name: `gpt-4o`, Endpoint: `https://api.openai.com/v1`, Secret: `openai_api_key`
+    - **Azure AI**: Name: `gpt-4o`, Endpoint: `https://your-resource.openai.azure.com/`, Secret: `azure_api_key`
+    - **Anthropic**: Name: `claude-3-opus-20240229`, Endpoint: `https://api.anthropic.com`, Secret: `anthropic_api_key`
 
-For production environments, you should store API keys securely using Nautobot Secrets:
+**For comprehensive provider configuration with detailed examples, see the [LLM Provider Configuration Guide](provider_configuration.md).**
+
+### Step 2: Create Secrets for API Keys (if needed)
+
+For cloud-based providers (OpenAI, Azure AI, Anthropic, HuggingFace), you should store API keys securely using Nautobot Secrets:
 
 1. Navigate to **Secrets > Secrets** in Nautobot
-2. Create a new Secret with your Azure OpenAI API key
-3. Name the secret (e.g., `azure_gpt4o_api_key`)
+2. Create a new Secret with your provider's API key
+3. Name the secret descriptively (e.g., `openai_api_key`, `azure_gpt4o_api_key`, `anthropic_api_key`)
 4. Configure the secret provider and value
 5. Use this secret name in your LLM Model configuration
 
 !!! note
-    In LAB/development environments, the app can use environment variables for API keys instead of Secrets.
+    - **Ollama** does not require API keys or secrets
+    - In LAB/development environments, the app can use environment variables for API keys instead of Secrets
+    - For production, always use Nautobot Secrets for better security
 
 ### Step 3: Configure MCP Servers (Optional)
 
@@ -63,9 +97,21 @@ MCP (Model Context Protocol) servers extend the capabilities of your AI agent by
 !!! info
     MCP servers are **optional**. The AI Chat Assistant works with just a default LLM model configured. MCP servers provide additional capabilities like code execution, file access, or integration with external systems when needed.
 
+**For comprehensive MCP server configuration with implementation examples, see the [MCP Server Configuration Guide](mcp_server_configuration.md).**
+
 ### Step 4: Configure Middleware (Optional)
 
-Middleware can be applied to LLM models to add capabilities like PII redaction, logging, retries, or custom processing. Each middleware type has a pre-configured default configuration that you can customize.
+Middleware can be applied to LLM models to add capabilities like caching, logging, retries, PII redaction, or custom processing.
+
+!!! tip
+    Start without middleware for your first setup. Add middleware later as you identify specific needs:
+    - **CacheMiddleware**: Reduce API costs by caching responses
+    - **RetryMiddleware**: Handle transient failures automatically
+    - **LoggingMiddleware**: Track requests for debugging and monitoring
+    - **ValidationMiddleware**: Security validation of inputs/outputs
+    - **PIIRedactionMiddleware**: Detect and redact sensitive information
+
+**For comprehensive middleware configuration with examples, see the [Middleware Configuration Guide](middleware_configuration.md).**
 
 #### Adding Middleware to a Model
 
