@@ -5,7 +5,7 @@ import sys
 from importlib import metadata
 from pathlib import Path
 
-from nautobot.apps import NautobotAppConfig, nautobot_database_ready
+from nautobot.apps import ConstanceConfigItem, NautobotAppConfig, nautobot_database_ready
 
 try:
     __version__ = metadata.version("nautobot-ai-ops")
@@ -44,6 +44,23 @@ class AiOpsConfig(NautobotAppConfig):
     base_url = "ai-ops"
     required_settings = []
     default_settings = {}
+    constance_config = {
+        "chat_session_ttl_minutes": ConstanceConfigItem(
+            default=5,
+            help_text="Time-to-live (TTL) for chat sessions in minutes. Chat sessions automatically expire after this period of inactivity or message age. Applies to both frontend (localStorage) and backend (MemorySaver) cleanup. Valid range: 1-1440 minutes (1 minute to 24 hours).",
+            field_type=int,
+        ),
+        "checkpoint_retention_days": ConstanceConfigItem(
+            default=7,
+            help_text="Retention period in days for conversation checkpoints. Used by cleanup jobs when migrated to Redis Stack or PostgreSQL persistent storage. Not enforced for current MemorySaver implementation which uses chat_session_ttl_minutes instead. Valid range: 1-365 days.",
+            field_type=int,
+        ),
+        "middleware_cache_ttl_minutes": ConstanceConfigItem(
+            default=5,
+            help_text="Cache time-to-live in minutes for LLM middleware configurations. Middleware instances are cached to avoid repeated database queries. Valid range: 1-60 minutes.",
+            field_type=int,
+        ),
+    }
     docs_view_name = "plugins:ai_ops:docs"
     searchable_models = ["llmmodel", "mcpserver"]
 
@@ -55,6 +72,7 @@ class AiOpsConfig(NautobotAppConfig):
             assign_mcp_server_statuses,
             create_default_llm_providers,
             create_default_middleware_types,
+            setup_chat_session_cleanup_schedule,
             setup_checkpoint_cleanup_schedule,
             setup_mcp_health_check_schedule,
             setup_middleware_cache_jobs,
@@ -68,6 +86,7 @@ class AiOpsConfig(NautobotAppConfig):
         nautobot_database_ready.connect(setup_checkpoint_cleanup_schedule, sender=self)
         nautobot_database_ready.connect(setup_middleware_cache_jobs, sender=self)
         nautobot_database_ready.connect(setup_mcp_health_check_schedule, sender=self)
+        nautobot_database_ready.connect(setup_chat_session_cleanup_schedule, sender=self)
 
         # Note: Periodic tasks are handled via Nautobot Jobs (ai_agents.jobs).
         # These jobs can be scheduled through the Nautobot UI for automatic execution.

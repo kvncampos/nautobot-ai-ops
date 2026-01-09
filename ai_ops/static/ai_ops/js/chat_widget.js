@@ -4,7 +4,9 @@
     // Chat state management
     let chatHistory = [];
     let inactivityTimer = null;
-    const INACTIVITY_TIMEOUT = 300000; // 5 minutes in milliseconds
+    // Get TTL from server config (default 5 minutes if not set)
+    const INACTIVITY_TIMEOUT = (window.CHAT_TTL_MINUTES || 5) * 60000; // Convert minutes to milliseconds
+    const GRACE_PERIOD = 30000; // 30 seconds grace period
     
     // DOM elements
     const chatMessages = document.getElementById('chat-messages');
@@ -24,7 +26,26 @@
         try {
             const saved = localStorage.getItem('nautobot_gpt_chat_history');
             if (saved) {
-                chatHistory = JSON.parse(saved);
+                const parsed = JSON.parse(saved);
+                const now = new Date();
+                const ttlMs = (window.CHAT_TTL_MINUTES || 5) * 60000 + GRACE_PERIOD;
+                
+                // Filter out messages older than TTL + grace period
+                const originalLength = parsed.length;
+                chatHistory = parsed.filter(msg => {
+                    const messageAge = now - new Date(msg.timestamp);
+                    return messageAge < ttlMs;
+                });
+                
+                // If messages were filtered out due to expiry, clear backend and show message
+                if (chatHistory.length < originalLength && chatHistory.length === 0) {
+                    const expiredMinutes = window.CHAT_TTL_MINUTES || 5;
+                    clearChatWithMessage(`Previous conversation expired (older than ${expiredMinutes} minutes).`);
+                } else if (chatHistory.length < originalLength) {
+                    // Some messages expired, update storage
+                    saveChatHistory();
+                }
+                
                 renderMessages();
             }
         } catch (e) {
@@ -141,8 +162,9 @@
             clearTimeout(inactivityTimer);
         }
         inactivityTimer = setTimeout(() => {
-            // Auto-clear after 5 minutes of inactivity
-            clearChatWithMessage('Session timed out after 5 minutes of inactivity.');
+            // Auto-clear after configured minutes of inactivity
+            const ttlMinutes = window.CHAT_TTL_MINUTES || 5;
+            clearChatWithMessage(`Session timed out after ${ttlMinutes} minutes of inactivity.`);
         }, INACTIVITY_TIMEOUT);
     }
     
@@ -254,16 +276,11 @@
         } else {
             // Determine what's missing and show appropriate error message
             const hasDefaultModel = window.HAS_DEFAULT_MODEL !== undefined ? window.HAS_DEFAULT_MODEL : true;
-            const hasHealthyMcp = window.HAS_HEALTHY_MCP !== undefined ? window.HAS_HEALTHY_MCP : true;
             
             let errorMessage = "Chat is currently disabled. ";
             
-            if (!hasDefaultModel && !hasHealthyMcp) {
-                errorMessage += "Please configure a default LLM model and ensure at least one MCP server has a 'Healthy' status to enable the AI Chat Agent.";
-            } else if (!hasDefaultModel) {
+            if (!hasDefaultModel) {
                 errorMessage += "Please configure a default LLM model to enable the AI Chat Agent.";
-            } else if (!hasHealthyMcp) {
-                errorMessage += "No healthy MCP servers are available. Please ensure at least one MCP server has a 'Healthy' status to enable the AI Chat Agent.";
             } else {
                 errorMessage += "Please check your configuration.";
             }

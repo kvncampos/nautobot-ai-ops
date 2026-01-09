@@ -241,16 +241,6 @@ class LLMMiddlewareTestCase(TestCase, TestDataMixin):
             )
             middleware.full_clean()
 
-    def test_llm_middleware_ttl_minimum(self):
-        """Test that ttl has minimum validator."""
-        with self.assertRaises(ValidationError):
-            middleware = LLMMiddleware(
-                llm_model=self.model,
-                middleware=self.middleware_type,
-                ttl=30,  # Less than minimum of 60
-            )
-            middleware.full_clean()
-
 
 class MCPServerTestCase(TestCase, TestDataMixin):
     """Test cases for MCPServer model."""

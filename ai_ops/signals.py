@@ -9,6 +9,7 @@ from nautobot.extras.models import Status
 from nautobot.extras.models.jobs import Job
 
 from ai_ops import models
+from ai_ops.constants.middleware_schemas import get_default_config_for_middleware
 from ai_ops.helpers.job_utils import create_or_update_scheduled_job, enable_job_and_get_details
 
 logger = logging.getLogger(__name__)
@@ -122,6 +123,37 @@ def setup_mcp_health_check_schedule(sender, **kwargs):  # pylint: disable=unused
 
     except Exception as e:
         logger.error(f"Failed to setup MCP health check schedule: {e}")
+
+
+def setup_chat_session_cleanup_schedule(sender, **kwargs):  # pylint: disable=unused-argument
+    """Enable and schedule the chat session cleanup job after migrations."""
+    try:
+        # Enable job and get all necessary details
+        job, job_user, default_queue, task_class_path = enable_job_and_get_details(
+            module_name="ai_ops.jobs.chat_session_cleanup",
+            job_class_name="CleanupExpiredChatsJob",
+        )
+
+        if not job:
+            return
+
+        # Create or update the scheduled job
+        # Note: This schedule (how often cleanup runs) is separate from chat_session_ttl_minutes (what age to delete).
+        # Default every-5-minutes is optimal for typical TTLs of 5-15 minutes.
+        # If you significantly increase TTL via Constance (e.g., 1+ hours), consider adjusting this schedule
+        # via Jobs UI to match (e.g., hourly) to avoid unnecessary cleanup checks.
+        create_or_update_scheduled_job(
+            schedule_name="Chat Session Cleanup",
+            job=job,
+            job_user=job_user,
+            default_queue=default_queue,
+            task_class_path=task_class_path,
+            crontab="*/5 * * * *",  # Run every 5 minutes
+            description="Automatically clean up expired chat sessions based on configured TTL (chat_session_ttl_minutes)",
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to setup chat session cleanup schedule: {e}")
 
 
 def create_default_llm_providers(sender, apps=global_apps, **kwargs):  # pylint: disable=unused-argument
@@ -238,11 +270,22 @@ def create_default_middleware_types(sender, apps=global_apps, **kwargs):  # pyli
     ]
 
     for config in middleware_configs:
-        models.MiddlewareType.objects.get_or_create(
+        middleware_type, created = models.MiddlewareType.objects.get_or_create(
             name=config["name"],
             defaults={
                 "is_custom": False,
                 "description": config["description"],
+                "default_config": get_default_config_for_middleware(config["name"]),
             },
         )
-        logger.info(f"Created or verified middleware type: {config['name']}")
+
+        # Update default_config if it's empty (for existing records)
+        if not middleware_type.default_config:
+            middleware_type.default_config = get_default_config_for_middleware(config["name"])
+            middleware_type.save(update_fields=["default_config"])
+            logger.info(f"Updated default_config for middleware type: {config['name']}")
+
+        if created:
+            logger.info(f"Created middleware type: {config['name']}")
+        else:
+            logger.debug(f"Verified middleware type: {config['name']}")

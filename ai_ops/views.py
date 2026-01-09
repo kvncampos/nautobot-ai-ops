@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils.decorators import method_decorator
+from nautobot.apps.config import get_app_settings_or_config
 from nautobot.apps.ui import Button, ButtonColorChoices, ObjectDetailContent, ObjectFieldsPanel, SectionChoices
 from nautobot.apps.views import GenericView, NautobotUIViewSet
 
@@ -121,6 +122,10 @@ class LLMMiddlewareUIViewSet(NautobotUIViewSet):
     serializer_class = serializers.LLMMiddlewareSerializer
     table_class = tables.LLMMiddlewareTable
 
+    # Custom templates with JavaScript for dynamic config population
+    create_template_name = "ai_ops/llmmiddleware_create.html"
+    update_template_name = "ai_ops/llmmiddleware_edit.html"
+
     object_detail_content = ObjectDetailContent(
         panels=[
             ObjectFieldsPanel(
@@ -148,8 +153,11 @@ class AIChatBotGenericView(GenericView):
         # Check if there are any MCP servers at all
         has_any_mcp = await sync_to_async(models.MCPServer.objects.exists)()
 
-        # Chat is enabled only if we have both a default model AND at least one healthy MCP server
-        chat_enabled = has_default_model and has_healthy_mcp
+        # Get chat session TTL from Constance config (in minutes)
+        chat_session_ttl_minutes = await sync_to_async(get_app_settings_or_config)("ai_ops", "chat_session_ttl_minutes")
+
+        # Chat is enabled only if we have a default model (MCP server no longer required)
+        chat_enabled = has_default_model
 
         # Get list of enabled providers for admin provider selection
         # Only staff users can select providers; normal users use default
@@ -170,6 +178,7 @@ class AIChatBotGenericView(GenericView):
             "has_any_mcp": has_any_mcp,
             "is_admin": is_admin,
             "enabled_providers": enabled_providers,
+            "chat_session_ttl_minutes": chat_session_ttl_minutes,
             # Add other context variables as needed
         }
         return await sync_to_async(render)(request, self.template_name, context)

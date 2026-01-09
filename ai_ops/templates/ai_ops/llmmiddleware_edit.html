@@ -1,0 +1,7 @@
+{% extends 'generic/object_edit.html' %}
+{% load static %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script src="{% static 'ai_ops/js/middleware_config_loader.js' %}"></script>
+{% endblock %}

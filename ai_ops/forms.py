@@ -1,5 +1,7 @@
 """Forms for ai_ops."""
 
+import json
+
 from django import forms
 from nautobot.apps.constants import CHARFIELD_MAX_LENGTH
 from nautobot.apps.forms import (
@@ -212,6 +214,15 @@ class MiddlewareTypeFilterForm(NautobotFilterForm):
 class LLMMiddlewareForm(NautobotModelForm):  # pylint: disable=too-many-ancestors
     """LLMMiddleware creation/edit form."""
 
+    # Add a readonly field to display the default config template (only shown when editing)
+    default_config_display = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 8, "readonly": "readonly", "class": "form-control bg-light"}),
+        label="Default Configuration Template",
+        help_text="This is the recommended starting configuration for the selected middleware type. "
+        "You can copy this to the Config field below and customize as needed.",
+    )
+
     class Meta:
         """Meta attributes."""
 
@@ -221,9 +232,58 @@ class LLMMiddlewareForm(NautobotModelForm):  # pylint: disable=too-many-ancestor
             "config": forms.Textarea(attrs={"rows": 10, "cols": 80, "class": "form-control"}),
         }
         help_texts = {
-            "config": "JSON configuration for the middleware. See documentation for schema per middleware type.",
+            "config": "JSON configuration for the middleware. For new middleware, you can leave this empty "
+            "and edit after creation to see the default configuration template.",
             "priority": "Execution priority (1-100). Lower values execute first. Ties broken alphabetically.",
         }
+
+    def __init__(self, *args, **kwargs):
+        """Initialize form and populate default config display."""
+        super().__init__(*args, **kwargs)
+
+        # Always show default_config_display field
+        # Remove and re-add default_config_display to control field order
+        default_config_field = self.fields.pop("default_config_display")
+
+        # Update label and help text
+        default_config_field.label = "Example Configuration (Read-Only)"
+        default_config_field.help_text = (
+            "This shows the recommended configuration template for the selected middleware type. "
+            "You can copy this to the Config field below, or leave Config empty and populate it when editing."
+        )
+
+        # Re-insert it after the middleware field
+        new_fields = {}
+        for name, field in self.fields.items():
+            new_fields[name] = field
+            if name == "middleware":
+                new_fields["default_config_display"] = default_config_field
+        self.fields = new_fields
+
+        # Update config help text
+        self.fields["config"].help_text = (
+            "JSON configuration for the middleware. Optional: You can leave this empty now and "
+            "populate it when editing (the example configuration will be shown above)."
+        )
+
+        if self.instance.pk:
+            # Editing existing instance - populate the default config display if middleware is set
+            try:
+                if self.instance.middleware and self.instance.middleware.default_config:
+                    self.fields["default_config_display"].initial = json.dumps(
+                        self.instance.middleware.default_config, indent=2
+                    )
+
+                    # If config is empty, pre-populate it with the default
+                    if not self.instance.config or self.instance.config == {}:
+                        self.initial["config"] = json.dumps(self.instance.middleware.default_config, indent=2)
+            except models.MiddlewareType.DoesNotExist:
+                pass
+        else:
+            # New instance - show placeholder text
+            self.fields[
+                "default_config_display"
+            ].initial = "Select a middleware type above to see example configuration"
 
 
 class LLMMiddlewareBulkEditForm(TagsBulkEditFormMixin, NautobotBulkEditForm):  # pylint: disable=too-many-ancestors

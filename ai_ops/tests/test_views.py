@@ -148,37 +148,6 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
                 self.assertFalse(context["is_admin"])
                 self.assertEqual(context["enabled_providers"], [])
 
-    def test_get_has_default_model_no_healthy_mcp(self):
-        """Test GET request when default model exists but no healthy MCP servers."""
-        request = self._create_request_with_user(self.regular_user)
-
-        # Mock render to avoid template rendering database issues
-        with patch("ai_ops.views.render") as mock_render:
-            mock_response = HttpResponse()
-            mock_render.return_value = mock_response
-
-            # Mock the database queries directly to bypass async/sync database isolation issues
-            with patch("ai_ops.models.LLMModel.objects") as mock_llm_manager, patch(
-                "ai_ops.models.MCPServer.objects"
-            ) as mock_mcp_manager:
-                # Mock the specific queries the view makes
-                mock_llm_manager.filter.return_value.exists.return_value = True  # has_default_model = True
-                mock_mcp_manager.filter.return_value.exists.return_value = False  # has_healthy_mcp = False
-                mock_mcp_manager.exists.return_value = True  # has_any_mcp = True
-
-                # Test the async view using Django's async_to_sync
-                async_view = async_to_sync(self.view.get)
-                async_view(request)
-
-                # Verify context data passed to render
-                context = mock_render.call_args[0][2]
-
-                self.assertFalse(context["chat_enabled"])  # No healthy MCP servers
-                self.assertTrue(context["has_default_model"])
-                self.assertFalse(context["has_healthy_mcp"])
-                self.assertTrue(context["has_any_mcp"])  # MCP servers exist but not healthy
-                self.assertFalse(context["is_admin"])
-
     def test_get_has_default_model_and_healthy_mcp(self):
         """Test GET request when both default model and healthy MCP servers exist."""
         request = self._create_request_with_user(self.regular_user)
@@ -468,3 +437,57 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
                 self.assertTrue(context["has_default_model"])
                 self.assertTrue(context["has_healthy_mcp"])
                 self.assertTrue(context["chat_enabled"])
+
+    @patch("ai_ops.views.get_app_settings_or_config")
+    def test_get_ttl_config_passed_to_template(self, mock_get_config):
+        """Test that chat_session_ttl_minutes is passed to template context."""
+        # Mock config to return 10 minutes
+        mock_get_config.return_value = 10
+
+        request = self._create_request_with_user(self.regular_user)
+
+        # Mock render to avoid template rendering
+        with patch("ai_ops.views.render") as mock_render:
+            mock_response = HttpResponse()
+            mock_render.return_value = mock_response
+
+            # Mock database queries
+            with patch("ai_ops.models.LLMModel.objects") as mock_llm_manager, patch(
+                "ai_ops.models.MCPServer.objects"
+            ) as mock_mcp_manager:
+                mock_llm_manager.filter.return_value.exists.return_value = True
+                mock_mcp_manager.filter.return_value.exists.return_value = True
+                mock_mcp_manager.exists.return_value = True
+
+                # Test the async view
+                async_view = async_to_sync(self.view.get)
+                async_view(request)
+
+                # Verify TTL is in context
+                context = mock_render.call_args[0][2]
+                self.assertEqual(context["chat_session_ttl_minutes"], 10)
+
+    def test_get_default_ttl_when_not_configured(self):
+        """Test that default TTL (5 minutes) is used when not configured."""
+        request = self._create_request_with_user(self.regular_user)
+
+        # Mock render to avoid template rendering
+        with patch("ai_ops.views.render") as mock_render:
+            mock_response = HttpResponse()
+            mock_render.return_value = mock_response
+
+            # Mock database queries
+            with patch("ai_ops.models.LLMModel.objects") as mock_llm_manager, patch(
+                "ai_ops.models.MCPServer.objects"
+            ) as mock_mcp_manager:
+                mock_llm_manager.filter.return_value.exists.return_value = True
+                mock_mcp_manager.filter.return_value.exists.return_value = True
+                mock_mcp_manager.exists.return_value = True
+
+                # Test the async view
+                async_view = async_to_sync(self.view.get)
+                async_view(request)
+
+                # Verify default TTL is used
+                context = mock_render.call_args[0][2]
+                self.assertEqual(context["chat_session_ttl_minutes"], 5)

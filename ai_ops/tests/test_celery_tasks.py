@@ -2,17 +2,20 @@
 
 from unittest.mock import MagicMock, patch
 
-from django.test import TestCase, override_settings
+from django.test import TestCase
 
 
 class CleanupOldCheckpointsTaskTestCase(TestCase):
     """Test cases for cleanup_old_checkpoints Celery task."""
 
+    @patch("ai_ops.celery_tasks.get_app_settings_or_config")
     @patch("ai_ops.checkpointer.get_redis_connection")
-    @override_settings(PLUGINS_CONFIG={"ai_ops": {"checkpoint_retention_days": 7}})
-    def test_cleanup_old_checkpoints_success(self, mock_get_redis):
+    def test_cleanup_old_checkpoints_success(self, mock_get_redis, mock_get_config):
         """Test successful checkpoint cleanup."""
         from ai_ops.celery_tasks import cleanup_old_checkpoints
+
+        # Mock config to return 7 days
+        mock_get_config.return_value = 7
 
         mock_redis = MagicMock()
         mock_get_redis.return_value = mock_redis
@@ -138,3 +141,83 @@ class ClearMCPCacheTaskTestCase(TestCase):
 
                     # Verify cache was cleared due to status change
                     mock_clear_cache.assert_called_once()
+
+
+class CleanupExpiredChatSessionsTaskTestCase(TestCase):
+    """Test cases for cleanup_expired_chat_sessions Celery task."""
+
+    @patch("ai_ops.celery_tasks.get_app_settings_or_config")
+    @patch("ai_ops.checkpointer.cleanup_expired_checkpoints")
+    def test_cleanup_expired_chat_sessions_success(self, mock_cleanup, mock_get_config):
+        """Test successful chat session cleanup."""
+        from ai_ops.celery_tasks import cleanup_expired_chat_sessions
+
+        # Mock config to return 5 minutes
+        mock_get_config.return_value = 5
+
+        # Mock successful cleanup
+        mock_cleanup.return_value = {
+            "success": True,
+            "processed_count": 10,
+            "deleted_count": 3,
+            "ttl_minutes": 5,
+        }
+
+        result = cleanup_expired_chat_sessions()
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["ttl_minutes"], 5)
+        self.assertEqual(result["deleted_count"], 3)
+        mock_cleanup.assert_called_once_with(ttl_minutes=5)
+
+    @patch("ai_ops.celery_tasks.get_app_settings_or_config")
+    @patch("ai_ops.checkpointer.cleanup_expired_checkpoints")
+    def test_cleanup_expired_chat_sessions_custom_ttl(self, mock_cleanup, mock_get_config):
+        """Test cleanup with custom TTL configuration."""
+        from ai_ops.celery_tasks import cleanup_expired_chat_sessions
+
+        # Mock config to return 10 minutes
+        mock_get_config.return_value = 10
+
+        mock_cleanup.return_value = {
+            "success": True,
+            "processed_count": 5,
+            "deleted_count": 2,
+            "ttl_minutes": 10,
+        }
+
+        result = cleanup_expired_chat_sessions()
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["ttl_minutes"], 10)
+        mock_cleanup.assert_called_once_with(ttl_minutes=10)
+
+    @patch("ai_ops.checkpointer.cleanup_expired_checkpoints")
+    def test_cleanup_expired_chat_sessions_default_ttl(self, mock_cleanup):
+        """Test cleanup uses default TTL when not configured."""
+        from ai_ops.celery_tasks import cleanup_expired_chat_sessions
+
+        mock_cleanup.return_value = {
+            "success": True,
+            "processed_count": 0,
+            "deleted_count": 0,
+            "ttl_minutes": 5,
+        }
+
+        result = cleanup_expired_chat_sessions()
+
+        self.assertTrue(result["success"])
+        # Should use default of 5 minutes
+        mock_cleanup.assert_called_once_with(ttl_minutes=5)
+
+    @patch("ai_ops.checkpointer.cleanup_expired_checkpoints")
+    def test_cleanup_expired_chat_sessions_error(self, mock_cleanup):
+        """Test cleanup handles errors gracefully."""
+        from ai_ops.celery_tasks import cleanup_expired_chat_sessions
+
+        mock_cleanup.side_effect = Exception("Checkpoint cleanup failed")
+
+        result = cleanup_expired_chat_sessions()
+
+        self.assertFalse(result["success"])
+        self.assertIn("error", result)

@@ -518,7 +518,7 @@ Return model
 
 ### Conversation State
 
-**Storage**: Redis checkpoints via LangGraph
+**Storage**: MemorySaver (in-memory) for short-term session storage
 
 **State Structure**:
 ```python
@@ -532,14 +532,53 @@ Return model
 ```
 
 **Thread Isolation**:
-- Each session has unique thread_id
+- Each session has unique thread_id (Django session key)
 - Sessions don't interfere
 - Parallel conversations supported
 
-**Persistence**:
-- Automatic via LangGraph checkpointer
-- Survives application restarts
-- Cleaned up by maintenance job
+**Persistence & TTL**:
+- **Backend (MemorySaver)**: In-memory storage with timestamp tracking
+  - Checkpoints tracked with creation timestamps
+  - Automatic cleanup every 5 minutes via scheduled job
+  - Expires after configured TTL (default: 5 minutes) + 30s grace period
+  - Lost on application restart
+- **Frontend (localStorage)**: Browser-based message display
+  - Messages filtered by age on page load
+  - Synced with backend TTL configuration
+  - Cleared automatically when expired
+  - Inactivity timer for auto-clearing (matches TTL config)
+
+**TTL Configuration**:
+```python
+# In nautobot_config.py
+PLUGINS_CONFIG = {
+    "ai_ops": {
+        "chat_session_ttl_minutes": 5,  # Default: 5 minutes
+    }
+}
+```
+
+**Cleanup Process**:
+1. **Frontend TTL Check** (on page load):
+   - Filters messages older than TTL + grace period
+   - Shows expiry message if conversation expired
+   - Calls backend clear API if all messages expired
+
+2. **Backend Scheduled Cleanup** (every 5 minutes):
+   - Scans all MemorySaver checkpoints
+   - Removes checkpoints older than TTL + grace period
+   - Logs processed and deleted counts
+
+3. **Inactivity Timer** (frontend):
+   - Resets on any user activity
+   - Triggers after TTL minutes of no interaction
+   - Clears both frontend and backend state
+
+**Migration Path**:
+- Current: MemorySaver (session-based, in-memory)
+- Future Option 1: Redis Stack with RediSearch (persistent, cached)
+- Future Option 2: PostgreSQL (persistent, database)
+- See TODOs in `checkpointer.py` for implementation details
 
 ### Application State
 

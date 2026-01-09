@@ -274,7 +274,7 @@ async def build_agent(llm_model=None, checkpointer=None, provider: str | None = 
         provider: Optional provider name override. If specified, uses this provider for LLM initialization.
 
     Returns:
-        Compiled graph ready for execution, or None if no MCP tools available
+        Compiled graph ready for execution, or None if no default model available
     """
     from asgiref.sync import sync_to_async
     from langchain.agents import create_agent
@@ -287,12 +287,8 @@ async def build_agent(llm_model=None, checkpointer=None, provider: str | None = 
     if llm_model is None:
         llm_model = await sync_to_async(LLMModel.get_default_model)()
 
-    # Get MCP client and tools
+    # Get MCP client and tools (may be empty if no MCP servers configured)
     client, tools = await get_or_create_mcp_client()
-
-    if not client or not tools:
-        logger.warning("Cannot build agent without MCP tools")
-        return None
 
     # Get LLM model with optional provider override
     # If provider is specified, it will be used instead of the model's configured provider
@@ -307,9 +303,10 @@ async def build_agent(llm_model=None, checkpointer=None, provider: str | None = 
     logger.info(log_msg)
 
     # Create agent with middleware
+    # If no tools are available, the agent will still work for basic conversation
     graph = create_agent(
         model=llm,
-        tools=tools,
+        tools=tools if tools else [],
         system_prompt=get_multi_mcp_system_prompt(),
         middleware=middleware,
         checkpointer=checkpointer,
@@ -405,7 +402,7 @@ async def process_message(user_input: str, thread_id: str, provider: str | None 
     """
     try:
         # Use context manager for proper checkpointer lifecycle
-        from ai_ops.checkpointer import get_checkpointer
+        from ai_ops.checkpointer import get_checkpointer, track_checkpoint_creation
 
         async with get_checkpointer() as checkpointer:
             # Handle case where checkpointer is None (during shutdown)
@@ -413,12 +410,12 @@ async def process_message(user_input: str, thread_id: str, provider: str | None 
                 logger.warning("Checkpointer unavailable during shutdown, using stateless response")
                 return "Server is currently shutting down. Please try again in a moment."
 
+            # Track checkpoint creation for TTL enforcement
+            track_checkpoint_creation(thread_id)
+
             # Build agent v2 with checkpointer integration
             # If provider is specified, the LLM model selection will use it
             graph = await build_agent(checkpointer=checkpointer, provider=provider)
-
-            if not graph:
-                return "No MCP servers are currently available. Please contact an administrator."
 
             # Configuration with thread_id for conversation isolation
             config = {"configurable": {"thread_id": thread_id}}
