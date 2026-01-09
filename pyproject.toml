@@ -28,6 +28,11 @@ include = [
     "ai_ops/templates/**/*",
 ]
 
+[tool.poetry.urls]
+"Download" = "https://pypi.org/project/nautobot-ai-ops/#files"
+"Bug Tracker" = "https://github.com/kvncampos/nautobot-ai-ops/issues"
+"Changelog" = "https://kvncampos.github.io/nautobot-ai-ops/admin/release_notes/"
+
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"
 # Used for local development
