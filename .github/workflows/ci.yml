@@ -10,11 +10,9 @@ permissions:
 
 on:  # yamllint disable-line rule:truthy rule:comments
   push:
-    branches:
-      - "main"
-      - "develop"
     tags:
-      - "v*"
+      - "*.*.*"
+      - "*.*.*b*"
   pull_request: ~
 
 env:

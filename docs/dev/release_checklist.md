@@ -17,9 +17,9 @@ This document is intended for app maintainers and outlines the steps to perform 
 This project follows a streamlined release process:
 
 1. **Feature development** → Merge to `main` via squash merge (PR required)
-2. **Beta release** → Tag `v1.0.0b1`, `v1.0.0b2`, etc. from `main`
+2. **Beta release** → Tag `1.0.0b1`, `1.0.0b2`, etc. from `main`
 3. **Testing period** → Let beta "cook" with real-world usage
-4. **Stable release** → Tag `v1.0.0` from `main`
+4. **Stable release** → Tag `1.0.0` from `main`
 
 Choose your path:
 
@@ -53,13 +53,13 @@ poetry version prerelease  # e.g., 1.0.0b1 → 1.0.0b2
 
 ```bash
 git add pyproject.toml
-git commit -m "chore: bump version to v1.0.0b1"
+git commit -m "chore: bump version to 1.0.0b1"
 ```
 
 ### 4. Tag and Push
 
 ```bash
-git tag v1.0.0b1
+git tag 1.0.0b1
 git push origin main --tags
 ```
 
@@ -89,8 +89,8 @@ If issues are found, fix them, merge to `main`, and release another beta:
 ```bash
 poetry version prerelease  # 1.0.0b1 → 1.0.0b2
 git add pyproject.toml
-git commit -m "chore: bump version to v1.0.0b2"
-git tag v1.0.0b2
+git commit -m "chore: bump version to 1.0.0b2"
+git tag 1.0.0b2
 git push origin main --tags
 ```
 
@@ -155,13 +155,13 @@ poetry version 1.0.0
 
 ```bash
 git add .
-git commit -m "chore: release v1.0.0"
+git commit -m "chore: release 1.0.0"
 ```
 
 ### 7. Tag and Push
 
 ```bash
-git tag v1.0.0
+git tag 1.0.0
 git push origin main --tags
 ```
 
@@ -244,8 +244,8 @@ Move the release notes from `docs/admin/release_notes/version_X.Y.md` to `docs/a
 
 ```bash
 git add .
-git commit -m "chore: release v1.2.3"
-git tag v1.2.3
+git commit -m "chore: release 1.2.3"
+git tag 1.2.3
 git push origin release-1.2.3 --tags
 ```
 
@@ -274,10 +274,10 @@ If you tagged the wrong version:
 
 ```bash
 # Delete local tag
-git tag -d v1.0.0
+git tag -d 1.0.0
 
 # Delete remote tag
-git push origin :refs/tags/v1.0.0
+git push origin :refs/tags/1.0.0
 ```
 
 ### Changelog Fragments Still Exist
@@ -297,11 +297,11 @@ Check the [Actions tab](https://github.com/kvncampos/nautobot-ai-ops/actions/wor
 ## Summary
 
 **For Beta Releases:**
-1. `poetry version 1.0.0b1` → `git commit` → `git tag v1.0.0b1` → `git push --tags`
+1. `poetry version 1.0.0b1` → `git commit` → `git tag 1.0.0b1` → `git push --tags`
 
 **For Stable Releases:**
 1. `invoke generate-release-notes --version 1.0.0`
-2. `poetry version 1.0.0` → `git commit` → `git tag v1.0.0` → `git push --tags`
+2. `poetry version 1.0.0` → `git commit` → `git tag 1.0.0` → `git push --tags`
 
 **Key Points:**
 - All PRs must include changelog fragments in `changes/`

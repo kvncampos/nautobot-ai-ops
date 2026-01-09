@@ -48,15 +48,15 @@ This project uses a simplified single-branch strategy:
 - **Main branch**: `main` is the primary development branch and always represents the latest code
 - **Feature branches**: All new features and bug fixes should be developed in feature branches created from `main`
 - **Pull requests**: All changes must go through pull requests that will be squash-merged into `main`
-- **Release strategy**: We use beta releases (e.g., `v1.0.0b1`, `v1.0.0b2`) for testing before stable releases
+- **Release strategy**: We use beta releases (e.g., `1.0.0b1`, `1.0.0b2`) for testing before stable releases
 
 AI Ops will observe semantic versioning, as of 1.0. This may result in a quick turnaround in minor versions to keep pace with an ever-growing feature set.
 
 ### Release Workflow
 
 1. Feature branches are merged to `main` via squash merge (one commit per PR)
-2. Beta releases are tagged from `main` (e.g., `v1.0.0b1`) for early testing
-3. After beta testing, stable releases are tagged (e.g., `v1.0.0`)
+2. Beta releases are tagged from `main` (e.g., `1.0.0b1`) for early testing
+3. After beta testing, stable releases are tagged (e.g., `1.0.0`)
 4. Users can install beta releases with `pip install --pre nautobot-ai-ops`
 
 ### Backporting to Older Releases
@@ -69,8 +69,8 @@ We will create a `release-X.Y` branch for you to open your PR against and cut a 
 
 AI Ops follows a flexible release schedule:
 
-- **Beta releases**: Tagged as `v1.0.0b1`, `v1.0.0b2`, etc. for early testing and feedback
-- **Stable releases**: Tagged as `v1.0.0` after beta testing completes
+- **Beta releases**: Tagged as `1.0.0b1`, `1.0.0b2`, etc. for early testing and feedback
+- **Stable releases**: Tagged as `1.0.0` after beta testing completes
 - **Pre-release testing**: Beta releases allow users to test new features before they reach stable
 - **Semantic versioning**: Major.minor.patch versioning with clear changelog documentation
 

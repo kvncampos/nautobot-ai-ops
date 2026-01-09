@@ -4,8 +4,8 @@ name: "Publish to PyPI"
 on:  # yamllint disable-line rule:truthy rule:comments
   push:
     tags:
-      - "v*.*.*"        # Stable: v1.0.0
-      - "v*.*.*b*"      # Beta: v1.0.0b1, v1.0.0b2
+      - "*.*.*"        # Stable: 1.0.0
+      - "*.*.*b*"      # Beta: 1.0.0b1, 1.0.0b2
   release:
     types: ["published"]
   workflow_dispatch:
@@ -45,7 +45,7 @@ jobs:
 
       # Verify changelog for stable releases only
       - name: "Verify changelog updated (stable releases)"
-        if: "startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, 'b')"
+        if: "startsWith(github.ref, 'refs/tags/') && !contains(github.ref, 'b')"
         run: |
           if [ -n "$(find changes -type f ! -name '.gitignore' 2>/dev/null)" ]; then
             echo "Error: Changelog fragments still exist in changes/"
