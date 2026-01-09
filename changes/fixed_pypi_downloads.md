@@ -1,0 +1,1 @@
+Added explicit Download, Bug Tracker, and Changelog URLs to package metadata to improve PyPI integration and fix download statistics tracking issues.
