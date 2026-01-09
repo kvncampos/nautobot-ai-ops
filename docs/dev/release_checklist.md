@@ -139,6 +139,7 @@ invoke generate-release-notes --version 1.0.0
 
 This will:
 - Generate/update `docs/admin/release_notes/version_1.0.md`
+- Update fallback version in `ai_ops/__init__.py` to match the release version
 - Delete all processed fragments from `changes/`
 - Stage the changes in git
 

@@ -758,6 +758,9 @@ def generate_release_notes(context, version="", date="", keep=False):
     version_major_minor = ".".join(version.split(".")[:2])
     context.run(f"poetry run python development/bin/ensure_release_notes.py --version {version_major_minor}")
 
+    # Update the fallback version in ai_ops/__init__.py to match the current version
+    context.run(f"poetry run python development/bin/update_fallback_version.py --version {version}")
+
     # Due to issues with git repo ownership in the containers, this must always run locally.
     context.run(command)
 
