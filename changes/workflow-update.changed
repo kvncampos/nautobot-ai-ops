@@ -1,0 +1,1 @@
+Modernized repository branching strategy to use single main branch with beta pre-releases (v1.0.0b1 format), updated all documentation and GitHub Actions workflows to support simplified release process, and enforced squash merge for all PRs to maintain clean commit history.

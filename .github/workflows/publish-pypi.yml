@@ -47,7 +47,7 @@ jobs:
       - name: "Verify changelog updated (stable releases)"
         if: "startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, 'b')"
         run: |
-          if [ -n "$(ls -A changes/*.* 2>/dev/null)" ]; then
+          if [ -n "$(find changes -type f ! -name '.gitignore' 2>/dev/null)" ]; then
             echo "Error: Changelog fragments still exist in changes/"
             echo "Run 'towncrier build --version <version>' before tagging stable release"
             exit 1

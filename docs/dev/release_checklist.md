@@ -222,11 +222,13 @@ git switch -c release-1.2.3 ltm-1.6
 
 ### 3. Update Version
 
+Choose the appropriate version bump based on the changes:
+
 ```bash
-# For bug fixes
+# For bug fixes only (patch release: 1.2.3 → 1.2.4)
 poetry version patch
 
-# For backported features
+# For backported features (minor release: 1.2.3 → 1.3.0)
 poetry version minor
 ```
 
