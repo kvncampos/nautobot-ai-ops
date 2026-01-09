@@ -25,6 +25,20 @@ This document describes all new features and changes in the release. The format 
 <!-- towncrier release notes start -->
 
 
+## [v1.0.2 (2026-01-09)](https://github.com/kvncampos/nautobot-ai-ops/releases/tag/v1.0.2)
+
+### Added
+
+- [#middleware-config-improvements](https://github.com/kvncampos/nautobot-ai-ops/issues/middleware-config-improvements) - Added default configuration templates for all middleware types, displaying type indicators in the LLMMiddleware form to guide users on expected parameter types when configuring middleware instances.
+
+### Changed
+
+- [#workflow-update](https://github.com/kvncampos/nautobot-ai-ops/issues/workflow-update) - Modernized repository branching strategy to use single main branch with beta pre-releases (1.0.0b1 format), updated all documentation and GitHub Actions workflows to support simplified release process, and enforced squash merge for all PRs to maintain clean commit history.
+
+### Fixed
+
+- Added explicit Download, Bug Tracker, and Changelog URLs to package metadata to improve PyPI integration.
+
 ## [v1.0.1 (2026-01-08)](https://github.com/kvncampos/nautobot-ai-ops/releases/tag/v1.0.1)
 
 ### Added
