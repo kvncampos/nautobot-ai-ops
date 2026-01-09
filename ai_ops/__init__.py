@@ -28,9 +28,9 @@ except metadata.PackageNotFoundError:
                 pyproject_data = tomli_lib.load(f)
             __version__ = pyproject_data["tool"]["poetry"]["version"]
         else:
-            __version__ = "1.0.1"  # Ultimate fallback
+            __version__ = "1.0.2"  # Ultimate fallback
     except (ImportError, KeyError, FileNotFoundError):
-        __version__ = "1.0.1"  # Ultimate fallback
+        __version__ = "1.0.2"  # Ultimate fallback
 
 
 class AiOpsConfig(NautobotAppConfig):
