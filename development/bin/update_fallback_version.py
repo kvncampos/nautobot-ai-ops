@@ -15,7 +15,7 @@ import argparse
 import re
 from pathlib import Path
 
-# Semantic versioning pattern: X.Y.Z or X.Y.ZbN (for beta/alpha)
+# Semantic versioning pattern: X.Y.Z or X.Y.ZbN (for beta) or X.Y.ZaN (for alpha)
 VERSION_PATTERN = r'^\d+\.\d+\.\d+([ab]\d+)?$'
 
 
