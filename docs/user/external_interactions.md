@@ -6,18 +6,61 @@ This document describes external dependencies, prerequisites, and integrations f
 
 ### From the App to Other Systems
 
-#### Azure OpenAI Service
+#### LLM Providers
 
-The AI Ops App integrates with Azure OpenAI Service to provide LLM capabilities:
+The AI Ops App integrates with multiple LLM providers to provide flexible AI capabilities:
 
-- **Purpose**: Large Language Model inference and chat completion
+##### Ollama (Local)
+
+- **Purpose**: Local Large Language Model inference
+- **Protocol**: HTTP REST API
+- **Authentication**: None (local deployment)
+- **Endpoints**: Configurable (default: http://localhost:11434)
+- **Models Supported**: Llama 2, Mistral, CodeLlama, and other Ollama models
+
+**Configuration Requirements**:
+- Ollama installed locally or on accessible server
+- At least one model pulled (e.g., `ollama pull llama2`)
+- Network connectivity to Ollama endpoint
+
+**Data Flow**:
+1. User sends message through chat interface
+2. App retrieves LLM configuration from database
+3. App constructs request with conversation history
+4. Request sent to local Ollama endpoint
+5. Response generated locally and returned to user
+
+##### OpenAI
+
+- **Purpose**: Cloud-based LLM inference via OpenAI API
 - **Protocol**: HTTPS REST API
 - **Authentication**: API Key (stored in Nautobot Secrets)
+- **Endpoints**: https://api.openai.com/v1
+- **Models Supported**: GPT-4, GPT-4o, GPT-4-turbo, GPT-3.5-turbo
+
+**Configuration Requirements**:
+- OpenAI API account and API key
+- Billing configured with OpenAI
+- Network connectivity to api.openai.com
+- API key stored in Nautobot Secret
+
+**Data Flow**:
+1. User sends message through chat interface
+2. App retrieves LLM configuration and API key from database/secrets
+3. App constructs request with conversation history
+4. Request sent to OpenAI API endpoint
+5. Response returned and displayed to user
+
+##### Azure OpenAI
+
+- **Purpose**: Enterprise-grade LLM inference via Azure OpenAI Service
+- **Protocol**: HTTPS REST API
+- **Authentication**: API Key or Azure AD (stored in Nautobot Secrets)
 - **Endpoints**: Configurable Azure OpenAI endpoint URLs
 - **Models Supported**: GPT-4, GPT-4o, GPT-4-turbo, and other Azure OpenAI deployments
 
 **Configuration Requirements**:
-- Azure OpenAI resource provisioned
+- Azure subscription and Azure OpenAI resource provisioned
 - Model deployment created in Azure
 - API key with appropriate permissions
 - Network connectivity from Nautobot to Azure OpenAI endpoints
@@ -28,6 +71,69 @@ The AI Ops App integrates with Azure OpenAI Service to provide LLM capabilities:
 3. App constructs request with conversation history
 4. Request sent to Azure OpenAI endpoint
 5. Response returned and displayed to user
+
+##### Anthropic
+
+- **Purpose**: Claude models for advanced reasoning and analysis
+- **Protocol**: HTTPS REST API
+- **Authentication**: API Key (stored in Nautobot Secrets)
+- **Endpoints**: https://api.anthropic.com
+- **Models Supported**: Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku
+
+**Configuration Requirements**:
+- Anthropic API account and API key
+- Billing configured with Anthropic
+- Network connectivity to api.anthropic.com
+- API key stored in Nautobot Secret
+
+**Data Flow**:
+1. User sends message through chat interface
+2. App retrieves LLM configuration and API key from database/secrets
+3. App constructs request with conversation history
+4. Request sent to Anthropic API endpoint
+5. Response returned and displayed to user
+
+##### HuggingFace
+
+- **Purpose**: Access to open-source models and inference endpoints
+- **Protocol**: HTTPS REST API
+- **Authentication**: API Token (stored in Nautobot Secrets)
+- **Endpoints**: Configurable (Inference API or dedicated endpoints)
+- **Models Supported**: Thousands of open-source models from HuggingFace Hub
+
+**Configuration Requirements**:
+- HuggingFace account and API token
+- Model selected or inference endpoint configured
+- Network connectivity to huggingface.co or custom endpoint
+- API token stored in Nautobot Secret
+
+**Data Flow**:
+1. User sends message through chat interface
+2. App retrieves LLM configuration and API token from database/secrets
+3. App constructs request with conversation history
+4. Request sent to HuggingFace Inference API or endpoint
+5. Response returned and displayed to user
+
+##### Custom Providers
+
+- **Purpose**: Integration with custom or proprietary LLM implementations
+- **Protocol**: Varies by implementation
+- **Authentication**: Configured per provider
+- **Endpoints**: Configurable custom endpoints
+- **Models Supported**: Implementation-dependent
+
+**Configuration Requirements**:
+- Custom LLM service deployed and accessible
+- Authentication mechanism implemented
+- Network connectivity to custom endpoint
+- Custom provider handler implemented in code
+
+**Data Flow**:
+1. User sends message through chat interface
+2. App retrieves LLM configuration from database
+3. App uses custom provider handler to format request
+4. Request sent to custom LLM endpoint
+5. Response parsed by custom handler and returned to user
 
 #### MCP (Model Context Protocol) Servers
 

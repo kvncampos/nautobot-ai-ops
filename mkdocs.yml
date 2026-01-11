@@ -108,9 +108,13 @@ nav:
       - App Overview: "user/app_overview.md"
       - Quick Start: "user/quick_start.md"
       - Getting Started: "user/app_getting_started.md"
+      - Configuration Guides:
+          - LLM Provider Configuration: "user/provider_configuration.md"
+          - Middleware Configuration: "user/middleware_configuration.md"
+          - MCP Server Configuration: "user/mcp_server_configuration.md"
       - Using the App: "user/app_use_cases.md"
-      - Frequently Asked Questions: "user/faq.md"
       - External Interactions: "user/external_interactions.md"
+      - Frequently Asked Questions: "user/faq.md"
   - Administrator Guide:
       - Install and Configure: "admin/install.md"
       - Upgrade: "admin/upgrade.md"
