@@ -148,7 +148,7 @@ async def clear_checkpointer_for_thread(thread_id: str) -> bool:
         return False
 
     try:
-        # MemorySaver stores checkpoints in a dict keyed by tuples like (thread_id,)
+        # MemorySaver stores checkpoints in a dictionary keyed by tuples like (thread_id,)
         # We can access the storage directly to clear a specific thread
         config = {"configurable": {"thread_id": thread_id}}
 
