@@ -4,7 +4,6 @@ This is the production-ready agent that supports multiple MCP servers with
 enterprise features including caching, health checks, and checkpointing.
 """
 
-import asyncio
 import logging
 from datetime import datetime
 from typing import Annotated
@@ -16,13 +15,16 @@ from langgraph.graph import StateGraph, add_messages
 from langgraph.prebuilt import ToolNode
 from typing_extensions import TypedDict
 
+from ai_ops.helpers.common.asyncio_utils import get_or_create_event_loop_lock
 from ai_ops.helpers.get_llm_model import get_llm_model_async
 from ai_ops.models import MCPServer
 
 logger = logging.getLogger(__name__)
 
-# Thread-safe cache lock
-_cache_lock = asyncio.Lock()
+# Lazy lock initialization to avoid event loop binding issues
+# Use list to allow modification via get_or_create_event_loop_lock
+_cache_lock: list = [None]
+
 
 # Application-level cache structure
 _mcp_client_cache = {
@@ -52,8 +54,11 @@ async def get_or_create_mcp_client(force_refresh: bool = False) -> tuple[MultiSe
     Returns:
         Tuple of (client, tools) or (None, []) if no healthy servers
     """
+    # Get lock bound to current event loop
+    lock = get_or_create_event_loop_lock(_cache_lock, "mcp_cache_lock")
+
     try:
-        async with _cache_lock:
+        async with lock:
             now = datetime.now()
 
             # Get cache TTL from default LLM model
@@ -172,7 +177,10 @@ async def clear_mcp_cache() -> int:
     Returns:
         Number of servers that were cached (for audit logging)
     """
-    async with _cache_lock:
+    # Get lock bound to current event loop
+    lock = get_or_create_event_loop_lock(_cache_lock, "mcp_cache_lock")
+
+    async with lock:
         cleared_count = _mcp_client_cache.get("server_count", 0)
 
         # Close existing client if present
@@ -215,8 +223,10 @@ async def shutdown_mcp_client():
     """
     global _mcp_client_cache
 
+    lock = get_or_create_event_loop_lock(_cache_lock, "mcp_cache_lock")
+
     try:
-        async with _cache_lock:
+        async with lock:
             logger.info("Shutting down MCP client...")
 
             # Close existing client if present
@@ -428,13 +438,27 @@ async def process_message(user_input: str, thread_id: str, provider: str | None 
 
             # Only pass the new user message
             # Graph automatically loads conversation history from checkpointer
-            result = await graph.ainvoke({"messages": [HumanMessage(content=user_input)]}, config=config)
+            # Type ignore: LangGraph accepts dict config but types show RunnableConfig
+            result = await graph.ainvoke({"messages": [HumanMessage(content=user_input)]}, config=config)  # type: ignore[arg-type]
 
             # Log conversation state after processing
             logger.debug(f"Message processed for thread_id: {thread_id}, total messages: {len(result['messages'])}")
 
             # Extract response from last message
-            response_text = result["messages"][-1].content
+            # Find the last AI message that has actual content (not just tool calls)
+            response_text = None
+            for message in reversed(result["messages"]):
+                # Check if it's an AI message with content (and not just tool calls)
+                if hasattr(message, "content") and message.content:
+                    # Skip messages that are only tool calls without text content
+                    if hasattr(message, "tool_calls") and message.tool_calls and not message.content.strip():
+                        continue
+                    response_text = message.content
+                    break
+
+            # Fallback to last message if no suitable message found
+            if response_text is None:
+                response_text = result["messages"][-1].content if result["messages"] else "No response generated"
 
             return response_text
 

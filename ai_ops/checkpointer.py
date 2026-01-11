@@ -14,11 +14,14 @@ from datetime import datetime, timedelta
 
 import redis
 
+from ai_ops.helpers.common.asyncio_utils import get_or_create_event_loop_lock
+
 logger = logging.getLogger(__name__)
 
 # Global singleton MemorySaver instance for conversation persistence
 _memory_saver_instance = None
-_memory_saver_lock = None
+# Use list to allow modification via get_or_create_event_loop_lock
+_memory_saver_lock: list = [None]
 # Global dict to track checkpoint creation timestamps for TTL enforcement
 _checkpoint_timestamps = {}
 
@@ -99,19 +102,15 @@ async def get_checkpointer():
 
         For production, consider using langgraph-checkpoint-postgres instead.
     """
-    import asyncio
-
     from langgraph.checkpoint.memory import MemorySaver
 
-    global _memory_saver_instance, _memory_saver_lock
+    global _memory_saver_instance
 
-    # Initialize lock on first access
-    if _memory_saver_lock is None:
-        _memory_saver_lock = asyncio.Lock()
+    lock = get_or_create_event_loop_lock(_memory_saver_lock, "memory_saver_lock")
 
     # Use singleton pattern to maintain conversation history across requests
     try:
-        async with _memory_saver_lock:
+        async with lock:
             if _memory_saver_instance is None:
                 logger.info("Initializing singleton LangGraph MemorySaver checkpointer")
                 _memory_saver_instance = MemorySaver()
@@ -153,23 +152,35 @@ async def clear_checkpointer_for_thread(thread_id: str) -> bool:
         config = {"configurable": {"thread_id": thread_id}}
 
         # Get current state to check if thread exists
-        state = await _memory_saver_instance.aget(config)
+        # Type ignore: LangGraph accepts dict config but types show RunnableConfig
+        state = await _memory_saver_instance.aget(config)  # type: ignore[arg-type]
 
         if state is None:
             logger.debug(f"No conversation history found for thread {thread_id}")
             return False
 
         # Clear by removing from storage
-        # Note: MemorySaver doesn't have a delete method, so we need to access storage directly
+        # MemorySaver stores data with the thread_id string as the key
         if hasattr(_memory_saver_instance, "storage"):
-            thread_key = (thread_id,)  # MemorySaver uses tuple key
-            if thread_key in _memory_saver_instance.storage:
-                del _memory_saver_instance.storage[thread_key]
+            logger.debug(f"Storage keys before clearing: {list(_memory_saver_instance.storage.keys())}")
+
+            # Check if this thread_id exists in storage
+            if thread_id in _memory_saver_instance.storage:
+                del _memory_saver_instance.storage[thread_id]
+
                 # Also remove timestamp tracking
+                thread_key = (thread_id,)
                 if thread_key in _checkpoint_timestamps:
                     del _checkpoint_timestamps[thread_key]
-                logger.info(f"Cleared conversation history for thread {thread_id}")
+
+                logger.info(f"Cleared checkpoint storage for thread {thread_id}")
+                logger.debug(f"Storage keys after clearing: {list(_memory_saver_instance.storage.keys())}")
                 return True
+            else:
+                logger.warning(
+                    f"Thread {thread_id} not found in storage keys: {list(_memory_saver_instance.storage.keys())}"
+                )
+                return False
 
         logger.warning(f"Could not access storage to clear thread {thread_id}")
         return False
@@ -179,12 +190,14 @@ async def clear_checkpointer_for_thread(thread_id: str) -> bool:
             logger.warning(f"Cannot clear thread {thread_id} during interpreter shutdown: {e}")
             # During shutdown, we can still try to clear from memory directly if available
             if hasattr(_memory_saver_instance, "storage"):
-                thread_key = (thread_id,)
-                if thread_key in _memory_saver_instance.storage:
-                    del _memory_saver_instance.storage[thread_key]
+                if thread_id in _memory_saver_instance.storage:
+                    del _memory_saver_instance.storage[thread_id]
+
+                    thread_key = (thread_id,)
                     if thread_key in _checkpoint_timestamps:
                         del _checkpoint_timestamps[thread_key]
-                    logger.info(f"Force-cleared conversation history for thread {thread_id} during shutdown")
+
+                    logger.info(f"Force-cleared checkpoint for thread {thread_id} during shutdown")
                     return True
             return False
         else:
@@ -204,14 +217,13 @@ async def reset_checkpointer() -> int:
     Returns:
         int: Number of threads that were cleared
     """
-    import asyncio
+    from langgraph.checkpoint.memory import MemorySaver
 
-    global _memory_saver_instance, _memory_saver_lock, _checkpoint_timestamps
+    global _memory_saver_instance, _checkpoint_timestamps
 
-    if _memory_saver_lock is None:
-        _memory_saver_lock = asyncio.Lock()
+    lock = get_or_create_event_loop_lock(_memory_saver_lock, "memory_saver_lock")
 
-    async with _memory_saver_lock:
+    async with lock:
         if _memory_saver_instance is None:
             logger.info("No MemorySaver instance to reset")
             return 0
@@ -222,8 +234,6 @@ async def reset_checkpointer() -> int:
             thread_count = len(_memory_saver_instance.storage)
 
         # Create new instance
-        from langgraph.checkpoint.memory import MemorySaver
-
         _memory_saver_instance = MemorySaver()
         _checkpoint_timestamps.clear()
         logger.info(f"Reset MemorySaver checkpointer, cleared {thread_count} thread(s)")

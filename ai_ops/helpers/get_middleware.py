@@ -4,7 +4,6 @@ This module provides caching and instantiation for LLM middleware configurations
 Middleware are cached per LLM model with automatic invalidation on configuration changes.
 """
 
-import asyncio
 import hashlib
 import importlib
 import json
@@ -14,6 +13,7 @@ from datetime import datetime, timedelta
 from asgiref.sync import sync_to_async
 from nautobot.apps.config import get_app_settings_or_config
 
+from ai_ops.helpers.common.asyncio_utils import get_or_create_event_loop_lock
 from ai_ops.helpers.common.enums import NautobotEnvironment
 from ai_ops.helpers.common.helpers import get_environment
 
@@ -31,7 +31,9 @@ _middleware_cache: dict = {
     "timestamp": None,
     "config_hash": None,
 }
-_cache_lock = asyncio.Lock()
+# Lazy lock initialization to avoid event loop binding issues
+# Use list to allow modification via get_or_create_event_loop_lock
+_cache_lock: list = [None]
 
 
 def _import_middleware_class(middleware_name: str):
@@ -118,6 +120,8 @@ async def _is_cache_valid(llm_model_id: int, config_hash: str) -> bool:
 
     # Get TTL from Constance config (in minutes) and convert to seconds
     cache_ttl_minutes = await sync_to_async(get_app_settings_or_config)("ai_ops", "middleware_cache_ttl_minutes")
+    if cache_ttl_minutes is None:
+        cache_ttl_minutes = 5  # Default to 5 minutes if not configured
     cache_ttl_seconds = cache_ttl_minutes * 60
     age = datetime.now() - _middleware_cache["timestamp"]
     return age < timedelta(seconds=cache_ttl_seconds)
@@ -140,11 +144,12 @@ async def get_middleware(llm_model, force_refresh: bool = False) -> list:
         Exception: If a critical middleware fails to instantiate
     """
     # Import here to avoid circular dependency
-    from asgiref.sync import sync_to_async
-
     from ai_ops.models import LLMMiddleware
 
-    async with _cache_lock:
+    # Get lock bound to current event loop
+    lock = get_or_create_event_loop_lock(_cache_lock, "middleware_cache_lock")
+
+    async with lock:
         # Get current middlewares from database
         middlewares_qs = await sync_to_async(list)(
             LLMMiddleware.objects.filter(llm_model=llm_model, is_active=True)
@@ -221,7 +226,10 @@ async def clear_middleware_cache() -> dict:
     Returns:
         dict: Cache statistics before clearing
     """
-    async with _cache_lock:
+    # Get lock bound to current event loop
+    lock = get_or_create_event_loop_lock(_cache_lock, "middleware_cache_lock")
+
+    async with lock:
         stats = await get_middleware_cache_stats()
         _middleware_cache.update(
             {
@@ -267,7 +275,10 @@ async def get_middleware_cache_stats() -> dict:
     Returns:
         dict: Cache statistics including model ID, count, age, and hash
     """
-    async with _cache_lock:
+    # Get lock bound to current event loop
+    lock = get_or_create_event_loop_lock(_cache_lock, "middleware_cache_lock")
+
+    async with lock:
         stats = {
             "llm_model_id": _middleware_cache["llm_model_id"],
             "middleware_count": len(_middleware_cache["middlewares"]),
@@ -279,6 +290,8 @@ async def get_middleware_cache_stats() -> dict:
             cache_ttl_minutes = await sync_to_async(get_app_settings_or_config)(
                 "ai_ops", "middleware_cache_ttl_minutes"
             )
+            if cache_ttl_minutes is None:
+                cache_ttl_minutes = 5  # Default to 5 minutes if not configured
             cache_ttl_seconds = cache_ttl_minutes * 60
             age = datetime.now() - _middleware_cache["timestamp"]
             stats["age_seconds"] = age.total_seconds()

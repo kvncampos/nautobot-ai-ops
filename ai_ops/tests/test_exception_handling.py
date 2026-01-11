@@ -82,14 +82,20 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         self.assertEqual(response.status_code, 500)
 
     @patch("ai_ops.views.get_environment")
+    @patch("ai_ops.helpers.get_middleware.clear_middleware_cache")
     @patch("ai_ops.checkpointer.clear_checkpointer_for_thread")
-    async def test_chat_clear_view_runtime_exception_in_local(self, mock_clear, mock_get_environment):
+    async def test_chat_clear_view_runtime_exception_in_local(
+        self, mock_clear, mock_clear_middleware, mock_get_environment
+    ):
         """Test ChatClearView RuntimeError handling in LOCAL environment."""
         # Set environment to LOCAL
         mock_get_environment.return_value = NautobotEnvironment.LOCAL
 
         # Make clear raise a RuntimeError
         mock_clear.side_effect = RuntimeError("Some runtime error")
+
+        # Mock middleware cache clear to succeed
+        mock_clear_middleware.return_value = None
 
         # Create request
         request = self.factory.post("/chat/clear")
@@ -107,14 +113,20 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         self.assertEqual(response.status_code, 500)
 
     @patch("ai_ops.views.get_environment")
+    @patch("ai_ops.helpers.get_middleware.clear_middleware_cache")
     @patch("ai_ops.checkpointer.clear_checkpointer_for_thread")
-    async def test_chat_clear_view_runtime_exception_in_nonprod(self, mock_clear, mock_get_environment):
+    async def test_chat_clear_view_runtime_exception_in_nonprod(
+        self, mock_clear, mock_clear_middleware, mock_get_environment
+    ):
         """Test ChatClearView RuntimeError handling in NONPROD environment."""
         # Set environment to NONPROD
         mock_get_environment.return_value = NautobotEnvironment.NONPROD
 
         # Make clear raise a RuntimeError
         mock_clear.side_effect = RuntimeError("Some runtime error")
+
+        # Mock middleware cache clear to succeed
+        mock_clear_middleware.return_value = None
 
         # Create request
         request = self.factory.post("/chat/clear")
@@ -133,14 +145,20 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         self.assertEqual(response.status_code, 500)
 
     @patch("ai_ops.views.get_environment")
+    @patch("ai_ops.helpers.get_middleware.clear_middleware_cache")
     @patch("ai_ops.checkpointer.clear_checkpointer_for_thread")
-    async def test_chat_clear_view_generic_exception_in_local(self, mock_clear, mock_get_environment):
+    async def test_chat_clear_view_generic_exception_in_local(
+        self, mock_clear, mock_clear_middleware, mock_get_environment
+    ):
         """Test ChatClearView generic Exception handling in LOCAL environment."""
         # Set environment to LOCAL
         mock_get_environment.return_value = NautobotEnvironment.LOCAL
 
         # Make clear raise a generic Exception
         mock_clear.side_effect = Exception("Generic error")
+
+        # Mock middleware cache clear to succeed
+        mock_clear_middleware.return_value = None
 
         # Create request
         request = self.factory.post("/chat/clear")
