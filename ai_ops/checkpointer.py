@@ -344,15 +344,26 @@ def cleanup_expired_checkpoints(ttl_minutes: int = 5) -> dict:
         if deleted_count > 0:
             try:
                 # Import here to avoid circular dependencies
-                # Use asyncio to run the async clear function
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
+                from ai_ops.helpers.get_middleware import clear_middleware_cache
+
+                # Check if we're already in an async context
                 try:
-                    from ai_ops.helpers.get_middleware import clear_middleware_cache
-                    loop.run_until_complete(clear_middleware_cache())
-                    logger.info(f"Cleared middleware cache after removing {deleted_count} expired checkpoints")
-                finally:
-                    loop.close()
+                    loop = asyncio.get_running_loop()
+                    # We're already in an async context, can't create nested event loop
+                    # This is expected when called from async code
+                    logger.warning(
+                        "Cannot clear middleware cache from async context. "
+                        "Middleware cache should be cleared separately by the caller."
+                    )
+                except RuntimeError:
+                    # No event loop running, safe to create one
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        loop.run_until_complete(clear_middleware_cache())
+                        logger.info(f"Cleared middleware cache after removing {deleted_count} expired checkpoints")
+                    finally:
+                        loop.close()
             except Exception as e:
                 logger.warning(f"Failed to clear middleware cache during checkpoint cleanup: {e}")
                 # Don't fail the entire cleanup if middleware cache clear fails
