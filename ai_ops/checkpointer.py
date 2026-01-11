@@ -7,6 +7,7 @@ Note: Redis checkpointing requires Redis Stack with RediSearch module.
 For persistent storage in production, use langgraph-checkpoint-postgres.
 """
 
+import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -147,7 +148,7 @@ async def clear_checkpointer_for_thread(thread_id: str) -> bool:
         return False
 
     try:
-        # MemorySaver stores checkpoints in a dict keyed by thread_id
+        # MemorySaver stores checkpoints in a dict keyed by tuples like (thread_id,)
         # We can access the storage directly to clear a specific thread
         config = {"configurable": {"thread_id": thread_id}}
 
@@ -160,20 +161,34 @@ async def clear_checkpointer_for_thread(thread_id: str) -> bool:
             return False
 
         # Clear by removing from storage
-        # MemorySaver stores data with the thread_id string as the key
+        # MemorySaver stores data with tuple keys like (thread_id,)
         if hasattr(_memory_saver_instance, "storage"):
             logger.debug(f"Storage keys before clearing: {list(_memory_saver_instance.storage.keys())}")
 
-            # Check if this thread_id exists in storage
-            if thread_id in _memory_saver_instance.storage:
-                del _memory_saver_instance.storage[thread_id]
+            # Create the thread key tuple - MemorySaver uses tuples for storage keys
+            thread_key = (thread_id,)
+            
+            # Clear all keys associated with this thread
+            # MemorySaver may have multiple keys per thread for different checkpoint IDs
+            cleared = False
+            keys_to_delete = []
+            for key in list(_memory_saver_instance.storage.keys()):
+                # Keys are tuples like (thread_id,) or (thread_id, checkpoint_id, ...)
+                if isinstance(key, tuple) and len(key) > 0 and key[0] == thread_id:
+                    keys_to_delete.append(key)
+            
+            # Delete all matching keys
+            for key in keys_to_delete:
+                del _memory_saver_instance.storage[key]
+                cleared = True
+                logger.debug(f"Cleared storage key: {key}")
+            
+            # Also remove timestamp tracking
+            if thread_key in _checkpoint_timestamps:
+                del _checkpoint_timestamps[thread_key]
 
-                # Also remove timestamp tracking
-                thread_key = (thread_id,)
-                if thread_key in _checkpoint_timestamps:
-                    del _checkpoint_timestamps[thread_key]
-
-                logger.info(f"Cleared checkpoint storage for thread {thread_id}")
+            if cleared:
+                logger.info(f"Cleared checkpoint storage for thread {thread_id} ({len(keys_to_delete)} keys)")
                 logger.debug(f"Storage keys after clearing: {list(_memory_saver_instance.storage.keys())}")
                 return True
             else:
@@ -190,13 +205,21 @@ async def clear_checkpointer_for_thread(thread_id: str) -> bool:
             logger.warning(f"Cannot clear thread {thread_id} during interpreter shutdown: {e}")
             # During shutdown, we can still try to clear from memory directly if available
             if hasattr(_memory_saver_instance, "storage"):
-                if thread_id in _memory_saver_instance.storage:
-                    del _memory_saver_instance.storage[thread_id]
+                cleared = False
+                keys_to_delete = []
+                for key in list(_memory_saver_instance.storage.keys()):
+                    if isinstance(key, tuple) and len(key) > 0 and key[0] == thread_id:
+                        keys_to_delete.append(key)
+                
+                for key in keys_to_delete:
+                    del _memory_saver_instance.storage[key]
+                    cleared = True
+                
+                thread_key = (thread_id,)
+                if thread_key in _checkpoint_timestamps:
+                    del _checkpoint_timestamps[thread_key]
 
-                    thread_key = (thread_id,)
-                    if thread_key in _checkpoint_timestamps:
-                        del _checkpoint_timestamps[thread_key]
-
+                if cleared:
                     logger.info(f"Force-cleared checkpoint for thread {thread_id} during shutdown")
                     return True
             return False
@@ -257,6 +280,9 @@ def cleanup_expired_checkpoints(ttl_minutes: int = 5) -> dict:
 
     This function scans all checkpoints and removes those older than the TTL
     plus a 30-second grace period to prevent race conditions with the frontend.
+    
+    When checkpoints are deleted, it also clears the middleware cache to ensure
+    stateful middleware instances (e.g., summarization buffers) are also removed.
 
     Args:
         ttl_minutes: Time-to-live in minutes (default: 5)
@@ -312,6 +338,24 @@ def cleanup_expired_checkpoints(ttl_minutes: int = 5) -> dict:
                 # No timestamp - assume it was created now to give it full TTL
                 _checkpoint_timestamps[thread_key] = now
                 logger.debug(f"Added timestamp for existing checkpoint {thread_key}")
+
+        # Clear middleware cache if any checkpoints were deleted
+        # This ensures stateful middleware instances are also removed
+        if deleted_count > 0:
+            try:
+                # Import here to avoid circular dependencies
+                # Use asyncio to run the async clear function
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    from ai_ops.helpers.get_middleware import clear_middleware_cache
+                    loop.run_until_complete(clear_middleware_cache())
+                    logger.info(f"Cleared middleware cache after removing {deleted_count} expired checkpoints")
+                finally:
+                    loop.close()
+            except Exception as e:
+                logger.warning(f"Failed to clear middleware cache during checkpoint cleanup: {e}")
+                # Don't fail the entire cleanup if middleware cache clear fails
 
         logger.info(
             f"Checkpoint cleanup completed: processed {processed_count} checkpoints, "
