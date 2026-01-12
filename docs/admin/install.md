@@ -282,7 +282,6 @@ Apply middleware to specific models:
    - **Is Active**: Check to enable this middleware
    - **Is Critical**: Check if initialization should fail if this middleware fails
    - **Priority**: Execution order (1-100, lower executes first)
-   - **TTL**: Time-to-live for middleware data in seconds
 
 ### 6. Configure MCP Servers (Optional)
 

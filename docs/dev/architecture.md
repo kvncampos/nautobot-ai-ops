@@ -386,7 +386,7 @@ Response to User
 │                                            │
 │  Priority 20: CacheMiddleware              │
 │    - Store response in cache               │
-│    - Set TTL from middleware config        │
+│    - Set cache TTL from config             │
 │                                            │
 │  Priority 10: LoggingMiddleware            │
 │    - Log response timestamp                │
