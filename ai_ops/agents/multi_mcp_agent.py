@@ -4,7 +4,6 @@ This is the production-ready agent that supports multiple MCP servers with
 enterprise features including caching, health checks, and checkpointing.
 """
 
-import asyncio
 import logging
 from datetime import datetime
 from typing import Annotated
@@ -16,13 +15,16 @@ from langgraph.graph import StateGraph, add_messages
 from langgraph.prebuilt import ToolNode
 from typing_extensions import TypedDict
 
+from ai_ops.helpers.common.asyncio_utils import get_or_create_event_loop_lock
 from ai_ops.helpers.get_llm_model import get_llm_model_async
 from ai_ops.models import MCPServer
 
 logger = logging.getLogger(__name__)
 
-# Thread-safe cache lock
-_cache_lock = asyncio.Lock()
+# Lazy lock initialization to avoid event loop binding issues
+# Use list to allow modification via get_or_create_event_loop_lock
+_cache_lock: list = [None]
+
 
 # Application-level cache structure
 _mcp_client_cache = {
@@ -52,8 +54,11 @@ async def get_or_create_mcp_client(force_refresh: bool = False) -> tuple[MultiSe
     Returns:
         Tuple of (client, tools) or (None, []) if no healthy servers
     """
+    # Get lock bound to current event loop
+    lock = get_or_create_event_loop_lock(_cache_lock, "mcp_cache_lock")
+
     try:
-        async with _cache_lock:
+        async with lock:
             now = datetime.now()
 
             # Get cache TTL from default LLM model
@@ -130,6 +135,9 @@ async def get_or_create_mcp_client(force_refresh: bool = False) -> tuple[MultiSe
                 client = MultiServerMCPClient(connections)
                 tools = await client.get_tools()
 
+                # Stage: mcp_connect - Log tool discovery
+                logger.warning(f"[mcp_connect] discovered {len(tools)} tools from {len(servers)} server(s)")
+
                 # Update cache
                 _mcp_client_cache.update(
                     {
@@ -140,7 +148,7 @@ async def get_or_create_mcp_client(force_refresh: bool = False) -> tuple[MultiSe
                     }
                 )
 
-                logger.info(f"Created MCP client with {len(servers)} server(s), {len(tools)} tool(s)")
+                logger.info(f"[mcp_connect] cache updated: servers={len(servers)}, tools={len(tools)}")
                 return client, tools
 
             except Exception as e:
@@ -172,7 +180,10 @@ async def clear_mcp_cache() -> int:
     Returns:
         Number of servers that were cached (for audit logging)
     """
-    async with _cache_lock:
+    # Get lock bound to current event loop
+    lock = get_or_create_event_loop_lock(_cache_lock, "mcp_cache_lock")
+
+    async with lock:
         cleared_count = _mcp_client_cache.get("server_count", 0)
 
         # Close existing client if present
@@ -215,8 +226,10 @@ async def shutdown_mcp_client():
     """
     global _mcp_client_cache
 
+    lock = get_or_create_event_loop_lock(_cache_lock, "mcp_cache_lock")
+
     try:
-        async with _cache_lock:
+        async with lock:
             logger.info("Shutting down MCP client...")
 
             # Close existing client if present
@@ -276,6 +289,8 @@ async def build_agent(llm_model=None, checkpointer=None, provider: str | None = 
     Returns:
         Compiled graph ready for execution, or None if no default model available
     """
+    logger.debug("Building agent with middleware and tools")
+
     from asgiref.sync import sync_to_async
     from langchain.agents import create_agent
 
@@ -287,27 +302,35 @@ async def build_agent(llm_model=None, checkpointer=None, provider: str | None = 
     if llm_model is None:
         llm_model = await sync_to_async(LLMModel.get_default_model)()
 
-    # Get MCP client and tools (may be empty if no MCP servers configured)
+    # Get MCP client and tools
     client, tools = await get_or_create_mcp_client()
+
+    # Log tool availability
+    if tools:
+        logger.debug(f"Loaded {len(tools)} MCP tools")
+    else:
+        logger.warning("No MCP tools available - agent will work for conversation only")
 
     # Get LLM model with optional provider override
     # If provider is specified, it will be used instead of the model's configured provider
     llm = await get_llm_model_async(model_name=llm_model.name, provider=provider)
 
     # Get middleware in priority order
+    # Middleware are always instantiated fresh to prevent state leaks between conversations
     middleware = await get_middleware(llm_model)
 
-    log_msg = f"Building agent v2 for model {llm_model.name} with {len(middleware)} middleware and {len(tools)} tools"
-    if provider:
-        log_msg += f" (provider override: {provider})"
-    logger.info(log_msg)
+    logger.info(f"Creating agent for {llm_model.name}: {len(tools)} tools, {len(middleware)} middleware")
+
+    # Generate dynamic system prompt with actual tool information and model name
+    system_prompt = get_multi_mcp_system_prompt(model_name=llm_model.name)
 
     # Create agent with middleware
     # If no tools are available, the agent will still work for basic conversation
+    tools_to_pass = tools if tools else []
     graph = create_agent(
         model=llm,
-        tools=tools if tools else [],
-        system_prompt=get_multi_mcp_system_prompt(),
+        tools=tools_to_pass,
+        system_prompt=system_prompt,
         middleware=middleware,
         checkpointer=checkpointer,
     )
@@ -353,7 +376,7 @@ async def build_workflow() -> StateGraph | None:
 
         # Add system prompt if not already present
         if not any(isinstance(msg, SystemMessage) for msg in messages):
-            system_message = SystemMessage(content=get_multi_mcp_system_prompt())
+            system_message = SystemMessage(content=get_multi_mcp_system_prompt(model_name=llm.model_name))
             messages = [system_message] + messages
 
         response = llm_with_tools.invoke(messages)
@@ -413,6 +436,32 @@ async def process_message(user_input: str, thread_id: str, provider: str | None 
             # Track checkpoint creation for TTL enforcement
             track_checkpoint_creation(thread_id)
 
+            # Check if this is a fresh conversation (no previous messages)
+            # This happens after clearing conversation history or starting a new session
+            config = {"configurable": {"thread_id": thread_id}}
+
+            try:
+                # DIAGNOSTIC: Log storage keys if available
+                if hasattr(checkpointer, "storage"):
+                    all_keys = list(checkpointer.storage.keys())
+                    matching_keys = [k for k in all_keys if isinstance(k, tuple) and len(k) > 0 and k[0] == thread_id]
+                    logger.info(
+                        f"[STATE_CHECK] Storage has {len(all_keys)} total keys, {len(matching_keys)} match this thread"
+                    )
+                    logger.debug(f"[STATE_CHECK] Matching keys: {matching_keys}")
+
+                # Type ignore: LangGraph accepts dict config but types show RunnableConfig
+                state = await checkpointer.aget(config)  # type: ignore[arg-type]
+
+                # DIAGNOSTIC: Log state check result
+                state_exists = state is not None
+                logger.info(f"[STATE_CHECK] State exists: {state_exists}")
+                if state_exists:
+                    logger.debug(f"[STATE_CHECK] State details: {state}")
+
+            except Exception as e:
+                logger.warning(f"[STATE_CHECK] Error checking conversation state: {e}")
+
             # Build agent v2 with checkpointer integration
             # If provider is specified, the LLM model selection will use it
             graph = await build_agent(checkpointer=checkpointer, provider=provider)
@@ -420,22 +469,55 @@ async def process_message(user_input: str, thread_id: str, provider: str | None 
             # Configuration with thread_id for conversation isolation
             config = {"configurable": {"thread_id": thread_id}}
 
-            # Log conversation state before processing
-            log_msg = f"Processing message for thread_id: {thread_id}"
-            if provider:
-                log_msg += f", provider override: {provider}"
-            logger.debug(log_msg)
+            logger.debug(f"Processing message for thread: {thread_id}")
 
             # Only pass the new user message
             # Graph automatically loads conversation history from checkpointer
-            result = await graph.ainvoke({"messages": [HumanMessage(content=user_input)]}, config=config)
+            # Type ignore: LangGraph accepts dict config but types show RunnableConfig
+            logger.warning(f"[llm_invoke] thread={thread_id} input='{user_input[:100]}...'")
+            result = await graph.ainvoke({"messages": [HumanMessage(content=user_input)]}, config=config)  # type: ignore[arg-type]
 
             # Log conversation state after processing
             logger.debug(f"Message processed for thread_id: {thread_id}, total messages: {len(result['messages'])}")
 
-            # Extract response from last message
-            response_text = result["messages"][-1].content
+            # Stage: tool_call - Log any tool calls made
+            tool_calls_made = []
+            logger.warning(f"[tool_call] thread={thread_id} analyzing {len(result['messages'])} messages...")
 
+            for idx, message in enumerate(result["messages"]):
+                msg_type = type(message).__name__
+                has_tool_calls_attr = hasattr(message, "tool_calls")
+                logger.debug(f"Message #{idx} type={msg_type} has_tool_calls={has_tool_calls_attr}")
+
+                if hasattr(message, "tool_calls") and message.tool_calls:
+                    logger.debug(f"Message #{idx} has {len(message.tool_calls)} tool call(s)")
+                    for tc in message.tool_calls:
+                        name = tc.get("name", "unknown") if isinstance(tc, dict) else getattr(tc, "name", "unknown")
+                        tool_calls_made.append(name)
+                        logger.debug(f"Tool called: {name}")
+
+            if tool_calls_made:
+                logger.debug(f"Tools used in conversation: {tool_calls_made}")
+            else:
+                logger.debug(f"No tools used for query: '{user_input[:100]}'")
+
+            # Stage: response - Extract and return final response
+            # Find the last AI message that has actual content (not just tool calls)
+            response_text = None
+            for message in reversed(result["messages"]):
+                # Check if it's an AI message with content (and not just tool calls)
+                if hasattr(message, "content") and message.content:
+                    # Skip messages that are only tool calls without text content
+                    if hasattr(message, "tool_calls") and message.tool_calls and not message.content.strip():
+                        continue
+                    response_text = message.content
+                    break
+
+            # Fallback to last message if no suitable message found
+            if response_text is None:
+                response_text = result["messages"][-1].content if result["messages"] else "No response generated"
+
+            logger.debug(f"Response generated: {len(response_text)} characters")
             return response_text
 
     except RuntimeError as e:

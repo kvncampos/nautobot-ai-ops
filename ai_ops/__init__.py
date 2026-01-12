@@ -55,11 +55,6 @@ class AiOpsConfig(NautobotAppConfig):
             help_text="Retention period in days for conversation checkpoints. Used by cleanup jobs when migrated to Redis Stack or PostgreSQL persistent storage. Not enforced for current MemorySaver implementation which uses chat_session_ttl_minutes instead. Valid range: 1-365 days.",
             field_type=int,
         ),
-        "middleware_cache_ttl_minutes": ConstanceConfigItem(
-            default=5,
-            help_text="Cache time-to-live in minutes for LLM middleware configurations. Middleware instances are cached to avoid repeated database queries. Valid range: 1-60 minutes.",
-            field_type=int,
-        ),
     }
     docs_view_name = "plugins:ai_ops:docs"
     searchable_models = ["llmmodel", "mcpserver"]
@@ -75,7 +70,6 @@ class AiOpsConfig(NautobotAppConfig):
             setup_chat_session_cleanup_schedule,
             setup_checkpoint_cleanup_schedule,
             setup_mcp_health_check_schedule,
-            setup_middleware_cache_jobs,
         )
 
         logger = logging.getLogger(__name__)
@@ -84,7 +78,6 @@ class AiOpsConfig(NautobotAppConfig):
         nautobot_database_ready.connect(create_default_llm_providers, sender=self)
         nautobot_database_ready.connect(create_default_middleware_types, sender=self)
         nautobot_database_ready.connect(setup_checkpoint_cleanup_schedule, sender=self)
-        nautobot_database_ready.connect(setup_middleware_cache_jobs, sender=self)
         nautobot_database_ready.connect(setup_mcp_health_check_schedule, sender=self)
         nautobot_database_ready.connect(setup_chat_session_cleanup_schedule, sender=self)
 
@@ -97,15 +90,13 @@ class AiOpsConfig(NautobotAppConfig):
             import asyncio
 
             from ai_ops.agents.multi_mcp_agent import warm_mcp_cache
-            from ai_ops.helpers.get_middleware import warm_middleware_cache
 
             # Try to get the running event loop
             try:
                 loop = asyncio.get_running_loop()
                 # If we have a running loop, schedule the tasks
                 loop.create_task(warm_mcp_cache())
-                loop.create_task(warm_middleware_cache())
-                logger.info("Scheduled MCP and middleware cache warming")
+                logger.info("Scheduled MCP cache warming")
             except RuntimeError:
                 # No running event loop (e.g., during tests or startup)
                 # This is expected and not an error

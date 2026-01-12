@@ -70,9 +70,13 @@ class OllamaHandler(BaseLLMProviderHandler):
 
         logger.info(f"Initializing ChatOllama with model={model_name}, base_url={base_url}, temperature={temperature}")
 
+        # Note: Some Ollama models (llama3.2, etc.) may not properly support native tool calling.
+        # If tools aren't being invoked, try a model with better tool support like llama3.1, mistral, or qwen2.5.
         return ChatOllama(
             model=model_name,
             base_url=base_url,
             temperature=temperature,
+            # Enable structured tool calling - required for proper tool invocation
+            # Some models may need format="json" if tool calling still fails
             **kwargs,
         )

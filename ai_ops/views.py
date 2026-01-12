@@ -4,7 +4,7 @@ import logging
 
 from asgiref.sync import sync_to_async
 from django.contrib.auth.decorators import user_passes_test
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from nautobot.apps.config import get_app_settings_or_config
@@ -144,44 +144,62 @@ class AIChatBotGenericView(GenericView):
 
     async def get(self, request, *args, **kwargs):
         """Render the chat widget template."""
-        # Check if there's a default LLM model configured
-        has_default_model = await sync_to_async(models.LLMModel.objects.filter(is_default=True).exists)()
+        try:
+            # Check if there's a default LLM model configured
+            has_default_model = await sync_to_async(models.LLMModel.objects.filter(is_default=True).exists)()
 
-        # Check if there are any healthy MCP servers
-        has_healthy_mcp = await sync_to_async(models.MCPServer.objects.filter(status__name="Healthy").exists)()
+            # Check if there are any healthy MCP servers
+            has_healthy_mcp = await sync_to_async(models.MCPServer.objects.filter(status__name="Healthy").exists)()
 
-        # Check if there are any MCP servers at all
-        has_any_mcp = await sync_to_async(models.MCPServer.objects.exists)()
+            # Check if there are any MCP servers at all
+            has_any_mcp = await sync_to_async(models.MCPServer.objects.exists)()
 
-        # Get chat session TTL from Constance config (in minutes)
-        chat_session_ttl_minutes = await sync_to_async(get_app_settings_or_config)("ai_ops", "chat_session_ttl_minutes")
+            # Get chat session TTL from Constance config (in minutes)
+            chat_session_ttl_minutes = await sync_to_async(get_app_settings_or_config)(
+                "ai_ops", "chat_session_ttl_minutes"
+            )
 
-        # Chat is enabled only if we have a default model (MCP server no longer required)
-        chat_enabled = has_default_model
+            # Chat is enabled only if we have a default model (MCP server no longer required)
+            chat_enabled = has_default_model
 
-        # Get list of enabled providers for admin provider selection
-        # Only staff users can select providers; normal users use default
-        enabled_providers = []
-        is_admin = request.user.is_staff
-        if is_admin:
-            providers = await sync_to_async(list)(models.LLMProvider.objects.filter(is_enabled=True))
-            enabled_providers = [
-                {"name": provider.name, "get_name_display": provider.get_name_display()} for provider in providers
-            ]
+            # Get list of enabled providers for admin provider selection
+            # Only staff users can select providers; normal users use default
+            enabled_providers = []
+            is_admin = request.user.is_staff
+            if is_admin:
+                providers = await sync_to_async(list)(models.LLMProvider.objects.filter(is_enabled=True))
+                # get_name_display() is a Django auto-generated method for CharField with choices
+                enabled_providers = [
+                    {"name": provider.name, "get_name_display": provider.get_name_display()}  # type: ignore[attr-defined]
+                    for provider in providers
+                ]
 
-        # You can pass any context data needed for your chatbot template
-        context = {
-            "title": "LLM ChatBot",
-            "chat_enabled": chat_enabled,
-            "has_default_model": has_default_model,
-            "has_healthy_mcp": has_healthy_mcp,
-            "has_any_mcp": has_any_mcp,
-            "is_admin": is_admin,
-            "enabled_providers": enabled_providers,
-            "chat_session_ttl_minutes": chat_session_ttl_minutes,
-            # Add other context variables as needed
-        }
-        return await sync_to_async(render)(request, self.template_name, context)
+            # You can pass any context data needed for your chatbot template
+            context = {
+                "title": "LLM ChatBot",
+                "chat_enabled": chat_enabled,
+                "has_default_model": has_default_model,
+                "has_healthy_mcp": has_healthy_mcp,
+                "has_any_mcp": has_any_mcp,
+                "is_admin": is_admin,
+                "enabled_providers": enabled_providers,
+                "chat_session_ttl_minutes": chat_session_ttl_minutes,
+                # Add other context variables as needed
+            }
+            return await sync_to_async(render)(request, self.template_name, context)
+
+        except RuntimeError as e:
+            if "cannot schedule new futures after interpreter shutdown" in str(e):
+                logger.warning(f"Cannot render chat view during interpreter shutdown: {e}")
+                # Return a simple error page instead of trying to render the full template
+                return HttpResponse(
+                    "<html><body><h1>Service Unavailable</h1>"
+                    "<p>The application is currently shutting down. Please try again in a moment.</p>"
+                    "</body></html>",
+                    status=503,
+                )
+            else:
+                raise
 
 
 # ============================================================================

@@ -8,7 +8,7 @@ to the single MCP agent.
 from datetime import datetime
 
 
-def get_multi_mcp_system_prompt() -> str:
+def get_multi_mcp_system_prompt(model_name: str) -> str:
     """Generate the system prompt for multi-MCP agent with current date context.
 
     Returns:
@@ -21,6 +21,39 @@ def get_multi_mcp_system_prompt() -> str:
 
 CURRENT DATE: {current_date}
 CURRENT MONTH: {current_month}
+
+═══════════════════════════════════════════════════════════════════════════════
+🛑 MANDATORY TOOL CALLING WORKFLOW - READ THIS FIRST
+═══════════════════════════════════════════════════════════════════════════════
+
+BEFORE calling any API execution tool (like mcp_nautobot_dynamic_api_request), you MUST:
+
+1. 🔍 DISCOVER: Call the schema/discovery tool FIRST
+   - Example: mcp_nautobot_openapi_api_request_schema(query="list devices")
+   - Review the returned `path` value (e.g., "/api/dcim/devices/")
+   - This discovers the correct, version-specific endpoint
+
+2. ✅ VERIFY: Confirm you have the exact path/parameters from step 1
+   - DO NOT proceed without this information
+   - DO NOT assume you know the path from training data
+
+3. 🚀 EXECUTE: Now call the API execution tool with that exact path
+   - Use the path exactly as returned by discovery
+   - Include any parameters identified in step 1
+
+⛔ NEVER guess API paths based on your training data
+⛔ NEVER skip discovery even if the path seems "obvious" (like /dcim/devices/)
+⛔ NEVER assume endpoints from documentation or examples are current
+
+WHY THIS MATTERS:
+- API paths change between versions
+- Guessing causes 404 errors that waste user time
+- Discovery tools provide current, accurate information
+
+VIOLATION CONSEQUENCE: Your request WILL FAIL with 404 Not Found error.
+
+SIMPLIFIED OPTION: Some tools (like mcp_nautobot_query) handle discovery automatically.
+Use these when available for simple queries.
 
 ═══════════════════════════════════════════════════════════════════════════════
 YOUR CAPABILITIES
@@ -48,16 +81,17 @@ When you don't know how to accomplish a task:
 
 **Context-Aware Decision Making:**
 
-  • If you have explicit knowledge about how to use a tool (from earlier in conversation):
-    → Use the tool directly with the information you already have
-    → Reuse endpoint paths, parameter names, and structures from previous successful calls
+  • If you successfully called a discovery tool EARLIER IN THIS CONVERSATION:
+    → You may reuse the endpoint path from that discovery call
+    → Verify the discovery happened in the last 10 messages
+    → If unsure or if discovery was more than 10 messages ago, re-discover
 
-  • If you lack specific knowledge about tool parameters or data structures:
-    → Look for discovery/schema tools first (e.g., tools with "search", "schema", or "list" in their names)
-    → Call discovery tools to learn the correct approach
+  • For NEW requests or different endpoints:
+    → ALWAYS call discovery tools first (e.g., tools with "search", "schema", or "list" in their names)
+    → NEVER assume you know the endpoint from training data
     → Then call data retrieval tools with the exact information from discovery
 
-  • If you receive errors (404 Not Found, 400 Bad Request, etc.):
+  • If you receive errors (404 Not Found, 400 Bad Request, 403 PermissionDenied, etc.):
     → Use discovery tools to verify correct paths/parameters
     → Retry with corrected information
 
