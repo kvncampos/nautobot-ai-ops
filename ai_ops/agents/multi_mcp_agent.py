@@ -289,11 +289,7 @@ async def build_agent(llm_model=None, checkpointer=None, provider: str | None = 
     Returns:
         Compiled graph ready for execution, or None if no default model available
     """
-    # Stage: agent_init - Agent initialization begins
-    logger.warning("[agent_init] ========== build_agent() CALLED ==========")
-    logger.warning(
-        f"[agent_init] params: llm_model={llm_model}, provider={provider}, has_checkpointer={checkpointer is not None}"
-    )
+    logger.debug("Building agent with middleware and tools")
 
     from asgiref.sync import sync_to_async
     from langchain.agents import create_agent
@@ -305,30 +301,15 @@ async def build_agent(llm_model=None, checkpointer=None, provider: str | None = 
     # Get LLM model
     if llm_model is None:
         llm_model = await sync_to_async(LLMModel.get_default_model)()
-        logger.warning(f"[agent_init] using_model={llm_model.name}")
 
-    # Stage: mcp_connect - MCP client connection
-    logger.warning("[mcp_connect] connecting to MCP servers...")
+    # Get MCP client and tools
     client, tools = await get_or_create_mcp_client()
-    logger.warning(f"[mcp_connect] complete, tools_count={len(tools) if tools else 0}")
 
-    # Stage: mcp_tools - Log available tools as compact JSON
+    # Log tool availability
     if tools:
-        import json
-
-        tools_summary = [
-            {
-                "name": tool.name,
-                "type": type(tool).__name__,
-                "description": (tool.description[:80] + "...")
-                if hasattr(tool, "description") and len(tool.description) > 80
-                else getattr(tool, "description", ""),
-            }
-            for tool in tools
-        ]
-        logger.warning(f"[mcp_tools] loaded {len(tools)} tools: {json.dumps(tools_summary)}")
+        logger.debug(f"Loaded {len(tools)} MCP tools")
     else:
-        logger.warning("[mcp_tools] WARNING: no tools returned from MCP client")
+        logger.warning("No MCP tools available - agent will work for conversation only")
 
     # Get LLM model with optional provider override
     # If provider is specified, it will be used instead of the model's configured provider
@@ -338,7 +319,7 @@ async def build_agent(llm_model=None, checkpointer=None, provider: str | None = 
     # Middleware are always instantiated fresh to prevent state leaks between conversations
     middleware = await get_middleware(llm_model)
 
-    logger.warning(f"[agent_init] creating agent: tools={len(tools)}, middleware={len(middleware)}")
+    logger.info(f"Creating agent for {llm_model.name}: {len(tools)} tools, {len(middleware)} middleware")
 
     # Generate dynamic system prompt with actual tool information and model name
     system_prompt = get_multi_mcp_system_prompt(model_name=llm_model.name)
@@ -459,9 +440,6 @@ async def process_message(user_input: str, thread_id: str, provider: str | None 
             # This happens after clearing conversation history or starting a new session
             config = {"configurable": {"thread_id": thread_id}}
 
-            # DIAGNOSTIC: Log thread_id details before state check
-            logger.info(f"[STATE_CHECK] Checking state for thread_id: '{thread_id}' (type: {type(thread_id).__name__})")
-
             try:
                 # DIAGNOSTIC: Log storage keys if available
                 if hasattr(checkpointer, "storage"):
@@ -491,11 +469,7 @@ async def process_message(user_input: str, thread_id: str, provider: str | None 
             # Configuration with thread_id for conversation isolation
             config = {"configurable": {"thread_id": thread_id}}
 
-            # Log conversation state before processing
-            log_msg = f"Processing message for thread_id: {thread_id}"
-            if provider:
-                log_msg += f", provider override: {provider}"
-            logger.debug(log_msg)
+            logger.debug(f"Processing message for thread: {thread_id}")
 
             # Only pass the new user message
             # Graph automatically loads conversation history from checkpointer
@@ -513,20 +487,19 @@ async def process_message(user_input: str, thread_id: str, provider: str | None 
             for idx, message in enumerate(result["messages"]):
                 msg_type = type(message).__name__
                 has_tool_calls_attr = hasattr(message, "tool_calls")
-                logger.debug(f"[tool_call] msg#{idx} type={msg_type} has_tool_calls={has_tool_calls_attr}")
+                logger.debug(f"Message #{idx} type={msg_type} has_tool_calls={has_tool_calls_attr}")
 
                 if hasattr(message, "tool_calls") and message.tool_calls:
-                    logger.warning(f"[tool_call] msg#{idx} has {len(message.tool_calls)} tool_calls")
+                    logger.debug(f"Message #{idx} has {len(message.tool_calls)} tool call(s)")
                     for tc in message.tool_calls:
                         name = tc.get("name", "unknown") if isinstance(tc, dict) else getattr(tc, "name", "unknown")
-                        args = tc.get("args") if isinstance(tc, dict) else getattr(tc, "args", {})
                         tool_calls_made.append(name)
-                        logger.warning(f"[tool_call] thread={thread_id} tool={name} args={args}")
+                        logger.debug(f"Tool called: {name}")
 
             if tool_calls_made:
-                logger.warning(f"[tool_call] thread={thread_id} tools_used={tool_calls_made}")
+                logger.debug(f"Tools used in conversation: {tool_calls_made}")
             else:
-                logger.warning(f"[tool_call] thread={thread_id} no_tools_used query='{user_input[:100]}'")
+                logger.debug(f"No tools used for query: '{user_input[:100]}'")
 
             # Stage: response - Extract and return final response
             # Find the last AI message that has actual content (not just tool calls)
@@ -544,7 +517,7 @@ async def process_message(user_input: str, thread_id: str, provider: str | None 
             if response_text is None:
                 response_text = result["messages"][-1].content if result["messages"] else "No response generated"
 
-            logger.warning(f"[response] thread={thread_id} response_length={len(response_text)}")
+            logger.debug(f"Response generated: {len(response_text)} characters")
             return response_text
 
     except RuntimeError as e:

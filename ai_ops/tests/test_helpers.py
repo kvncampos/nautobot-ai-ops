@@ -149,17 +149,12 @@ class CheckpointerTestCase(TestCase):
             ("new_thread",): new_time,
         }
 
-        # Mock the clear_middleware_cache function
-        with patch("ai_ops.helpers.get_middleware.clear_middleware_cache") as mock_clear:
-            # Run cleanup with short TTL
-            result = cleanup_expired_checkpoints(ttl_minutes=5)
+        # Run cleanup with short TTL
+        result = cleanup_expired_checkpoints(ttl_minutes=5)
 
-            # Verify cleanup was successful
-            self.assertTrue(result["success"])
-            self.assertEqual(result["deleted_count"], 1)
-
-            # Verify middleware cache clear was attempted
-            mock_clear.assert_called_once()
+        # Verify cleanup was successful
+        self.assertTrue(result["success"])
+        self.assertEqual(result["deleted_count"], 1)
 
 
 class MiddlewareSchemaTestCase(TestCase):

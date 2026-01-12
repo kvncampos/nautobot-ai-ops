@@ -142,8 +142,7 @@ async def clear_checkpointer_for_thread(thread_id: str) -> bool:
     """
     global _memory_saver_instance, _checkpoint_timestamps
 
-    # DIAGNOSTIC: Log thread_id details
-    logger.info(f"[CLEAR] Starting clear operation for thread_id: '{thread_id}' (type: {type(thread_id).__name__})")
+    logger.debug(f"Clearing conversation history for thread: {thread_id}")
 
     if _memory_saver_instance is None:
         logger.warning("No MemorySaver instance exists to clear")
@@ -171,60 +170,44 @@ async def clear_checkpointer_for_thread(thread_id: str) -> bool:
         # MemorySaver stores data with tuple keys like (thread_id,)
         if hasattr(_memory_saver_instance, "storage"):
             all_keys = list(_memory_saver_instance.storage.keys())
-            logger.info(f"[CLEAR] Storage has {len(all_keys)} total keys before clearing")
-            logger.debug(f"[CLEAR] All storage keys: {all_keys}")
 
             # Create the thread key tuple - MemorySaver uses tuples for storage keys
             thread_key = (thread_id,)
 
             # Clear all keys associated with this thread
             # MemorySaver may store keys as plain strings OR tuples like (thread_id, checkpoint_id, ...)
-            cleared = False
             keys_to_delete = []
             for key in all_keys:
                 # Check if key matches thread_id (handles both string keys and tuple keys)
-                matches = False
                 if isinstance(key, str) and key == thread_id:
-                    # Plain string key matches
-                    matches = True
-                    logger.debug(f"[CLEAR] String key matches - will delete: {key}")
+                    keys_to_delete.append(key)
                 elif isinstance(key, tuple) and len(key) > 0 and key[0] == thread_id:
-                    # Tuple key with thread_id as first element matches
-                    matches = True
-                    logger.debug(f"[CLEAR] Tuple key matches - will delete: {key}")
-                else:
-                    logger.debug(f"[CLEAR] Key does NOT match: {key} (type: {type(key).__name__})")
-
-                if matches:
                     keys_to_delete.append(key)
 
             # Delete all matching keys
             for key in keys_to_delete:
                 del _memory_saver_instance.storage[key]
-                cleared = True
-                logger.info(f"[CLEAR] Deleted storage key: {key}")
 
             # Also remove timestamp tracking
             if thread_key in _checkpoint_timestamps:
                 del _checkpoint_timestamps[thread_key]
-                logger.debug(f"[CLEAR] Removed timestamp tracking for {thread_key}")
 
-            if cleared:
-                remaining_keys = list(_memory_saver_instance.storage.keys())
-                logger.info(f"[CLEAR] Successfully cleared {len(keys_to_delete)} keys for thread {thread_id}")
-                logger.info(f"[CLEAR] Storage now has {len(remaining_keys)} remaining keys")
-                logger.debug(f"[CLEAR] Remaining keys: {remaining_keys}")
+            if keys_to_delete:
+                logger.info(f"Cleared {len(keys_to_delete)} checkpoint(s) for thread {thread_id}")
 
-                # DIAGNOSTIC: Verify state is actually None after clearing
-                verify_config = {"configurable": {"thread_id": thread_id}}
-                verify_state = await _memory_saver_instance.aget(verify_config)  # type: ignore[arg-type]
-                logger.info(f"[CLEAR] Verification check - state for thread {thread_id} is: {verify_state}")
+                # Verify state is actually cleared
+                try:
+                    verify_config = {"configurable": {"thread_id": thread_id}}
+                    verify_state = await _memory_saver_instance.aget(verify_config)  # type: ignore[arg-type]
+                    if verify_state is not None:
+                        logger.warning(f"Verification failed: state still exists for thread {thread_id}")
+                except KeyError:
+                    # After clearing, it's expected that the thread may not be found
+                    logger.debug(f"Verification passed: thread {thread_id} not found in storage (expected)")
 
                 return True
             else:
-                logger.warning(
-                    f"Thread {thread_id} not found in storage keys: {list(_memory_saver_instance.storage.keys())}"
-                )
+                logger.debug(f"No checkpoints found for thread {thread_id}")
                 return False
 
         logger.warning(f"Could not access storage to clear thread {thread_id}")
@@ -370,19 +353,6 @@ def cleanup_expired_checkpoints(ttl_minutes: int = 5) -> dict:
             f"Checkpoint cleanup completed: processed {processed_count} checkpoints, "
             f"deleted {deleted_count} expired checkpoints (TTL: {ttl_minutes} minutes)"
         )
-
-        # Clear middleware cache if any checkpoints were deleted
-        if deleted_count > 0:
-            try:
-                # Import async_to_sync for running async function
-                from asgiref.sync import async_to_sync
-
-                from ai_ops.helpers.get_middleware import clear_middleware_cache
-
-                async_to_sync(clear_middleware_cache)()
-                logger.debug("Cleared middleware cache after checkpoint cleanup")
-            except Exception as e:
-                logger.warning(f"Failed to clear middleware cache: {e}")
 
         return {
             "success": True,
