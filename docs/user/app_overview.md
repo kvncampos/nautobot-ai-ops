@@ -66,7 +66,7 @@ The app introduces five primary models:
 
 - **Cleanup Old Checkpoints**: Scheduled job to maintain conversation history by removing old checkpoints from Redis
 - **MCP Server Health Check**: Automated health monitoring for HTTP MCP servers with retry logic and cache invalidation
-- **Middleware Cache Invalidation**: Automatic cache clearing when middleware configurations change
+- **Fresh Middleware Instantiation**: Middleware instances created fresh for each request to prevent state leaks between conversations
 - **Default Model Cache Warming**: Pre-loads middleware for newly set default models
 
 ### User Interface

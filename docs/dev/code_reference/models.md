@@ -334,8 +334,7 @@ cache_config = LLMMiddleware.objects.create(
     config_version="1.1.0",
     is_active=True,
     is_critical=False,
-    priority=10,
-    ttl=300
+    priority=10
 )
 
 # Configure logging middleware (executes second)
@@ -350,8 +349,7 @@ logging_config = LLMMiddleware.objects.create(
     },
     is_active=True,
     is_critical=True,  # Critical - agent won't start without it
-    priority=20,
-    ttl=300
+    priority=20
 )
 
 # Query active middleware for a model
@@ -706,7 +704,6 @@ All models include validation logic to ensure data integrity:
 
 - Each middleware type can only be configured once per model (unique_together constraint)
 - Priority must be between 1 and 100
-- TTL must be at least 60 seconds
 - Critical flag determines initialization behavior
 
 ### MCPServer Validation
