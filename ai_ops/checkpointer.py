@@ -7,7 +7,6 @@ Note: Redis checkpointing requires Redis Stack with RediSearch module.
 For persistent storage in production, use langgraph-checkpoint-postgres.
 """
 
-import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -143,6 +142,9 @@ async def clear_checkpointer_for_thread(thread_id: str) -> bool:
     """
     global _memory_saver_instance, _checkpoint_timestamps
 
+    # DIAGNOSTIC: Log thread_id details
+    logger.info(f"[CLEAR] Starting clear operation for thread_id: '{thread_id}' (type: {type(thread_id).__name__})")
+
     if _memory_saver_instance is None:
         logger.warning("No MemorySaver instance exists to clear")
         return False
@@ -154,7 +156,12 @@ async def clear_checkpointer_for_thread(thread_id: str) -> bool:
 
         # Get current state to check if thread exists
         # Type ignore: LangGraph accepts dict config but types show RunnableConfig
-        state = await _memory_saver_instance.aget(config)  # type: ignore[arg-type]
+        try:
+            state = await _memory_saver_instance.aget(config)  # type: ignore[arg-type]
+        except KeyError:
+            # Thread doesn't exist in storage - this is expected for new/cleared threads
+            logger.debug(f"Thread {thread_id} not found in storage (KeyError)")
+            state = None
 
         if state is None:
             logger.debug(f"No conversation history found for thread {thread_id}")
@@ -163,33 +170,56 @@ async def clear_checkpointer_for_thread(thread_id: str) -> bool:
         # Clear by removing from storage
         # MemorySaver stores data with tuple keys like (thread_id,)
         if hasattr(_memory_saver_instance, "storage"):
-            logger.debug(f"Storage keys before clearing: {list(_memory_saver_instance.storage.keys())}")
+            all_keys = list(_memory_saver_instance.storage.keys())
+            logger.info(f"[CLEAR] Storage has {len(all_keys)} total keys before clearing")
+            logger.debug(f"[CLEAR] All storage keys: {all_keys}")
 
             # Create the thread key tuple - MemorySaver uses tuples for storage keys
             thread_key = (thread_id,)
-            
+
             # Clear all keys associated with this thread
-            # MemorySaver may have multiple keys per thread for different checkpoint IDs
+            # MemorySaver may store keys as plain strings OR tuples like (thread_id, checkpoint_id, ...)
             cleared = False
             keys_to_delete = []
-            for key in list(_memory_saver_instance.storage.keys()):
-                # Keys are tuples like (thread_id,) or (thread_id, checkpoint_id, ...)
-                if isinstance(key, tuple) and len(key) > 0 and key[0] == thread_id:
+            for key in all_keys:
+                # Check if key matches thread_id (handles both string keys and tuple keys)
+                matches = False
+                if isinstance(key, str) and key == thread_id:
+                    # Plain string key matches
+                    matches = True
+                    logger.debug(f"[CLEAR] String key matches - will delete: {key}")
+                elif isinstance(key, tuple) and len(key) > 0 and key[0] == thread_id:
+                    # Tuple key with thread_id as first element matches
+                    matches = True
+                    logger.debug(f"[CLEAR] Tuple key matches - will delete: {key}")
+                else:
+                    logger.debug(f"[CLEAR] Key does NOT match: {key} (type: {type(key).__name__})")
+
+                if matches:
                     keys_to_delete.append(key)
-            
+
             # Delete all matching keys
             for key in keys_to_delete:
                 del _memory_saver_instance.storage[key]
                 cleared = True
-                logger.debug(f"Cleared storage key: {key}")
-            
+                logger.info(f"[CLEAR] Deleted storage key: {key}")
+
             # Also remove timestamp tracking
             if thread_key in _checkpoint_timestamps:
                 del _checkpoint_timestamps[thread_key]
+                logger.debug(f"[CLEAR] Removed timestamp tracking for {thread_key}")
 
             if cleared:
-                logger.info(f"Cleared checkpoint storage for thread {thread_id} ({len(keys_to_delete)} keys)")
-                logger.debug(f"Storage keys after clearing: {list(_memory_saver_instance.storage.keys())}")
+                remaining_keys = list(_memory_saver_instance.storage.keys())
+                logger.info(f"[CLEAR] Successfully cleared {len(keys_to_delete)} keys for thread {thread_id}")
+                logger.info(f"[CLEAR] Storage now has {len(remaining_keys)} remaining keys")
+                logger.debug(f"[CLEAR] Remaining keys: {remaining_keys}")
+
+                # DIAGNOSTIC: Verify state is actually None after clearing
+                verify_config = {"configurable": {"thread_id": thread_id}}
+                verify_state = await _memory_saver_instance.aget(verify_config)  # type: ignore[arg-type]
+                logger.info(f"[CLEAR] Verification check - state for thread {thread_id} is: {verify_state}")
+
                 return True
             else:
                 logger.warning(
@@ -210,11 +240,11 @@ async def clear_checkpointer_for_thread(thread_id: str) -> bool:
                 for key in list(_memory_saver_instance.storage.keys()):
                     if isinstance(key, tuple) and len(key) > 0 and key[0] == thread_id:
                         keys_to_delete.append(key)
-                
+
                 for key in keys_to_delete:
                     del _memory_saver_instance.storage[key]
                     cleared = True
-                
+
                 thread_key = (thread_id,)
                 if thread_key in _checkpoint_timestamps:
                     del _checkpoint_timestamps[thread_key]
@@ -280,9 +310,6 @@ def cleanup_expired_checkpoints(ttl_minutes: int = 5) -> dict:
 
     This function scans all checkpoints and removes those older than the TTL
     plus a 30-second grace period to prevent race conditions with the frontend.
-    
-    When checkpoints are deleted, it also clears the middleware cache to ensure
-    stateful middleware instances (e.g., summarization buffers) are also removed.
 
     Args:
         ttl_minutes: Time-to-live in minutes (default: 5)
@@ -339,39 +366,23 @@ def cleanup_expired_checkpoints(ttl_minutes: int = 5) -> dict:
                 _checkpoint_timestamps[thread_key] = now
                 logger.debug(f"Added timestamp for existing checkpoint {thread_key}")
 
-        # Clear middleware cache if any checkpoints were deleted
-        # This ensures stateful middleware instances are also removed
-        if deleted_count > 0:
-            try:
-                # Import here to avoid circular dependencies
-                from ai_ops.helpers.get_middleware import clear_middleware_cache
-
-                # Check if we're already in an async context
-                try:
-                    loop = asyncio.get_running_loop()
-                    # We're already in an async context, can't create nested event loop
-                    # This is expected when called from async code
-                    logger.warning(
-                        "Cannot clear middleware cache from async context. "
-                        "Middleware cache should be cleared separately by the caller."
-                    )
-                except RuntimeError:
-                    # No event loop running, safe to create one
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    try:
-                        loop.run_until_complete(clear_middleware_cache())
-                        logger.info(f"Cleared middleware cache after removing {deleted_count} expired checkpoints")
-                    finally:
-                        loop.close()
-            except Exception as e:
-                logger.warning(f"Failed to clear middleware cache during checkpoint cleanup: {e}")
-                # Don't fail the entire cleanup if middleware cache clear fails
-
         logger.info(
             f"Checkpoint cleanup completed: processed {processed_count} checkpoints, "
             f"deleted {deleted_count} expired checkpoints (TTL: {ttl_minutes} minutes)"
         )
+
+        # Clear middleware cache if any checkpoints were deleted
+        if deleted_count > 0:
+            try:
+                # Import async_to_sync for running async function
+                from asgiref.sync import async_to_sync
+
+                from ai_ops.helpers.get_middleware import clear_middleware_cache
+
+                async_to_sync(clear_middleware_cache)()
+                logger.debug("Cleared middleware cache after checkpoint cleanup")
+            except Exception as e:
+                logger.warning(f"Failed to clear middleware cache: {e}")
 
         return {
             "success": True,

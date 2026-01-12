@@ -298,15 +298,9 @@ class ChatClearView(GenericView):
 
             # Import here to avoid circular dependencies
             from ai_ops.checkpointer import clear_checkpointer_for_thread
-            from ai_ops.helpers.get_middleware import clear_middleware_cache
 
             # Clear the conversation history for this thread
             cleared = await clear_checkpointer_for_thread(thread_id)
-
-            # Also clear middleware cache to remove any stateful middleware instances
-            # that might retain conversation context (e.g., summarization buffers)
-            await clear_middleware_cache()
-            logger.info(f"Cleared middleware cache for thread {thread_id}")
 
             if cleared:
                 return JsonResponse({"success": True, "message": "Conversation history cleared successfully"})

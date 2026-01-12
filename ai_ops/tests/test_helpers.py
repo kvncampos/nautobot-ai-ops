@@ -1,6 +1,6 @@
 """Tests for helper functions."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from django.test import TestCase
 
@@ -100,33 +100,40 @@ class CheckpointerTestCase(TestCase):
         # Track timestamp
         checkpoint_module._checkpoint_timestamps[(test_thread_id,)] = MagicMock()
 
-        # Clear the thread
-        result = async_to_sync(clear_checkpointer_for_thread)(test_thread_id)
+        # Mock aget to return a valid state (MemorySaver.aget requires specific checkpoint format)
+        # We need to mock it because our test storage doesn't have the exact format MemorySaver expects
+        with patch.object(
+            checkpoint_module._memory_saver_instance,
+            "aget",
+            new_callable=lambda: AsyncMock(return_value={"messages": ["message1"]}),
+        ):
+            # Clear the thread
+            result = async_to_sync(clear_checkpointer_for_thread)(test_thread_id)
 
-        # Verify it was cleared successfully
-        self.assertTrue(result)
+            # Verify it was cleared successfully
+            self.assertTrue(result)
 
-        # Verify all keys for this thread were removed
-        remaining_keys = list(checkpoint_module._memory_saver_instance.storage.keys())
-        for key in remaining_keys:
-            if isinstance(key, tuple) and len(key) > 0:
-                self.assertNotEqual(key[0], test_thread_id, f"Thread key {key} should have been removed")
+            # Verify all keys for this thread were removed
+            remaining_keys = list(checkpoint_module._memory_saver_instance.storage.keys())
+            for key in remaining_keys:
+                if isinstance(key, tuple) and len(key) > 0:
+                    self.assertNotEqual(key[0], test_thread_id, f"Thread key {key} should have been removed")
 
-        # Verify other thread is still there
-        self.assertIn(("other_thread",), remaining_keys)
+            # Verify other thread is still there
+            self.assertIn(("other_thread",), remaining_keys)
 
-        # Verify timestamp was removed
-        self.assertNotIn((test_thread_id,), checkpoint_module._checkpoint_timestamps)
+            # Verify timestamp was removed
+            self.assertNotIn((test_thread_id,), checkpoint_module._checkpoint_timestamps)
 
     def test_cleanup_expired_checkpoints_clears_middleware_cache(self):
         """Test that cleanup_expired_checkpoints clears middleware cache when deleting checkpoints."""
         from datetime import datetime, timedelta
 
-        from ai_ops.checkpointer import cleanup_expired_checkpoints
-        from ai_ops import checkpointer as checkpoint_module
-
         # Setup checkpointer
         from langgraph.checkpoint.memory import MemorySaver
+
+        from ai_ops import checkpointer as checkpoint_module
+        from ai_ops.checkpointer import cleanup_expired_checkpoints
 
         checkpoint_module._memory_saver_instance = MemorySaver()
         checkpoint_module._memory_saver_instance.storage = {
@@ -144,19 +151,15 @@ class CheckpointerTestCase(TestCase):
 
         # Mock the clear_middleware_cache function
         with patch("ai_ops.helpers.get_middleware.clear_middleware_cache") as mock_clear:
-            # Mock asyncio.new_event_loop() to avoid event loop issues
-            mock_loop = MagicMock()
-            with patch("asyncio.new_event_loop", return_value=mock_loop):
-                with patch("asyncio.set_event_loop"):
-                    # Run cleanup with short TTL
-                    result = cleanup_expired_checkpoints(ttl_minutes=5)
+            # Run cleanup with short TTL
+            result = cleanup_expired_checkpoints(ttl_minutes=5)
 
-                    # Verify cleanup was successful
-                    self.assertTrue(result["success"])
-                    self.assertEqual(result["deleted_count"], 1)
+            # Verify cleanup was successful
+            self.assertTrue(result["success"])
+            self.assertEqual(result["deleted_count"], 1)
 
-                    # Verify middleware cache clear was attempted
-                    mock_loop.run_until_complete.assert_called_once()
+            # Verify middleware cache clear was attempted
+            mock_clear.assert_called_once()
 
 
 class MiddlewareSchemaTestCase(TestCase):
