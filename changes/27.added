@@ -1,5 +1,0 @@
-Added `mcp_nautobot_query` tool to MCP server for simplified Nautobot API queries with automatic endpoint discovery, eliminating the need for agents to manually chain schema discovery and API request tools.
-
-Enhanced system prompt with explicit tool workflow instructions requiring agents to use discovery tools before making API requests, preventing guessed URL 404 errors.
-
-Improved `mcp_nautobot_dynamic_api_request` to return helpful guidance on 404 errors instead of raising exceptions, allowing agents to self-correct.

@@ -1,1 +1,0 @@
-Added automatic synchronization of fallback version strings in ai_ops/__init__.py when running towncrier release notes generation.

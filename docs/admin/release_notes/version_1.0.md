@@ -25,6 +25,38 @@ This document describes all new features and changes in the release. The format 
 <!-- towncrier release notes start -->
 
 
+## [v1.0.3 (2026-01-12)](https://github.com/kvncampos/nautobot-ai-ops/releases/tag/v1.0.3)
+
+### Added
+
+- [#27](https://github.com/kvncampos/nautobot-ai-ops/issues/27) - Added `mcp_nautobot_query` tool to MCP server for simplified Nautobot API queries with automatic endpoint discovery, eliminating the need for agents to manually chain schema discovery and API request tools.
+- [#27](https://github.com/kvncampos/nautobot-ai-ops/issues/27) - 
+- [#27](https://github.com/kvncampos/nautobot-ai-ops/issues/27) - Enhanced system prompt with explicit tool workflow instructions requiring agents to use discovery tools before making API requests, preventing guessed URL 404 errors.
+- [#27](https://github.com/kvncampos/nautobot-ai-ops/issues/27) - 
+- [#27](https://github.com/kvncampos/nautobot-ai-ops/issues/27) - Improved `mcp_nautobot_dynamic_api_request` to return helpful guidance on 404 errors instead of raising exceptions, allowing agents to self-correct.
+
+### Documentation
+
+- [#24](https://github.com/kvncampos/nautobot-ai-ops/issues/24) - Added comprehensive configuration guides for all 6 LLM providers (Ollama, OpenAI, Azure AI, Anthropic, HuggingFace, Custom) with prerequisites, authentication methods, and deployment strategies.
+- [#24](https://github.com/kvncampos/nautobot-ai-ops/issues/24) - 
+- [#24](https://github.com/kvncampos/nautobot-ai-ops/issues/24) - Added middleware configuration guide covering built-in middleware (Cache, Retry, Logging, RateLimit, Validation) and custom middleware examples (PII Redaction, Cost Tracking, Circuit Breaker) with priority-based execution and performance optimization.
+- [#24](https://github.com/kvncampos/nautobot-ai-ops/issues/24) - 
+- [#24](https://github.com/kvncampos/nautobot-ai-ops/issues/24) - Added MCP Server configuration guide with 6 server type implementations including Python/FastAPI examples, Docker deployment, health monitoring, and security patterns.
+- [#24](https://github.com/kvncampos/nautobot-ai-ops/issues/24) - 
+- [#24](https://github.com/kvncampos/nautobot-ai-ops/issues/24) - Expanded external_interactions.md to cover all 6 LLM providers instead of Azure-only with data flows and authentication details.
+- [#24](https://github.com/kvncampos/nautobot-ai-ops/issues/24) - 
+- [#24](https://github.com/kvncampos/nautobot-ai-ops/issues/24) - Enhanced app_getting_started.md with multi-provider quick start options and references to comprehensive configuration guides.
+- [#24](https://github.com/kvncampos/nautobot-ai-ops/issues/24) - 
+- [#24](https://github.com/kvncampos/nautobot-ai-ops/issues/24) - Improved app_use_cases.md with detailed provider selection guide, cost optimization strategies, and real-world deployment examples.
+- [#24](https://github.com/kvncampos/nautobot-ai-ops/issues/24) - 
+- [#24](https://github.com/kvncampos/nautobot-ai-ops/issues/24) - Reorganized mkdocs navigation structure with new "Configuration Guides" subsection for better documentation hierarchy.
+- [#24](https://github.com/kvncampos/nautobot-ai-ops/issues/24) - 
+- [#24](https://github.com/kvncampos/nautobot-ai-ops/issues/24) - Updated README homepage to clarify production-ready features (replacing "Enterprise features") and added project evolution note indicating continuous development.
+
+### Housekeeping
+
+- [#towncrier-automation](https://github.com/kvncampos/nautobot-ai-ops/issues/towncrier-automation) - Added automatic synchronization of fallback version strings in ai_ops/__init__.py when running towncrier release notes generation.
+
 ## [v1.0.2 (2026-01-09)](https://github.com/kvncampos/nautobot-ai-ops/releases/tag/v1.0.2)
 
 ### Added
