@@ -59,7 +59,7 @@ def _import_middleware_class(middleware_name: str):
     )
 
 
-async def get_middleware(llm_model, force_refresh: bool = False) -> list:
+async def get_middleware(llm_model) -> list:
     """Get fresh middleware instances for an LLM model.
 
     IMPORTANT: Always instantiates fresh middleware instances to prevent state leaks
