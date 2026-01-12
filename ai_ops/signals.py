@@ -6,7 +6,6 @@ from django.apps import apps as global_apps
 from django.contrib.contenttypes.models import ContentType
 from nautobot.core.choices import ColorChoices
 from nautobot.extras.models import Status
-from nautobot.extras.models.jobs import Job
 
 from ai_ops import models
 from ai_ops.constants.middleware_schemas import get_default_config_for_middleware
@@ -63,39 +62,6 @@ def setup_checkpoint_cleanup_schedule(sender, **kwargs):  # pylint: disable=unus
 
     except Exception as e:
         logger.error(f"Failed to setup checkpoint cleanup schedule: {e}")
-
-
-def setup_middleware_cache_jobs(sender, **kwargs):  # pylint: disable=unused-argument
-    """Enable middleware cache management jobs after migrations."""
-    try:
-        # Get the middleware cache job hooks
-        invalidation_job = Job.objects.filter(
-            module_name="ai_ops.jobs.middleware_cache_jobs",
-            job_class_name="MiddlewareCacheInvalidationJob",
-        ).first()
-
-        warming_job = Job.objects.filter(
-            module_name="ai_ops.jobs.middleware_cache_jobs",
-            job_class_name="DefaultModelCacheWarmingJob",
-        ).first()
-
-        # Enable both jobs if they exist
-        for job in [invalidation_job, warming_job]:
-            if not job:
-                logger.warning(f"Middleware cache job not found: {job}")
-                continue
-
-            if not job.enabled:
-                job.enabled = True
-                job.save()
-                logger.info(f"Enabled {job.job_class_name}")
-            else:
-                logger.debug(f"{job.job_class_name} already enabled")
-
-        logger.info("Middleware cache jobs setup complete")
-
-    except Exception as e:
-        logger.error(f"Failed to setup middleware cache jobs: {e}")
 
 
 def setup_mcp_health_check_schedule(sender, **kwargs):  # pylint: disable=unused-argument
