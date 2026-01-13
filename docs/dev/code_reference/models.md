@@ -8,9 +8,76 @@ The AI Ops App uses a flexible multi-provider architecture to support various LL
 
 - **LLMProvider**: Defines available LLM providers (Ollama, OpenAI, Azure AI, Anthropic, HuggingFace)
 - **LLMModel**: Stores specific model configurations for a provider
+- **SystemPrompt**: Manages system prompts that define AI agent behavior
 - **MiddlewareType**: Defines middleware types that can be applied to models
 - **LLMMiddleware**: Configures middleware instances for specific models
 - **MCPServer**: Manages Model Context Protocol server connections
+
+## SystemPrompt
+
+::: ai_ops.models.SystemPrompt
+    options:
+        show_root_heading: true
+        show_source: false
+
+The `SystemPrompt` class stores system prompts that define AI agent behavior. Prompts can be stored in the database or loaded from code files.
+
+### Key Features
+
+- **Database Storage**: Store prompt text directly in the model
+- **File-Based Loading**: Reference Python files for complex prompts
+- **Template Variables**: Support for `{current_date}`, `{current_month}`, `{model_name}`
+- **Status Workflow**: Only "Approved" prompts are used by agents
+- **Version Tracking**: Automatic versioning when prompt text changes
+
+### Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | CharField | Unique descriptive name (e.g., "Multi-MCP Default") |
+| `prompt_text` | TextField | Prompt content with variable support (nullable if file-based) |
+| `status` | StatusField | Only "Approved" prompts are active |
+| `version` | PositiveIntegerField | Auto-incremented on prompt_text changes |
+| `is_file_based` | BooleanField | If True, loads from Python file |
+| `prompt_file_name` | CharField | Name of file in `ai_ops/prompts/` (without `.py`) |
+
+### Usage Example
+
+```python
+from ai_ops.models import SystemPrompt
+from nautobot.extras.models import Status
+
+# Create a database-stored prompt
+approved_status = Status.objects.get(name="Approved")
+prompt = SystemPrompt.objects.create(
+    name="Network Specialist",
+    prompt_text="""You are {model_name}, a network operations assistant.
+Today is {current_date}.
+
+Your role is to help with network troubleshooting and automation.""",
+    status=approved_status,
+    is_file_based=False
+)
+
+# Create a file-based prompt
+file_prompt = SystemPrompt.objects.create(
+    name="Multi-MCP Default",
+    status=approved_status,
+    is_file_based=True,
+    prompt_file_name="multi_mcp_system_prompt"
+)
+
+# Get the rendered prompt content
+from ai_ops.helpers.get_prompt import get_active_prompt
+content = get_active_prompt(llm_model)
+```
+
+### Validation Rules
+
+- `prompt_text` is required when `is_file_based=False`
+- `prompt_file_name` is required when `is_file_based=True`
+- File-based prompts must exist at `ai_ops/prompts/<name>.py`
+- File must contain a `get_<filename>()` function
 
 ## LLMProvider
 
@@ -147,6 +214,7 @@ The `LLMModel` class stores configurations for Large Language Models from any su
 | `is_default` | BooleanField | Whether this is the default model |
 | `temperature` | FloatField | Temperature setting (0.0 to 2.0) |
 | `cache_ttl` | IntegerField | Cache TTL for MCP connections (minimum 60 seconds) |
+| `system_prompt` | ForeignKey | Optional reference to a SystemPrompt for this model |
 
 ### Usage Example
 

@@ -414,32 +414,25 @@ async def process_message(user_input: str, thread_id: str, provider: str | None 
             # Only pass the new user message
             # Graph automatically loads conversation history from checkpointer
             # Type ignore: LangGraph accepts dict config but types show RunnableConfig
-            logger.warning(f"[llm_invoke] thread={thread_id} input='{user_input[:100]}...'")
+            logger.info(f"[llm_invoke] thread={thread_id} input_length={len(user_input)}")
             result = await graph.ainvoke({"messages": [HumanMessage(content=user_input)]}, config=config)  # type: ignore[arg-type]
 
             # Log conversation state after processing
             logger.debug(f"Message processed for thread_id: {thread_id}, total messages: {len(result['messages'])}")
 
-            # Stage: tool_call - Log any tool calls made
+            # Stage: tool_call - Log summary of tool calls made
             tool_calls_made = []
-            logger.warning(f"[tool_call] thread={thread_id} analyzing {len(result['messages'])} messages...")
 
-            for idx, message in enumerate(result["messages"]):
-                msg_type = type(message).__name__
-                has_tool_calls_attr = hasattr(message, "tool_calls")
-                logger.debug(f"Message #{idx} type={msg_type} has_tool_calls={has_tool_calls_attr}")
-
+            for message in result["messages"]:
                 if hasattr(message, "tool_calls") and message.tool_calls:
-                    logger.debug(f"Message #{idx} has {len(message.tool_calls)} tool call(s)")
                     for tc in message.tool_calls:
                         name = tc.get("name", "unknown") if isinstance(tc, dict) else getattr(tc, "name", "unknown")
                         tool_calls_made.append(name)
-                        logger.debug(f"Tool called: {name}")
 
             if tool_calls_made:
-                logger.debug(f"Tools used in conversation: {tool_calls_made}")
+                logger.info(f"[tool_call] thread={thread_id} tools_used={tool_calls_made}")
             else:
-                logger.debug(f"No tools used for query: '{user_input[:100]}'")
+                logger.debug(f"[tool_call] thread={thread_id} no_tools_used")
 
             # Stage: response - Extract and return final response
             # Find the last AI message that has actual content (not just tool calls)

@@ -210,9 +210,49 @@ Use the Multi-MCP Agent when:
 
 ## System Prompts
 
-The agents use system prompts to define their behavior:
+The agents use system prompts to define their behavior. Prompts can be managed via the UI or stored in code files.
+
+### Dynamic System Prompt Loading
+
+The `get_active_prompt()` helper function loads prompts using a fallback hierarchy:
+
+```python
+from ai_ops.helpers.get_prompt import get_active_prompt
+
+# Load prompt for a specific model
+system_prompt = get_active_prompt(llm_model)
+```
+
+**Fallback Hierarchy:**
+
+1. **Model-Assigned Prompt**: If the LLM Model has a `system_prompt` FK with "Approved" status
+2. **Global File-Based Prompt**: The first approved prompt with `is_file_based=True`
+3. **Code Fallback**: Built-in `get_multi_mcp_system_prompt()` function
+
+### Prompt Helper Functions
+
+The `ai_ops/helpers/get_prompt.py` module provides:
+
+| Function | Description |
+|----------|-------------|
+| `get_active_prompt(llm_model)` | Main entry point - loads prompt with fallback hierarchy |
+| `_load_prompt_content(prompt_obj, model_name)` | Loads content from file or database |
+| `_render_prompt_variables(prompt_text, model_name)` | Substitutes runtime variables |
+| `_get_fallback_prompt(model_name)` | Returns code-based fallback prompt |
+
+### Template Variables
+
+Runtime variables are substituted in prompt text:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `{current_date}` | Current date in "Month DD, YYYY" format | January 13, 2026 |
+| `{current_month}` | Current month in "Month YYYY" format | January 2026 |
+| `{model_name}` | Name of the LLM model | gpt-4o |
 
 ### Multi-MCP System Prompt
+
+For file-based prompts, the default implementation is in:
 
 ```python
 # ai_ops/prompts/multi_mcp_system_prompt.py
@@ -240,32 +280,58 @@ Simpler prompt for single-server scenarios.
 
 ### Customizing Prompts
 
-To customize agent behavior:
+Prompts can be customized in two ways:
 
-1. Edit the prompt files
-2. Modify system instructions
-3. Add domain-specific guidance
-4. Restart Nautobot to apply changes
+**Option 1: Via Nautobot UI (Recommended)**
 
-**Example customization**:
+1. Navigate to **AI Platform > LLM > System Prompts**
+2. Create a new prompt with your custom instructions
+3. Set status to "Approved"
+4. Optionally assign to a specific model
+
+**Option 2: Code-Based (for version control)**
+
+1. Create a Python file in `ai_ops/prompts/`
+2. Define a `get_<filename>()` function
+3. Create a SystemPrompt record with `is_file_based=True`
+
+**Example file-based prompt:**
 ```python
-SYSTEM_PROMPT = """
-You are a network operations AI assistant.
+# ai_ops/prompts/network_specialist.py
 
-Your role is to help network engineers with:
-- Device configuration questions
-- Troubleshooting connectivity issues  
-- Best practices for network automation
-- Nautobot data queries
+def get_network_specialist(model_name: str = "AI Assistant") -> str:
+    """Return the network specialist system prompt."""
+    return f"""You are {model_name}, a network operations AI assistant.
 
-Always:
-- Provide step-by-step guidance
-- Cite sources when possible
-- Admit when you're unsure
-- Suggest consulting documentation or experts for critical decisions
+Your capabilities include:
+- Analyzing network configurations
+- Troubleshooting connectivity issues
+- Suggesting automation improvements
 
-Available tools: {tool_names}
+Always follow RFC standards when applicable.
 """
+```
+
+### Agent Integration
+
+The `build_agent()` function automatically loads the appropriate prompt:
+
+```python
+async def build_agent(llm_model=None, checkpointer=None, provider=None):
+    # ... setup code ...
+    
+    # Get system prompt from database or fallback to code-based prompt
+    system_prompt = await sync_to_async(get_active_prompt)(llm_model)
+    
+    # Create agent with the loaded prompt
+    graph = create_agent(
+        model=llm,
+        tools=tools,
+        system_prompt=system_prompt,
+        middleware=middleware,
+        checkpointer=checkpointer,
+    )
+    return graph
 ```
 
 ## LangGraph Integration

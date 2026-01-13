@@ -110,6 +110,7 @@ nav:
       - Getting Started: "user/app_getting_started.md"
       - Configuration Guides:
           - LLM Provider Configuration: "user/provider_configuration.md"
+          - System Prompt Configuration: "user/system_prompt_configuration.md"
           - Middleware Configuration: "user/middleware_configuration.md"
           - MCP Server Configuration: "user/mcp_server_configuration.md"
       - Using the App: "user/app_use_cases.md"

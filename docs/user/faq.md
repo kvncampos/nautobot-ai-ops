@@ -285,6 +285,55 @@ LLM models have limitations:
    - GPT-4 is generally more accurate than GPT-3.5
    - Adjust model selection based on task requirements
 
+### Why isn't my custom system prompt being used?
+
+If your custom system prompt isn't being applied to the AI agent:
+
+1. **Check Prompt Status**:
+   - Navigate to **AI Platform > LLM > System Prompts**
+   - Verify your prompt has status "Approved"
+   - Only approved prompts are used by agents
+
+2. **Check Prompt Assignment**:
+   - If you assigned the prompt to a specific model, verify the assignment
+   - Edit the LLM Model and confirm the System Prompt dropdown selection
+   - The model must be the one being used (check if it's the default)
+
+3. **Verify Prompt Content**:
+   - For database prompts: Ensure `prompt_text` is not empty
+   - For file-based prompts: Verify `prompt_file_name` matches the file
+
+4. **Check Fallback Behavior**:
+   - If no model-specific prompt is assigned, the agent uses global file-based prompts
+   - If no approved prompts exist, the agent falls back to code-based defaults
+
+5. **Review Logs**:
+   - Check Nautobot logs for prompt loading messages
+   - Look for errors like "Failed to load file-based prompt"
+
+### How do I know which prompt my model is using?
+
+To determine the active system prompt:
+
+1. **Check Nautobot Logs**:
+   - Enable DEBUG logging for `ai_ops`
+   - Look for log messages: "Using system prompt: [name] (model=[model_name])"
+   - Log messages indicate which prompt was loaded
+
+2. **Check Model Configuration**:
+   - Navigate to **AI Platform > Configuration > LLM Models**
+   - View the model's detail page
+   - The "System Prompt" field shows any assigned prompt
+
+3. **Understand the Fallback Hierarchy**:
+   - **Priority 1**: Model's assigned prompt (if status is "Approved")
+   - **Priority 2**: Global file-based prompt (is_file_based=True, status="Approved")
+   - **Priority 3**: Code fallback (`get_multi_mcp_system_prompt()`)
+
+4. **Test via Chat**:
+   - Ask the AI "What is your role?" or similar questions
+   - The response should reflect the active prompt's instructions
+
 ## Performance Questions
 
 ### How can I improve response times?
@@ -330,22 +379,35 @@ Costs depend on Azure OpenAI usage:
 
 ### Can I customize the AI agent's behavior?
 
-The agent's behavior is defined by system prompts in the code:
+Yes! The AI Ops App provides a **System Prompt Management** feature that allows you to customize agent behavior directly from the Nautobot UI:
 
-- `ai_ops/prompts/multi_mcp_system_prompt.py`
-- `ai_ops/prompts/system_prompt.py`
+1. Navigate to **AI Platform > LLM > System Prompts**
+2. Create a new prompt with your desired instructions
+3. Set the status to "Approved" to activate it
+4. Optionally assign it to a specific LLM Model
 
-Modifying these requires code changes and app redeployment. See the [Developer Guide](../dev/extending.md) for details.
+**Key Features:**
+- **Template Variables**: Use `{current_date}`, `{current_month}`, and `{model_name}` for dynamic content
+- **Version Tracking**: Automatic versioning when prompt text changes
+- **Status Workflow**: Only "Approved" prompts are used by agents
+- **Model-Specific**: Assign different prompts to different models
+
+For advanced customization, you can also create file-based prompts in `ai_ops/prompts/` for version control.
+
+See the [System Prompt Configuration Guide](system_prompt_configuration.md) for detailed instructions.
 
 ### Can I use different LLM providers besides Azure OpenAI?
 
-Currently, the app is designed for Azure OpenAI. Supporting other providers would require code modifications:
+Yes! The AI Ops App supports multiple LLM providers:
 
-- Modify `ai_ops/helpers/get_azure_model.py`
-- Update model configuration in `ai_ops/models.py`
-- Adjust API calls in agent code
+- **Ollama**: Free, local LLM inference (great for development)
+- **OpenAI**: GPT-4, GPT-4o, GPT-3.5-turbo
+- **Azure OpenAI**: Enterprise-grade with Microsoft SLAs
+- **Anthropic**: Claude 3 models
+- **HuggingFace**: Open-source models
+- **Custom**: Implement your own provider
 
-This is not currently supported out-of-the-box.
+See the [LLM Provider Configuration Guide](provider_configuration.md) for setup instructions.
 
 ### How is conversation data secured?
 

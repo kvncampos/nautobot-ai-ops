@@ -193,7 +193,40 @@ Middleware executes in priority order (lowest to highest):
 
 Multiple middleware instances can have the same priority.
 
-### Step 5: Use the AI Chat Assistant
+### Step 5: Configure System Prompts (Optional)
+
+System prompts define the behavior and persona of your AI agent. The app provides flexible prompt management:
+
+1. Navigate to **AI Platform > LLM > System Prompts**
+2. Click **+ Add** to create a new prompt
+3. Fill in the fields:
+   - **Name**: Unique identifier (e.g., "Network Specialist", "Code Assistant")
+   - **Prompt Text**: The system prompt content with optional variables
+   - **Status**: Set to "Approved" to activate
+   - **Is File Based**: Check if loading from a Python file
+
+**Template Variables**: Use these placeholders in your prompts:
+- `{current_date}` - Current date (e.g., "January 13, 2026")
+- `{current_month}` - Current month (e.g., "January 2026")
+- `{model_name}` - Name of the LLM model
+
+**Example Prompt**:
+```
+You are {model_name}, a network operations AI assistant.
+Today is {current_date}.
+
+Your role is to help engineers with:
+- Network troubleshooting
+- Configuration assistance
+- Automation guidance
+```
+
+!!! tip "Prompt Assignment"
+    You can assign a specific prompt to an LLM Model by editing the model and selecting from the **System Prompt** dropdown. If no prompt is assigned, the agent uses a default prompt.
+
+**For comprehensive prompt configuration with best practices, see the [System Prompt Configuration Guide](system_prompt_configuration.md).**
+
+### Step 6: Use the AI Chat Assistant
 
 Now you're ready to use the AI Chat Assistant:
 
@@ -220,7 +253,7 @@ Now you're ready to use the AI Chat Assistant:
     }
     ```
 
-### Step 6: Monitor and Maintain
+### Step 7: Monitor and Maintain
 
 #### Check MCP Server Health
 

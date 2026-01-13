@@ -85,6 +85,7 @@ API Version: (leave empty)
 Is Default: ✓ (for development)
 Temperature: 0.7
 Cache TTL: 300
+System Prompt: (optional - select a custom prompt or leave empty for default)
 ```
 
 **Model 2: Mistral**
@@ -98,6 +99,7 @@ API Version: (leave empty)
 Is Default: ☐
 Temperature: 0.5
 Cache TTL: 300
+System Prompt: (optional - select a custom prompt or leave empty for default)
 ```
 
 **Model 3: Code Llama**
@@ -111,6 +113,7 @@ API Version: (leave empty)
 Is Default: ☐
 Temperature: 0.3
 Cache TTL: 300
+System Prompt: (optional - select a custom prompt or leave empty for default)
 ```
 
 **Screenshot Placeholder:**
@@ -210,6 +213,7 @@ API Version: (leave empty)
 Is Default: ✓ (for production)
 Temperature: 0.3
 Cache TTL: 300
+System Prompt: (optional - select a custom prompt or leave empty for default)
 ```
 
 **Model 2: GPT-4 Turbo**
@@ -223,6 +227,7 @@ API Version: (leave empty)
 Is Default: ☐
 Temperature: 0.3
 Cache TTL: 300
+System Prompt: (optional - select a custom prompt or leave empty for default)
 ```
 
 **Model 3: GPT-3.5 Turbo**
@@ -236,6 +241,7 @@ API Version: (leave empty)
 Is Default: ☐
 Temperature: 0.5
 Cache TTL: 300
+System Prompt: (optional - select a custom prompt or leave empty for default)
 ```
 
 **Screenshot Placeholder:**
@@ -332,6 +338,7 @@ API Version: 2024-02-15-preview
 Is Default: ✓
 Temperature: 0.3
 Cache TTL: 300
+System Prompt: (optional - select a custom prompt or leave empty for default)
 ```
 
 **Model 2: Azure GPT-4 Turbo**
@@ -345,6 +352,7 @@ API Version: 2024-02-15-preview
 Is Default: ☐
 Temperature: 0.3
 Cache TTL: 300
+System Prompt: (optional - select a custom prompt or leave empty for default)
 ```
 
 **Screenshot Placeholder:**
@@ -462,6 +470,7 @@ API Version: 2023-06-01
 Is Default: ☐
 Temperature: 0.7
 Cache TTL: 300
+System Prompt: (optional - select a custom prompt or leave empty for default)
 ```
 
 **Model 2: Claude 3 Sonnet**
@@ -475,6 +484,7 @@ API Version: 2023-06-01
 Is Default: ☐
 Temperature: 0.5
 Cache TTL: 300
+System Prompt: (optional - select a custom prompt or leave empty for default)
 ```
 
 **Model 3: Claude 3 Haiku**
@@ -488,6 +498,7 @@ API Version: 2023-06-01
 Is Default: ☐
 Temperature: 0.5
 Cache TTL: 300
+System Prompt: (optional - select a custom prompt or leave empty for default)
 ```
 
 **Screenshot Placeholder:**
@@ -572,6 +583,7 @@ API Version: (leave empty)
 Is Default: ☐
 Temperature: 0.7
 Cache TTL: 300
+System Prompt: (optional - select a custom prompt or leave empty for default)
 ```
 
 **Model 2: Mistral (via HuggingFace)**
@@ -585,6 +597,7 @@ API Version: (leave empty)
 Is Default: ☐
 Temperature: 0.5
 Cache TTL: 300
+System Prompt: (optional - select a custom prompt or leave empty for default)
 ```
 
 **Model 3: CodeLlama (via HuggingFace)**
@@ -598,6 +611,7 @@ API Version: (leave empty)
 Is Default: ☐
 Temperature: 0.3
 Cache TTL: 300
+System Prompt: (optional - select a custom prompt or leave empty for default)
 ```
 
 **Screenshot Placeholder:**
@@ -702,6 +716,7 @@ API Version: v1
 Is Default: ☐
 Temperature: 0.5
 Cache TTL: 300
+System Prompt: (optional - select a custom prompt or leave empty for default)
 ```
 
 **Screenshot Placeholder:**
