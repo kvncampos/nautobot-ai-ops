@@ -53,7 +53,6 @@ def assign_system_prompt_statuses(sender, apps=global_apps, **kwargs):  # pylint
         status, _ = Status.objects.get_or_create(
             name=config["name"],
             defaults={
-                "name": config["name"],
                 "color": config["color"],
             },
         )
