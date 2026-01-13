@@ -197,10 +197,9 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         view = ClearMCPCacheView.as_view()
         response = view(request)
 
-        # In LAB environment, exception details should NOT be exposed
+        # In LAB environment, exception details should be exposed (not NONPROD/PROD)
         response_data = response.content.decode("utf-8")
-        self.assertNotIn("Cache error", response_data)
-        self.assertIn("Failed to clear MCP cache", response_data)
+        self.assertIn("Cache error", response_data)
         self.assertEqual(response.status_code, 500)
 
     @patch("ai_ops.api.views.get_environment")

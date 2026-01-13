@@ -282,9 +282,9 @@ class ChatMessageView(GenericView):
 
             logger.error(f"Chat message error: {e!s}\n{traceback.format_exc()}")
 
-            # Only expose exception details in LOCAL environment for security
+            # Only hide exception details in NONPROD and PROD environments for security
             env = get_environment()
-            if env == NautobotEnvironment.LOCAL:
+            if env not in (NautobotEnvironment.NONPROD, NautobotEnvironment.PROD):
                 error_message = f"Error processing message: {e!s}"
             else:
                 error_message = ErrorMessages.CHAT_ERROR
@@ -335,9 +335,9 @@ class ChatClearView(GenericView):
                 )
             else:
                 logger.error(f"Runtime error clearing conversation: {str(e)}")
-                # Only expose exception details in LOCAL environment for security
+                # Only hide exception details in NONPROD and PROD environments for security
                 env = get_environment()
-                if env == NautobotEnvironment.LOCAL:
+                if env not in (NautobotEnvironment.NONPROD, NautobotEnvironment.PROD):
                     error_message = str(e)
                 else:
                     error_message = ErrorMessages.CLEAR_CHAT_ERROR
@@ -347,9 +347,9 @@ class ChatClearView(GenericView):
 
             logger.error(f"Failed to clear conversation: {str(e)}\n{traceback.format_exc()}")
 
-            # Only expose exception details in LOCAL environment for security
+            # Only hide exception details in NONPROD and PROD environments for security
             env = get_environment()
-            if env == NautobotEnvironment.LOCAL:
+            if env not in (NautobotEnvironment.NONPROD, NautobotEnvironment.PROD):
                 error_message = str(e)
             else:
                 error_message = ErrorMessages.CLEAR_CHAT_ERROR
@@ -396,7 +396,7 @@ class ClearMCPCacheView(GenericView):
             else:
                 logger.error(f"Runtime error clearing MCP cache: {str(e)}")
                 env = get_environment()
-                if env == NautobotEnvironment.LOCAL:
+                if env not in (NautobotEnvironment.NONPROD, NautobotEnvironment.PROD):
                     error_message = f"Failed to clear cache: {str(e)}"
                 else:
                     error_message = ErrorMessages.CACHE_CLEAR_ERROR
@@ -407,9 +407,9 @@ class ClearMCPCacheView(GenericView):
 
             logger.error(f"Failed to clear MCP cache: {str(e)}\n{traceback.format_exc()}")
 
-            # Only expose exception details in LOCAL environment for security
+            # Only hide exception details in NONPROD and PROD environments for security
             env = get_environment()
-            if env == NautobotEnvironment.LOCAL:
+            if env not in (NautobotEnvironment.NONPROD, NautobotEnvironment.PROD):
                 error_message = f"Failed to clear cache: {str(e)}"
             else:
                 error_message = ErrorMessages.CACHE_CLEAR_ERROR
