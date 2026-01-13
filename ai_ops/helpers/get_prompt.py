@@ -13,7 +13,7 @@ def get_active_prompt(llm_model) -> str:
     Retrieves the prompt using the following fallback hierarchy:
     1. Model's assigned SystemPrompt (if status is 'Approved')
     2. Global default SystemPrompt (is_file_based=True, status='Approved')
-    3. Code-based fallback: get_system_prompt()
+    3. Code-based fallback: get_prompt()
 
     For file-based prompts, dynamically imports and calls the prompt function.
     For database prompts, renders runtime variables in prompt_text.
