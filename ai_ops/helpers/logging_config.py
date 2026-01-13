@@ -23,7 +23,7 @@ _logging_configured = False
 
 
 def get_correlation_id() -> str:
-    """Get current correlation ID, or generate a new one if not set."""
+    """Get the current correlation ID; if none is set, generate a new one and store it in the context."""
     cid = correlation_id_var.get()
     if not cid:
         cid = str(uuid.uuid4())
@@ -32,7 +32,7 @@ def get_correlation_id() -> str:
 
 
 def set_correlation_id(cid: str) -> None:
-    """Set the correlation ID for the current async context."""
+    """Get the current correlation ID; if none is set, generate a new one and store it in the context."""
     correlation_id_var.set(cid)
 
 
@@ -44,7 +44,11 @@ def generate_correlation_id() -> str:
 
 
 def get_user() -> str:
-    """Get current user from context."""
+    """Get current user from context.
+
+    Returns:
+        str: The username string from context, or an empty string if not set.
+    """
     return user_var.get()
 
 
