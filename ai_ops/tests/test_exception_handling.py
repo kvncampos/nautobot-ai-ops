@@ -82,7 +82,7 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
 
     @patch("ai_ops.views.get_environment")
     @patch("ai_ops.checkpointer.clear_checkpointer_for_thread")
-    async def test_chat_clear_view_runtime_exception_in_local(self, mock_clear, mock_get_environment):
+    def test_chat_clear_view_runtime_exception_in_local(self, mock_clear, mock_get_environment):
         """Test ChatClearView RuntimeError handling in LOCAL environment."""
         # Set environment to LOCAL
         mock_get_environment.return_value = NautobotEnvironment.LOCAL
@@ -96,9 +96,9 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         request.session = MagicMock()
         request.session.session_key = "test-session-key"
 
-        # Call view
+        # Call view (sync view, not async)
         view = ChatClearView.as_view()
-        response = await view(request)
+        response = view(request)
 
         # In LOCAL environment, exception details should be exposed
         response_data = response.content.decode("utf-8")
@@ -107,7 +107,7 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
 
     @patch("ai_ops.views.get_environment")
     @patch("ai_ops.checkpointer.clear_checkpointer_for_thread")
-    async def test_chat_clear_view_runtime_exception_in_nonprod(self, mock_clear, mock_get_environment):
+    def test_chat_clear_view_runtime_exception_in_nonprod(self, mock_clear, mock_get_environment):
         """Test ChatClearView RuntimeError handling in NONPROD environment."""
         # Set environment to NONPROD
         mock_get_environment.return_value = NautobotEnvironment.NONPROD
@@ -121,9 +121,9 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         request.session = MagicMock()
         request.session.session_key = "test-session-key"
 
-        # Call view
+        # Call view (sync view, not async)
         view = ChatClearView.as_view()
-        response = await view(request)
+        response = view(request)
 
         # In NONPROD environment, exception details should NOT be exposed
         response_data = response.content.decode("utf-8")
@@ -133,7 +133,7 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
 
     @patch("ai_ops.views.get_environment")
     @patch("ai_ops.checkpointer.clear_checkpointer_for_thread")
-    async def test_chat_clear_view_generic_exception_in_local(self, mock_clear, mock_get_environment):
+    def test_chat_clear_view_generic_exception_in_local(self, mock_clear, mock_get_environment):
         """Test ChatClearView generic Exception handling in LOCAL environment."""
         # Set environment to LOCAL
         mock_get_environment.return_value = NautobotEnvironment.LOCAL
@@ -147,9 +147,9 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         request.session = MagicMock()
         request.session.session_key = "test-session-key"
 
-        # Call view
+        # Call view (sync view, not async)
         view = ChatClearView.as_view()
-        response = await view(request)
+        response = view(request)
 
         # In LOCAL environment, exception details should be exposed
         response_data = response.content.decode("utf-8")
@@ -158,7 +158,7 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
 
     @patch("ai_ops.views.get_environment")
     @patch("ai_ops.agents.multi_mcp_agent.clear_mcp_cache")
-    async def test_clear_mcp_cache_view_exception_in_local(self, mock_clear_cache, mock_get_environment):
+    def test_clear_mcp_cache_view_exception_in_local(self, mock_clear_cache, mock_get_environment):
         """Test ClearMCPCacheView exception handling in LOCAL environment."""
         # Set environment to LOCAL
         mock_get_environment.return_value = NautobotEnvironment.LOCAL
@@ -170,9 +170,9 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         request = self.factory.post("/mcp/clear-cache")
         request.user = self.superuser
 
-        # Call view
+        # Call view (sync view, not async)
         view = ClearMCPCacheView.as_view()
-        response = await view(request)
+        response = view(request)
 
         # In LOCAL environment, exception details should be exposed
         response_data = response.content.decode("utf-8")
@@ -181,7 +181,7 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
 
     @patch("ai_ops.views.get_environment")
     @patch("ai_ops.agents.multi_mcp_agent.clear_mcp_cache")
-    async def test_clear_mcp_cache_view_exception_in_lab(self, mock_clear_cache, mock_get_environment):
+    def test_clear_mcp_cache_view_exception_in_lab(self, mock_clear_cache, mock_get_environment):
         """Test ClearMCPCacheView exception handling in LAB environment."""
         # Set environment to LAB
         mock_get_environment.return_value = NautobotEnvironment.LAB
@@ -193,9 +193,9 @@ class ExceptionHandlingTestCase(TestCase, TestDataMixin):
         request = self.factory.post("/mcp/clear-cache")
         request.user = self.superuser
 
-        # Call view
+        # Call view (sync view, not async)
         view = ClearMCPCacheView.as_view()
-        response = await view(request)
+        response = view(request)
 
         # In LAB environment, exception details should NOT be exposed
         response_data = response.content.decode("utf-8")

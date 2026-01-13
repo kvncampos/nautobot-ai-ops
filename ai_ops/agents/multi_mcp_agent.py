@@ -5,6 +5,7 @@ enterprise features including caching, health checks, and checkpointing.
 """
 
 import logging
+import time
 from datetime import datetime
 from typing import Annotated
 
@@ -16,6 +17,13 @@ from typing_extensions import TypedDict
 
 from ai_ops.helpers.common.asyncio_utils import get_or_create_event_loop_lock
 from ai_ops.helpers.get_llm_model import get_llm_model_async
+from ai_ops.helpers.logging_config import (
+    generate_correlation_id,
+    get_correlation_id,
+    get_user,
+    set_user,
+)
+from ai_ops.helpers.tool_callback import ToolLoggingCallback
 from ai_ops.models import MCPServer
 
 logger = logging.getLogger(__name__)
@@ -111,9 +119,20 @@ async def get_or_create_mcp_client(force_refresh: bool = False) -> tuple[MultiSe
 
                     Note: verify=False is intentional per requirements for connecting
                     to internal MCP servers with self-signed certificates.
+                    Includes X-Correlation-ID and X-Nautobot-User headers for cross-service tracing.
                     """
+                    # Get correlation ID and user from current context for cross-service tracing
+                    correlation_id = get_correlation_id()
+                    user = get_user()
+                    headers = {}
+                    if correlation_id:
+                        headers["X-Correlation-ID"] = correlation_id
+                    if user:
+                        headers["X-Nautobot-User"] = user
+
                     return httpx.AsyncClient(
                         verify=False,  # noqa: S501 - intentional per requirements
+                        headers=headers,
                         limits=httpx.Limits(
                             max_keepalive_connections=5,
                             max_connections=10,
@@ -338,7 +357,9 @@ async def build_agent(llm_model=None, checkpointer=None, provider: str | None = 
     return graph
 
 
-async def process_message(user_input: str, thread_id: str, provider: str | None = None) -> str:
+async def process_message(
+    user_input: str, thread_id: str, provider: str | None = None, username: str | None = None
+) -> str:
     """Process a user message through the agent with checkpointed conversation history.
 
     This implementation follows Approach 1: compile graph per-request within checkpointer
@@ -359,10 +380,24 @@ async def process_message(user_input: str, thread_id: str, provider: str | None 
         thread_id: Unique conversation thread identifier (e.g., session key)
         provider: Optional provider name override. If specified, uses this provider instead of default.
                  Only admin users should be allowed to specify this parameter.
+        username: Optional username of the logged-in Nautobot user (for logging/debugging).
 
     Returns:
         Assistant's response text
     """
+    # Generate correlation ID for end-to-end request tracing
+    correlation_id = generate_correlation_id()
+    request_start_time = time.perf_counter()
+
+    # Set user context for logging
+    if username:
+        set_user(username)
+
+    logger.info(
+        f"[request_start] thread={thread_id} correlation_id={correlation_id} "
+        f"user={username or 'anonymous'} input_length={len(user_input)}"
+    )
+
     try:
         # Use context manager for proper checkpointer lifecycle
         from ai_ops.checkpointer import get_checkpointer, track_checkpoint_creation
@@ -414,7 +449,9 @@ async def process_message(user_input: str, thread_id: str, provider: str | None 
             # Only pass the new user message
             # Graph automatically loads conversation history from checkpointer
             # Type ignore: LangGraph accepts dict config but types show RunnableConfig
-            logger.info(f"[llm_invoke] thread={thread_id} input_length={len(user_input)}")
+            # Include ToolLoggingCallback for real-time tool call logging
+            config["callbacks"] = [ToolLoggingCallback()]
+            logger.info(f"[llm_invoke] thread={thread_id} correlation_id={correlation_id}")
             result = await graph.ainvoke({"messages": [HumanMessage(content=user_input)]}, config=config)  # type: ignore[arg-type]
 
             # Log conversation state after processing
@@ -450,7 +487,13 @@ async def process_message(user_input: str, thread_id: str, provider: str | None 
             if response_text is None:
                 response_text = result["messages"][-1].content if result["messages"] else "No response generated"
 
-            logger.debug(f"Response generated: {len(response_text)} characters")
+            # Log request completion with timing
+            request_duration_ms = (time.perf_counter() - request_start_time) * 1000
+            logger.info(
+                f"[request_complete] thread={thread_id} correlation_id={correlation_id} "
+                f"duration_ms={request_duration_ms:.1f} response_chars={len(response_text)} "
+                f"tools_used={len(tool_calls_made)}"
+            )
             return response_text
 
     except RuntimeError as e:

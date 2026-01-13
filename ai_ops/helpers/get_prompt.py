@@ -13,7 +13,7 @@ def get_active_prompt(llm_model) -> str:
     Retrieves the prompt using the following fallback hierarchy:
     1. Model's assigned SystemPrompt (if status is 'Approved')
     2. Global default SystemPrompt (is_file_based=True, status='Approved')
-    3. Code-based fallback: get_multi_mcp_system_prompt()
+    3. Code-based fallback: get_system_prompt()
 
     For file-based prompts, dynamically imports and calls the prompt function.
     For database prompts, renders runtime variables in prompt_text.
@@ -76,8 +76,8 @@ def _load_prompt_content(prompt_obj, model_name: str) -> str:
         # Dynamic import from ai_ops/prompts/{prompt_file_name}.py
         try:
             module = importlib.import_module(f"ai_ops.prompts.{prompt_obj.prompt_file_name}")
-            func_name = f"get_{prompt_obj.prompt_file_name}"
-            func = getattr(module, func_name)
+            # All prompt files use standardized 'get_prompt' function
+            func = getattr(module, "get_prompt")
             logger.debug(f"Loading file-based prompt: {prompt_obj.prompt_file_name}")
             return func(model_name=model_name)
         except (ImportError, AttributeError) as e:
@@ -127,6 +127,6 @@ def _get_fallback_prompt(model_name: str) -> str:
     Returns:
         str: The fallback system prompt.
     """
-    from ai_ops.prompts.multi_mcp_system_prompt import get_multi_mcp_system_prompt
+    from ai_ops.prompts.system_prompt import get_prompt
 
-    return get_multi_mcp_system_prompt(model_name=model_name)
+    return get_prompt(model_name=model_name)
