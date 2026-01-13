@@ -154,7 +154,7 @@ class SystemPrompt(PrimaryModel):  # pylint: disable=too-many-ancestors
             module = importlib.import_module(f"ai_ops.prompts.{self.prompt_file_name}")
             # All prompt files use standardized 'get_prompt' function
             if hasattr(module, "get_prompt"):
-                func = getattr(module, "get_prompt")
+                func = module.get_prompt
                 # Check if function accepts model_name argument
                 sig = inspect.signature(func)
                 if "model_name" in sig.parameters:

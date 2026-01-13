@@ -77,7 +77,7 @@ def _load_prompt_content(prompt_obj, model_name: str) -> str:
         try:
             module = importlib.import_module(f"ai_ops.prompts.{prompt_obj.prompt_file_name}")
             # All prompt files use standardized 'get_prompt' function
-            func = getattr(module, "get_prompt")
+            func = module.get_prompt
             logger.debug(f"Loading file-based prompt: {prompt_obj.prompt_file_name}")
             return func(model_name=model_name)
         except (ImportError, AttributeError) as e:
