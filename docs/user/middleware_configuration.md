@@ -127,7 +127,6 @@ Config Version: 1.1.0
 Is Active: ✓
 Is Critical: ☐
 Priority: 20
-TTL: 300
 ```
 
 **Screenshot Placeholder:**
@@ -208,7 +207,6 @@ Config Version: 1.1.0
 Is Active: ✓
 Is Critical: ✓ (Production environments)
 Priority: 30
-TTL: 300
 ```
 
 **Screenshot Placeholder:**
@@ -297,7 +295,6 @@ Config Version: 1.1.0
 Is Active: ✓
 Is Critical: ☐
 Priority: 10
-TTL: 300
 ```
 
 **Screenshot Placeholder:**
@@ -381,7 +378,6 @@ Config Version: 1.1.0
 Is Active: ✓
 Is Critical: ☐
 Priority: 50
-TTL: 300
 ```
 
 **Screenshot Placeholder:**
@@ -454,7 +450,6 @@ Config Version: 1.1.0
 Is Active: ✓
 Is Critical: ✓ (Security critical)
 Priority: 15
-TTL: 300
 ```
 
 **Screenshot Placeholder:**
@@ -533,7 +528,6 @@ Config Version: 1.0.0
 Is Active: ✓
 Is Critical: ✓
 Priority: 25
-TTL: 300
 ```
 
 **Screenshot Placeholder:**
@@ -609,7 +603,6 @@ Config Version: 1.0.0
 Is Active: ✓
 Is Critical: ☐
 Priority: 85
-TTL: 300
 ```
 
 **Screenshot Placeholder:**
@@ -663,7 +656,6 @@ Config Version: 1.0.0
 Is Active: ✓
 Is Critical: ☐
 Priority: 55
-TTL: 300
 ```
 
 **Screenshot Placeholder:**

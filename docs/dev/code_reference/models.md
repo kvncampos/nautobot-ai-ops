@@ -288,7 +288,7 @@ The `LLMMiddleware` class configures middleware instances for specific LLM model
 - **Critical Flag**: Mark middleware as critical for initialization
 - **Unique Constraint**: Each middleware type can only be configured once per model
 - **JSON Configuration**: Flexible configuration storage
-- **TTL Management**: Time-to-live for middleware data
+- **Fresh Instantiation**: Middleware instances created fresh for each request to prevent state leaks
 
 ### Fields
 
@@ -301,7 +301,6 @@ The `LLMMiddleware` class configures middleware instances for specific LLM model
 | `is_active` | BooleanField | Whether this middleware is currently active |
 | `is_critical` | BooleanField | If True, agent fails if middleware can't load |
 | `priority` | IntegerField | Execution priority (1-100, lower executes first) |
-| `ttl` | IntegerField | Time-to-live for middleware data in seconds (min 60) |
 
 ### Execution Order
 
@@ -334,8 +333,7 @@ cache_config = LLMMiddleware.objects.create(
     config_version="1.1.0",
     is_active=True,
     is_critical=False,
-    priority=10,
-    ttl=300
+    priority=10
 )
 
 # Configure logging middleware (executes second)
@@ -350,8 +348,7 @@ logging_config = LLMMiddleware.objects.create(
     },
     is_active=True,
     is_critical=True,  # Critical - agent won't start without it
-    priority=20,
-    ttl=300
+    priority=20
 )
 
 # Query active middleware for a model
@@ -706,7 +703,6 @@ All models include validation logic to ensure data integrity:
 
 - Each middleware type can only be configured once per model (unique_together constraint)
 - Priority must be between 1 and 100
-- TTL must be at least 60 seconds
 - Critical flag determines initialization behavior
 
 ### MCPServer Validation
