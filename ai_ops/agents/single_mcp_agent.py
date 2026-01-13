@@ -244,9 +244,9 @@ For production use with multiple MCP servers, see multi_mcp_agent.py.
 #     messages = state["messages"]
 
 #     # Load system prompt from external file
-#     from ai_ops.prompts.system_prompt import get_system_prompt
+#     from ai_ops.prompts.system_prompt import get_prompt
 
-#     system_message = SystemMessage(content=get_system_prompt())
+#     system_message = SystemMessage(content=get_prompt())
 
 #     # Prepend system message if not already present
 #     if not any(isinstance(msg, SystemMessage) for msg in messages):

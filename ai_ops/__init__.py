@@ -63,6 +63,7 @@ class AiOpsConfig(NautobotAppConfig):
         """Connect signal handlers when the app is ready."""
         import logging
 
+        from .helpers.logging_config import setup_ai_ops_logging
         from .signals import (
             assign_mcp_server_statuses,
             assign_system_prompt_statuses,
@@ -74,6 +75,9 @@ class AiOpsConfig(NautobotAppConfig):
         )
 
         logger = logging.getLogger(__name__)
+
+        # Setup structured JSON logging for ai_ops.* loggers
+        setup_ai_ops_logging()
 
         nautobot_database_ready.connect(assign_mcp_server_statuses, sender=self)
         nautobot_database_ready.connect(assign_system_prompt_statuses, sender=self)

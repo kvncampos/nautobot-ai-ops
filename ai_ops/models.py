@@ -74,7 +74,7 @@ class SystemPrompt(PrimaryModel):  # pylint: disable=too-many-ancestors
         null=True,
         blank=True,
         help_text="Name of the Python file in ai_ops/prompts/ to load (without .py extension). "
-        "Example: 'multi_mcp_system_prompt' will load get_multi_mcp_system_prompt() from that file.",
+        "Example: 'multi_mcp_system_prompt' will load get_prompt() from that file.",
     )
 
     class Meta(PrimaryModel.Meta):
@@ -107,11 +107,11 @@ class SystemPrompt(PrimaryModel):  # pylint: disable=too-many-ancestors
                 import importlib
 
                 module = importlib.import_module(f"ai_ops.prompts.{self.prompt_file_name}")
-                func_name = f"get_{self.prompt_file_name}"
-                if not hasattr(module, func_name):
+                # All prompt files use standardized 'get_prompt' function
+                if not hasattr(module, "get_prompt"):
                     raise ValidationError(
                         {
-                            "prompt_file_name": f"Function '{func_name}' not found in ai_ops.prompts.{self.prompt_file_name}"
+                            "prompt_file_name": f"Function 'get_prompt' not found in ai_ops.prompts.{self.prompt_file_name}"
                         }
                     )
             except ImportError as e:
@@ -149,14 +149,21 @@ class SystemPrompt(PrimaryModel):  # pylint: disable=too-many-ancestors
 
         try:
             import importlib
+            import inspect
 
             module = importlib.import_module(f"ai_ops.prompts.{self.prompt_file_name}")
-            func_name = f"get_{self.prompt_file_name}"
-            if hasattr(module, func_name):
-                func = getattr(module, func_name)
-                # Call with a placeholder model name for preview purposes
-                return func(model_name="[Model Name]")
-            return f"*Function '{func_name}' not found in module*"
+            # All prompt files use standardized 'get_prompt' function
+            if hasattr(module, "get_prompt"):
+                func = module.get_prompt
+                # Check if function accepts model_name argument
+                sig = inspect.signature(func)
+                if "model_name" in sig.parameters:
+                    # Call with a placeholder model name for preview purposes
+                    return func(model_name="[Model Name]")
+                else:
+                    # Call without arguments
+                    return func()
+            return "*Function 'get_prompt' not found in module*"
         except ImportError as e:
             return f"*Error loading prompt file: {e}*"
         except Exception as e:  # pylint: disable=broad-except

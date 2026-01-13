@@ -349,7 +349,7 @@ class GetActivePromptTestCase(TestCase):
 
         # Should fallback to code-based prompt since assigned prompt is not Approved
         result = get_active_prompt(self.model)
-        # Code fallback will have default MCP prompt content
+        # Fallback will use global file-based prompt (multi_mcp_system_prompt)
         self.assertIn("intelligent AI assistant", result)
 
     def test_get_active_prompt_fallback_to_file_based(self):
@@ -390,7 +390,7 @@ class GetActivePromptTestCase(TestCase):
         self.model.save()
 
         result = get_active_prompt(self.model)
-        # Should fallback to code-based get_multi_mcp_system_prompt or file-based
+        # Should fallback to global file-based prompt (multi_mcp_system_prompt)
         self.assertIn("intelligent AI assistant", result)
 
     def test_get_active_prompt_variable_substitution(self):
@@ -430,6 +430,7 @@ class GetActivePromptTestCase(TestCase):
 
         # Should not raise, should return fallback prompt
         result = get_active_prompt(None)
+        # Fallback will use global file-based prompt (multi_mcp_system_prompt)
         self.assertIn("intelligent AI assistant", result)
 
     def test_get_active_prompt_unknown_variable_preserved(self):
@@ -481,6 +482,7 @@ class GetActivePromptTestCase(TestCase):
 
         # Should fallback since status is not Approved
         result = get_active_prompt(self.model)
+        # Fallback will use global file-based prompt (multi_mcp_system_prompt)
         self.assertIn("intelligent AI assistant", result)
         self.assertNotIn("This is deprecated content", result)
 

@@ -265,9 +265,14 @@ class ChatMessageView(GenericView):
             # Use session key as thread_id for conversation isolation
             thread_id = request.session.session_key
 
+            # Get username for logging (use 'anonymous' if not authenticated)
+            username = request.user.username if request.user.is_authenticated else None
+
             # Process message through checkpointed agent with optional provider override
             # Checkpointer automatically loads/saves conversation history
-            response_text = await process_message(user_message, thread_id, provider=provider_override)
+            response_text = await process_message(
+                user_message, thread_id, provider=provider_override, username=username
+            )
 
             return JsonResponse({"response": response_text, "error": None})
 
@@ -277,9 +282,9 @@ class ChatMessageView(GenericView):
 
             logger.error(f"Chat message error: {e!s}\n{traceback.format_exc()}")
 
-            # Only expose exception details in LOCAL environment for security
+            # Only hide exception details in NONPROD and PROD environments for security
             env = get_environment()
-            if env == NautobotEnvironment.LOCAL:
+            if env not in (NautobotEnvironment.NONPROD, NautobotEnvironment.PROD):
                 error_message = f"Error processing message: {e!s}"
             else:
                 error_message = ErrorMessages.CHAT_ERROR
@@ -290,11 +295,14 @@ class ChatMessageView(GenericView):
 class ChatClearView(GenericView):
     """Clear chat conversation history from checkpointer."""
 
-    async def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         """Clear the conversation checkpoint for this session.
 
         This clears the conversation history for the current session thread,
         allowing the user to start a fresh conversation.
+
+        Note: This is a sync view to avoid asgiref RuntimeError during
+        interpreter shutdown. Uses async_to_sync internally.
         """
         try:
             # Get the session thread_id
@@ -304,10 +312,13 @@ class ChatClearView(GenericView):
                 return JsonResponse({"success": False, "message": "No active session to clear"}, status=400)
 
             # Import here to avoid circular dependencies
+            from asgiref.sync import async_to_sync
+
             from ai_ops.checkpointer import clear_checkpointer_for_thread
 
             # Clear the conversation history for this thread
-            cleared = await clear_checkpointer_for_thread(thread_id)
+            # Use async_to_sync to call the async function from sync context
+            cleared = async_to_sync(clear_checkpointer_for_thread)(thread_id)
 
             if cleared:
                 return JsonResponse({"success": True, "message": "Conversation history cleared successfully"})
@@ -324,9 +335,9 @@ class ChatClearView(GenericView):
                 )
             else:
                 logger.error(f"Runtime error clearing conversation: {str(e)}")
-                # Only expose exception details in LOCAL environment for security
+                # Only hide exception details in NONPROD and PROD environments for security
                 env = get_environment()
-                if env == NautobotEnvironment.LOCAL:
+                if env not in (NautobotEnvironment.NONPROD, NautobotEnvironment.PROD):
                     error_message = str(e)
                 else:
                     error_message = ErrorMessages.CLEAR_CHAT_ERROR
@@ -336,9 +347,9 @@ class ChatClearView(GenericView):
 
             logger.error(f"Failed to clear conversation: {str(e)}\n{traceback.format_exc()}")
 
-            # Only expose exception details in LOCAL environment for security
+            # Only hide exception details in NONPROD and PROD environments for security
             env = get_environment()
-            if env == NautobotEnvironment.LOCAL:
+            if env not in (NautobotEnvironment.NONPROD, NautobotEnvironment.PROD):
                 error_message = str(e)
             else:
                 error_message = ErrorMessages.CLEAR_CHAT_ERROR
@@ -354,28 +365,51 @@ class ClearMCPCacheView(GenericView):
         """Ensure only superusers can access this view."""
         return super().dispatch(*args, **kwargs)
 
-    async def post(self, request, *args, **kwargs):
-        """Clear the MCP client application cache."""
+    def post(self, request, *args, **kwargs):
+        """Clear the MCP client application cache.
+
+        Note: This is a sync view to avoid asgiref RuntimeError during
+        interpreter shutdown. Uses async_to_sync internally.
+        """
         try:
             # Import here to avoid circular dependencies
+            from asgiref.sync import async_to_sync
+
             from ai_ops.agents.multi_mcp_agent import clear_mcp_cache
 
-            # Clear the cache
-            cleared_count = await clear_mcp_cache()
+            # Clear the cache using async_to_sync
+            cleared_count = async_to_sync(clear_mcp_cache)()
 
             # Log the action (system action, not an object change)
             logger.info(f"User {request.user.username} cleared MCP client cache for {cleared_count} healthy servers")
 
             return JsonResponse({"success": True, "cleared_count": cleared_count})
 
+        except RuntimeError as e:
+            # Handle interpreter shutdown gracefully
+            if "cannot schedule new futures after interpreter shutdown" in str(e):
+                logger.warning(f"Cannot clear MCP cache during shutdown: {str(e)}")
+                return JsonResponse(
+                    {"success": True, "message": "Server is shutting down, cache will be cleared on restart"},
+                    status=200,
+                )
+            else:
+                logger.error(f"Runtime error clearing MCP cache: {str(e)}")
+                env = get_environment()
+                if env not in (NautobotEnvironment.NONPROD, NautobotEnvironment.PROD):
+                    error_message = f"Failed to clear cache: {str(e)}"
+                else:
+                    error_message = ErrorMessages.CACHE_CLEAR_ERROR
+                return JsonResponse({"success": False, "error": error_message}, status=500)
+
         except Exception as e:
             import traceback
 
             logger.error(f"Failed to clear MCP cache: {str(e)}\n{traceback.format_exc()}")
 
-            # Only expose exception details in LOCAL environment for security
+            # Only hide exception details in NONPROD and PROD environments for security
             env = get_environment()
-            if env == NautobotEnvironment.LOCAL:
+            if env not in (NautobotEnvironment.NONPROD, NautobotEnvironment.PROD):
                 error_message = f"Failed to clear cache: {str(e)}"
             else:
                 error_message = ErrorMessages.CACHE_CLEAR_ERROR
