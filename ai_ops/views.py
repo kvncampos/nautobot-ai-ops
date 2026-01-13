@@ -8,7 +8,14 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from nautobot.apps.config import get_app_settings_or_config
-from nautobot.apps.ui import Button, ButtonColorChoices, ObjectDetailContent, ObjectFieldsPanel, SectionChoices
+from nautobot.apps.ui import (
+    Button,
+    ButtonColorChoices,
+    ObjectDetailContent,
+    ObjectFieldsPanel,
+    ObjectTextPanel,
+    SectionChoices,
+)
 from nautobot.apps.views import GenericView, NautobotUIViewSet
 
 from ai_ops import filters, forms, models, tables
@@ -408,6 +415,50 @@ class MCPServerUIViewSet(NautobotUIViewSet):
                 template_path="ai_ops/components/button/mcp_health_check.html",
                 javascript_template_path="ai_ops/extras/mcp_health_check_button.js",
                 attributes={"onClick": "checkMCPHealth(event)"},
+            ),
+        ],
+    )
+
+
+# ============================================================================
+# System Prompts API Endpoints
+# ============================================================================
+class SystemPromptUIViewSet(NautobotUIViewSet):
+    """ViewSet for SystemPrompt views."""
+
+    bulk_update_form_class = forms.SystemPromptBulkEditForm
+    filterset_class = filters.SystemPromptFilterSet
+    filterset_form_class = forms.SystemPromptFilterForm
+    form_class = forms.SystemPromptForm
+    lookup_field = "pk"
+    queryset = models.SystemPrompt.objects.all()
+    serializer_class = serializers.SystemPromptSerializer
+    table_class = tables.SystemPromptTable
+
+    # Custom template to include CSS for scrollable markdown preview
+    retrieve_template_name = "ai_ops/systemprompt_retrieve.html"
+
+    object_detail_content = ObjectDetailContent(
+        panels=[
+            ObjectFieldsPanel(
+                weight=100,
+                section=SectionChoices.LEFT_HALF,
+                fields=[
+                    "name",
+                    "status",
+                    "version",
+                    "is_file_based",
+                    "prompt_file_name",
+                ],  # pyright: ignore[reportArgumentType]
+            ),
+            ObjectTextPanel(
+                weight=200,
+                section=SectionChoices.RIGHT_HALF,
+                label="Prompt Preview (Rendered Markdown)",
+                body_id="prompt-preview-panel",
+                object_field="rendered_prompt",
+                render_as=ObjectTextPanel.RenderOptions.MARKDOWN,
+                render_placeholder=True,
             ),
         ],
     )

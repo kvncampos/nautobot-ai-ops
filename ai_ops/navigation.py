@@ -42,6 +42,17 @@ llm_configuration_items = (
             ),
         ),
     ),
+    NavMenuItem(
+        link="plugins:ai_ops:systemprompt_list",
+        name="System Prompts",
+        permissions=["ai_ops.view_systemprompt"],
+        buttons=(
+            NavMenuAddButton(
+                link="plugins:ai_ops:systemprompt_add",
+                permissions=["ai_ops.add_systemprompt"],
+            ),
+        ),
+    ),
 )
 
 # Middleware configuration

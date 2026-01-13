@@ -21,6 +21,148 @@ from ai_ops.helpers.llm_providers.base import BaseLLMProviderHandler
 # https://docs.nautobot.com/projects/core/en/stable/development/core/model-checklist/#extras-features
 
 
+def get_default_system_prompt_status():
+    """Get or create the default status for SystemPrompt (Approved).
+
+    Returns:
+        uuid: The primary key of the default Status (Approved).
+    """
+    approved_status, _ = Status.objects.get_or_create(
+        name="Approved",
+        defaults={"color": "4caf50"},  # Green
+    )
+    return approved_status.pk
+
+
+@extras_features("custom_links", "custom_validators", "export_templates", "graphql", "statuses", "webhooks")
+class SystemPrompt(PrimaryModel):  # pylint: disable=too-many-ancestors
+    """Model for storing system prompts for LLM models.
+
+    System prompts define the behavior and persona of LLM agents.
+    Prompts can be stored in the database (prompt_text) or loaded from code files (is_file_based).
+    Only prompts with 'Approved' status are used by agents.
+    """
+
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+        help_text="Unique descriptive name for this prompt (e.g., 'Multi-MCP Default', 'Network Specialist')",
+    )
+    prompt_text = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Prompt content. Supports variables: {current_date}, {current_month}, {model_name}. "
+        "Leave blank if using file-based prompt.",
+    )
+    status = StatusField(
+        to=Status,
+        on_delete=models.PROTECT,
+        default=get_default_system_prompt_status,
+        help_text="Only prompts with 'Approved' status are used by agents.",
+    )
+    version = models.PositiveIntegerField(
+        default=1,
+        editable=False,
+        help_text="Auto-incremented version number for tracking prompt changes.",
+    )
+    is_file_based = models.BooleanField(
+        default=False,
+        help_text="If True, loads prompt from code file (prompt_file_name); if False, uses prompt_text field.",
+    )
+    prompt_file_name = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text="Name of the Python file in ai_ops/prompts/ to load (without .py extension). "
+        "Example: 'multi_mcp_system_prompt' will load get_multi_mcp_system_prompt() from that file.",
+    )
+
+    class Meta(PrimaryModel.Meta):
+        """Meta class."""
+
+        ordering = ["name", "-version"]
+        verbose_name = "System Prompt"
+        verbose_name_plural = "System Prompts"
+
+    def __str__(self):
+        """String representation."""
+        status_name = self.status.name if self.status else "No Status"
+        return f"{self.name} v{self.version} ({status_name})"
+
+    def clean(self):
+        """Validate SystemPrompt instance."""
+        super().clean()
+
+        # Require prompt_text when not file-based
+        if not self.is_file_based and not self.prompt_text:
+            raise ValidationError({"prompt_text": "Prompt text is required when not using a file-based prompt."})
+
+        # Require prompt_file_name when file-based
+        if self.is_file_based and not self.prompt_file_name:
+            raise ValidationError({"prompt_file_name": "File name is required when using a file-based prompt."})
+
+        # Validate file exists if file-based
+        if self.is_file_based and self.prompt_file_name:
+            try:
+                import importlib
+
+                module = importlib.import_module(f"ai_ops.prompts.{self.prompt_file_name}")
+                func_name = f"get_{self.prompt_file_name}"
+                if not hasattr(module, func_name):
+                    raise ValidationError(
+                        {
+                            "prompt_file_name": f"Function '{func_name}' not found in ai_ops.prompts.{self.prompt_file_name}"
+                        }
+                    )
+            except ImportError as e:
+                raise ValidationError(
+                    {"prompt_file_name": f"Could not import ai_ops.prompts.{self.prompt_file_name}: {e}"}
+                ) from e
+
+    def save(self, *args, **kwargs):
+        """Override save to auto-increment version when prompt_text is updated."""
+        if self.pk:  # Existing instance - check if prompt_text changed
+            try:
+                old_instance = SystemPrompt.objects.get(pk=self.pk)
+                if old_instance.prompt_text != self.prompt_text:
+                    self.version += 1
+            except SystemPrompt.DoesNotExist:
+                pass
+        super().save(*args, **kwargs)
+
+    @property
+    def rendered_prompt(self) -> str:
+        """Get the prompt content, loading from file if necessary.
+
+        For database-stored prompts, returns prompt_text directly.
+        For file-based prompts, dynamically loads and executes the prompt function.
+
+        Returns:
+            str: The prompt content (may include template variables like {model_name}).
+        """
+        if not self.is_file_based:
+            return self.prompt_text or ""
+
+        # Load from file
+        if not self.prompt_file_name:
+            return "*No prompt file specified*"
+
+        try:
+            import importlib
+
+            module = importlib.import_module(f"ai_ops.prompts.{self.prompt_file_name}")
+            func_name = f"get_{self.prompt_file_name}"
+            if hasattr(module, func_name):
+                func = getattr(module, func_name)
+                # Call with a placeholder model name for preview purposes
+                return func(model_name="[Model Name]")
+            return f"*Function '{func_name}' not found in module*"
+        except ImportError as e:
+            return f"*Error loading prompt file: {e}*"
+        except Exception as e:  # pylint: disable=broad-except
+            return f"*Error executing prompt function: {e}*"
+
+
 class LLMProviderChoice(models.TextChoices):
     """Choices for LLM provider types."""
 
@@ -155,6 +297,14 @@ class LLMModel(PrimaryModel):  # pylint: disable=too-many-ancestors
         help_text="Cache time-to-live in seconds for MCP client connections (minimum 60 seconds)",
         validators=[MinValueValidator(60)],
     )
+    system_prompt = models.ForeignKey(
+        "SystemPrompt",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="llm_models",
+        help_text="System prompt to use for this model. If not set, uses the default file-based prompt.",
+    )
 
     class Meta(PrimaryModel.Meta):
         """Meta class."""
@@ -180,10 +330,14 @@ class LLMModel(PrimaryModel):  # pylint: disable=too-many-ancestors
         Raises:
             LLMModel.DoesNotExist: If no models exist in the database.
         """
-        default_model = cls.objects.filter(is_default=True).select_related("llm_provider").first()
+        default_model = (
+            cls.objects.filter(is_default=True)
+            .select_related("llm_provider", "system_prompt", "system_prompt__status")
+            .first()
+        )
         if default_model:
             return default_model
-        first_model = cls.objects.select_related("llm_provider").first()
+        first_model = cls.objects.select_related("llm_provider", "system_prompt", "system_prompt__status").first()
         if first_model:
             return first_model
         raise cls.DoesNotExist(

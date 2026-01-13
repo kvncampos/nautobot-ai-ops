@@ -1,0 +1,7 @@
+{% extends 'generic/object_retrieve.html' %}
+{% load static %}
+
+{% block extra_styles %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'ai_ops/css/system_prompt.css' %}">
+{% endblock extra_styles %}

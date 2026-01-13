@@ -65,6 +65,7 @@ class AiOpsConfig(NautobotAppConfig):
 
         from .signals import (
             assign_mcp_server_statuses,
+            assign_system_prompt_statuses,
             create_default_llm_providers,
             create_default_middleware_types,
             setup_chat_session_cleanup_schedule,
@@ -75,6 +76,7 @@ class AiOpsConfig(NautobotAppConfig):
         logger = logging.getLogger(__name__)
 
         nautobot_database_ready.connect(assign_mcp_server_statuses, sender=self)
+        nautobot_database_ready.connect(assign_system_prompt_statuses, sender=self)
         nautobot_database_ready.connect(create_default_llm_providers, sender=self)
         nautobot_database_ready.connect(create_default_middleware_types, sender=self)
         nautobot_database_ready.connect(setup_checkpoint_cleanup_schedule, sender=self)

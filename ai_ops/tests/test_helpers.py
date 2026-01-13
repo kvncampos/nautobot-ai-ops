@@ -241,3 +241,270 @@ class MiddlewareSchemaTestCase(TestCase):
         self.assertIsInstance(priority, int)
         self.assertGreater(priority, 0)
         self.assertLessEqual(priority, 100)
+
+
+class GetActivePromptTestCase(TestCase):
+    """Test cases for get_active_prompt helper."""
+
+    def setUp(self):
+        """Set up test data."""
+        self._create_system_prompt_statuses()
+        self._create_test_llm_model()
+
+    def _create_system_prompt_statuses(self):
+        """Create required statuses for SystemPrompt."""
+        from django.contrib.contenttypes.models import ContentType
+        from nautobot.core.choices import ColorChoices
+        from nautobot.extras.models import Status
+
+        from ai_ops.models import SystemPrompt
+
+        system_prompt_ct = ContentType.objects.get_for_model(SystemPrompt)
+
+        status_configs = [
+            {"name": "Approved", "color": ColorChoices.COLOR_GREEN},
+            {"name": "Testing", "color": ColorChoices.COLOR_AMBER},
+            {"name": "Deprecated", "color": ColorChoices.COLOR_GREY},
+        ]
+
+        for config in status_configs:
+            status, _ = Status.objects.get_or_create(
+                name=config["name"],
+                defaults={"color": config["color"]},
+            )
+            if system_prompt_ct not in status.content_types.all():
+                status.content_types.add(system_prompt_ct)
+
+    def _create_test_llm_model(self):
+        """Create test LLM model."""
+        from ai_ops.models import LLMModel, LLMProvider, LLMProviderChoice
+
+        self.provider, _ = LLMProvider.objects.get_or_create(
+            name=LLMProviderChoice.OLLAMA,
+            defaults={"description": "Test provider"},
+        )
+        self.model, _ = LLMModel.objects.get_or_create(
+            name="test-model",
+            defaults={
+                "llm_provider": self.provider,
+                "is_default": True,
+            },
+        )
+
+    def _get_approved_status(self):
+        """Get the Approved status."""
+        from nautobot.extras.models import Status
+
+        return Status.objects.get(name="Approved")
+
+    def _get_testing_status(self):
+        """Get the Testing status."""
+        from nautobot.extras.models import Status
+
+        return Status.objects.get(name="Testing")
+
+    def test_get_active_prompt_with_model_assigned_prompt(self):
+        """Test get_active_prompt returns model's assigned prompt when approved."""
+        import time
+
+        from ai_ops.helpers.get_prompt import get_active_prompt
+        from ai_ops.models import SystemPrompt
+
+        approved_status = self._get_approved_status()
+        unique_name = f"HelperTest_Model_Specific_{int(time.time())}"
+        prompt, _ = SystemPrompt.objects.get_or_create(
+            name=unique_name,
+            version=1,
+            defaults={
+                "prompt_text": "You are a test assistant for {model_name}.",
+                "status": approved_status,
+            },
+        )
+        self.model.system_prompt = prompt
+        self.model.save()
+
+        result = get_active_prompt(self.model)
+        self.assertIn("test assistant", result)
+        self.assertIn("test-model", result)  # Variable substitution
+
+    def test_get_active_prompt_skips_non_approved(self):
+        """Test get_active_prompt skips non-approved prompts and falls back."""
+        import time
+
+        from ai_ops.helpers.get_prompt import get_active_prompt
+        from ai_ops.models import SystemPrompt
+
+        testing_status = self._get_testing_status()
+        unique_name = f"HelperTest_Testing_{int(time.time())}"
+        prompt, _ = SystemPrompt.objects.get_or_create(
+            name=unique_name,
+            version=1,
+            defaults={
+                "prompt_text": "This is a testing prompt.",
+                "status": testing_status,
+            },
+        )
+        self.model.system_prompt = prompt
+        self.model.save()
+
+        # Should fallback to code-based prompt since assigned prompt is not Approved
+        result = get_active_prompt(self.model)
+        # Code fallback will have default MCP prompt content
+        self.assertIn("intelligent AI assistant", result)
+
+    def test_get_active_prompt_fallback_to_file_based(self):
+        """Test get_active_prompt fallback to file-based global prompt."""
+        import time
+
+        from ai_ops.helpers.get_prompt import get_active_prompt
+        from ai_ops.models import SystemPrompt
+
+        approved_status = self._get_approved_status()
+
+        # Clear any assigned prompt
+        self.model.system_prompt = None
+        self.model.save()
+
+        # Create or get a file-based global prompt
+        unique_name = f"HelperTest_Global_File_{int(time.time())}"
+        SystemPrompt.objects.get_or_create(
+            name=unique_name,
+            version=1,
+            defaults={
+                "is_file_based": True,
+                "prompt_file_name": "multi_mcp_system_prompt",
+                "status": approved_status,
+            },
+        )
+
+        result = get_active_prompt(self.model)
+        # Should use the file-based prompt
+        self.assertIn("intelligent AI assistant", result)
+
+    def test_get_active_prompt_ultimate_fallback(self):
+        """Test get_active_prompt ultimate fallback to code when no prompts exist."""
+        from ai_ops.helpers.get_prompt import get_active_prompt
+
+        # Clear model assignment (don't delete all prompts as that affects other tests)
+        self.model.system_prompt = None
+        self.model.save()
+
+        result = get_active_prompt(self.model)
+        # Should fallback to code-based get_multi_mcp_system_prompt or file-based
+        self.assertIn("intelligent AI assistant", result)
+
+    def test_get_active_prompt_variable_substitution(self):
+        """Test that prompt variables are correctly substituted."""
+        import time
+        from datetime import datetime
+
+        from ai_ops.helpers.get_prompt import get_active_prompt
+        from ai_ops.models import SystemPrompt
+
+        approved_status = self._get_approved_status()
+        unique_name = f"HelperTest_Variable_{int(time.time())}"
+        prompt, _ = SystemPrompt.objects.get_or_create(
+            name=unique_name,
+            version=1,
+            defaults={
+                "prompt_text": "Date: {current_date}. Month: {current_month}. Model: {model_name}.",
+                "status": approved_status,
+            },
+        )
+        self.model.system_prompt = prompt
+        self.model.save()
+
+        result = get_active_prompt(self.model)
+
+        # Check that variables were substituted
+        current_date = datetime.now().strftime("%B %d, %Y")
+        current_month = datetime.now().strftime("%B %Y")
+
+        self.assertIn(current_date, result)
+        self.assertIn(current_month, result)
+        self.assertIn("test-model", result)
+
+    def test_get_active_prompt_with_none_model(self):
+        """Test get_active_prompt handles None model gracefully."""
+        from ai_ops.helpers.get_prompt import get_active_prompt
+
+        # Should not raise, should return fallback prompt
+        result = get_active_prompt(None)
+        self.assertIn("intelligent AI assistant", result)
+
+    def test_get_active_prompt_unknown_variable_preserved(self):
+        """Test that unknown variables in prompt don't cause errors."""
+        import time
+
+        from ai_ops.helpers.get_prompt import get_active_prompt
+        from ai_ops.models import SystemPrompt
+
+        approved_status = self._get_approved_status()
+        unique_name = f"HelperTest_Unknown_Var_{int(time.time())}"
+        prompt, _ = SystemPrompt.objects.get_or_create(
+            name=unique_name,
+            version=1,
+            defaults={
+                "prompt_text": "Hello {unknown_var}. Model: {model_name}.",
+                "status": approved_status,
+            },
+        )
+        self.model.system_prompt = prompt
+        self.model.save()
+
+        # Should not raise - unknown variables logged as warning, raw text returned
+        result = get_active_prompt(self.model)
+        # Should have the raw text since format() will fail on unknown var
+        self.assertIn("{unknown_var}", result)
+
+    def test_get_active_prompt_deprecated_status_falls_back(self):
+        """Test that deprecated prompts are skipped like testing prompts."""
+        import time
+
+        from nautobot.extras.models import Status
+
+        from ai_ops.helpers.get_prompt import get_active_prompt
+        from ai_ops.models import SystemPrompt
+
+        deprecated_status = Status.objects.get(name="Deprecated")
+        unique_name = f"HelperTest_Deprecated_{int(time.time())}"
+        prompt, _ = SystemPrompt.objects.get_or_create(
+            name=unique_name,
+            version=1,
+            defaults={
+                "prompt_text": "This is deprecated content.",
+                "status": deprecated_status,
+            },
+        )
+        self.model.system_prompt = prompt
+        self.model.save()
+
+        # Should fallback since status is not Approved
+        result = get_active_prompt(self.model)
+        self.assertIn("intelligent AI assistant", result)
+        self.assertNotIn("This is deprecated content", result)
+
+    def test_get_active_prompt_refreshes_model_for_prompt(self):
+        """Test get_active_prompt works even if system_prompt wasn't select_related."""
+        import time
+
+        from ai_ops.helpers.get_prompt import get_active_prompt
+        from ai_ops.models import LLMModel, SystemPrompt
+
+        approved_status = self._get_approved_status()
+        unique_name = f"HelperTest_Fresh_Load_{int(time.time())}"
+        prompt, _ = SystemPrompt.objects.get_or_create(
+            name=unique_name,
+            version=1,
+            defaults={
+                "prompt_text": "Loaded fresh from DB for helper test.",
+                "status": approved_status,
+            },
+        )
+        self.model.system_prompt = prompt
+        self.model.save()
+
+        # Get model without select_related
+        fresh_model = LLMModel.objects.get(pk=self.model.pk)
+        result = get_active_prompt(fresh_model)
+        self.assertIn("Loaded fresh from DB for helper test", result)

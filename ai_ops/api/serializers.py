@@ -56,3 +56,14 @@ class MCPServerSerializer(NautobotModelSerializer, TaggedModelSerializerMixin): 
 
         model = models.MCPServer
         fields = "__all__"
+
+
+class SystemPromptSerializer(NautobotModelSerializer, TaggedModelSerializerMixin):  # pylint: disable=too-many-ancestors
+    """SystemPrompt Serializer."""
+
+    class Meta:
+        """Meta attributes."""
+
+        model = models.SystemPrompt
+        fields = "__all__"
+        read_only_fields = ["version"]  # Version auto-increments when prompt_text is updated

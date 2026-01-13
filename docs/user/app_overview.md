@@ -44,10 +44,11 @@ The AI Ops App leverages the following Nautobot features and capabilities:
 
 ### Models
 
-The app introduces five primary models:
+The app introduces six primary models:
 
 - **LLMProvider**: Manages LLM provider configurations (Ollama, OpenAI, Azure AI, Anthropic, HuggingFace, Custom)
 - **LLMModel**: Manages LLM model configurations including API keys, endpoints, and parameters for any supported provider
+- **SystemPrompt**: Manages system prompts that define AI agent behavior with support for template variables, version tracking, and status-based approval workflow
 - **MiddlewareType**: Defines middleware types (built-in LangChain or custom) that can be applied to models
 - **LLMMiddleware**: Configures middleware instances for specific models with priority-based execution
 - **MCPServer**: Manages Model Context Protocol server configurations for extended agent capabilities
@@ -73,7 +74,9 @@ The app introduces five primary models:
 
 - **Navigation Menu**: "AI Platform" tab with sections for:
     - Chat & Assistance: AI Chat Assistant interface
-    - Configuration: LLM Providers, LLM Models, Middleware Types, LLM Middleware, and MCP Servers management
+    - LLM: LLM Providers, LLM Models, and System Prompts management
+    - Middleware: Middleware Types and LLM Middleware configuration
+    - MCP: MCP Servers management
 - **List Views**: Comprehensive list views with filtering and sorting for all models
 - **Detail Views**: Rich detail pages using Nautobot's UI Component Framework
 - **Forms**: Create, update, and bulk edit forms for all models
@@ -83,6 +86,7 @@ The app introduces five primary models:
 - **REST API**: Full REST API for all models via NautobotModelViewSet
   - `/api/plugins/ai-ops/llm-providers/`
   - `/api/plugins/ai-ops/llm-models/`
+  - `/api/plugins/ai-ops/system-prompts/`
   - `/api/plugins/ai-ops/middleware-types/`
   - `/api/plugins/ai-ops/llm-middleware/`
   - `/api/plugins/ai-ops/mcp-servers/`

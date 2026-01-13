@@ -1,0 +1,45 @@
+/* SystemPrompt Detail View - Prompt Preview Panel Styling */
+
+/* Scrollable container for the prompt preview markdown panel */
+#prompt-preview-panel {
+    max-height: 1000px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Custom scrollbar styling for webkit browsers (Chrome, Safari, Edge) */
+#prompt-preview-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+#prompt-preview-panel::-webkit-scrollbar-track {
+    background: var(--bs-secondary-bg, #f1f1f1);
+    border-radius: 4px;
+}
+
+#prompt-preview-panel::-webkit-scrollbar-thumb {
+    background: var(--bs-secondary, #c1c1c1);
+    border-radius: 4px;
+}
+
+#prompt-preview-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-primary, #0d6efd);
+}
+
+/* Firefox scrollbar styling */
+#prompt-preview-panel {
+    scrollbar-width: thin;
+    scrollbar-color: var(--bs-secondary, #c1c1c1) var(--bs-secondary-bg, #f1f1f1);
+}
+
+/* Ensure code blocks within the panel don't overflow */
+#prompt-preview-panel pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+#prompt-preview-panel code {
+    word-break: break-word;
+}

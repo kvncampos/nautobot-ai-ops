@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="300" viewBox="0 0 800 300">
+  <rect width="800" height="300" fill="#f5f5f5" stroke="#ddd" stroke-width="2"/>
+  <text x="400" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#666">
+    Screenshot Placeholder
+  </text>
+  <text x="400" y="170" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#999">
+    LLM Model System Prompt Field
+  </text>
+  <text x="400" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#bbb">
+    Replace with actual screenshot of LLM Model edit form
+  </text>
+  <text x="400" y="230" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#bbb">
+    showing the System Prompt dropdown field
+  </text>
+</svg>

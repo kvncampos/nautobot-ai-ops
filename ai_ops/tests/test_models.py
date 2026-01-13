@@ -10,6 +10,7 @@ from ai_ops.models import (
     LLMProviderChoice,
     MCPServer,
     MiddlewareType,
+    SystemPrompt,
 )
 from ai_ops.tests.factories import TestDataMixin
 
@@ -305,3 +306,234 @@ class MCPServerTestCase(TestCase, TestDataMixin):
                 url="",  # Empty URL
             )
             server.clean()
+
+
+class SystemPromptTestCase(TestCase, TestDataMixin):
+    """Test cases for SystemPrompt model."""
+
+    def setUp(self):
+        """Set up test data."""
+        self.setup_test_data()
+        self._create_system_prompt_statuses()
+
+    def tearDown(self):
+        """Clean up after tests."""
+        self.teardown_test_data()
+
+    def _create_system_prompt_statuses(self):
+        """Create required statuses for SystemPrompt."""
+        from django.contrib.contenttypes.models import ContentType
+        from nautobot.core.choices import ColorChoices
+        from nautobot.extras.models import Status
+
+        system_prompt_ct = ContentType.objects.get_for_model(SystemPrompt)
+
+        status_configs = [
+            {"name": "Approved", "color": ColorChoices.COLOR_GREEN},
+            {"name": "Testing", "color": ColorChoices.COLOR_AMBER},
+            {"name": "Deprecated", "color": ColorChoices.COLOR_GREY},
+        ]
+
+        for config in status_configs:
+            status, _ = Status.objects.get_or_create(
+                name=config["name"],
+                defaults={"color": config["color"]},
+            )
+            if system_prompt_ct not in status.content_types.all():
+                status.content_types.add(system_prompt_ct)
+
+    def _get_approved_status(self):
+        """Get the Approved status."""
+        from nautobot.extras.models import Status
+
+        return Status.objects.get(name="Approved")
+
+    def _get_testing_status(self):
+        """Get the Testing status."""
+        from nautobot.extras.models import Status
+
+        return Status.objects.get(name="Testing")
+
+    def _get_deprecated_status(self):
+        """Get the Deprecated status."""
+        from nautobot.extras.models import Status
+
+        return Status.objects.get(name="Deprecated")
+
+    def test_system_prompt_creation(self):
+        """Test SystemPrompt instance creation."""
+        import time
+
+        approved_status = self._get_approved_status()
+        unique_name = f"ModelTest_Create_{int(time.time())}"
+        prompt = SystemPrompt.objects.create(
+            name=unique_name,
+            prompt_text="You are a helpful assistant.",
+            status=approved_status,
+            is_file_based=False,
+        )
+        self.assertEqual(prompt.name, unique_name)
+        self.assertEqual(prompt.version, 1)
+        self.assertFalse(prompt.is_file_based)
+        self.assertIn("v1 (Approved)", str(prompt))
+
+    def test_system_prompt_version_increments_on_prompt_text_change(self):
+        """Test that version auto-increments when prompt_text is updated."""
+        import time
+
+        approved_status = self._get_approved_status()
+
+        # Create prompt with unique name
+        unique_name = f"ModelTest_Version_{int(time.time())}"
+        prompt = SystemPrompt.objects.create(
+            name=unique_name,
+            prompt_text="Original content",
+            status=approved_status,
+        )
+        self.assertEqual(prompt.version, 1)
+
+        # Update prompt_text - version should increment
+        prompt.prompt_text = "Updated content v2"
+        prompt.save()
+        self.assertEqual(prompt.version, 2)
+
+        # Update prompt_text again - version should increment again
+        prompt.prompt_text = "Updated content v3"
+        prompt.save()
+        self.assertEqual(prompt.version, 3)
+
+    def test_system_prompt_version_unchanged_on_other_field_update(self):
+        """Test that version does NOT increment when other fields change."""
+        import time
+
+        approved_status = self._get_approved_status()
+        testing_status = self._get_testing_status()
+
+        # Create prompt with unique name
+        unique_name = f"ModelTest_NoVersion_{int(time.time())}"
+        prompt = SystemPrompt.objects.create(
+            name=unique_name,
+            prompt_text="Content that won't change",
+            status=approved_status,
+        )
+        original_version = prompt.version
+        self.assertEqual(original_version, 1)
+
+        # Update status only - version should NOT change
+        prompt.status = testing_status
+        prompt.save()
+        self.assertEqual(prompt.version, original_version)
+
+    def test_system_prompt_unique_name(self):
+        """Test that prompt names must be unique."""
+        import time
+
+        from django.db import IntegrityError
+
+        approved_status = self._get_approved_status()
+        unique_name = f"ModelTest_Unique_{int(time.time())}"
+
+        # Create first prompt
+        SystemPrompt.objects.create(
+            name=unique_name,
+            prompt_text="Content",
+            status=approved_status,
+        )
+
+        # Try to create another with same name - should fail
+        with self.assertRaises(IntegrityError):
+            SystemPrompt.objects.create(
+                name=unique_name,
+                prompt_text="Different content",
+                status=approved_status,
+            )
+
+    def test_system_prompt_requires_prompt_text_when_not_file_based(self):
+        """Test that prompt_text is required when is_file_based=False."""
+        import time
+
+        approved_status = self._get_approved_status()
+
+        with self.assertRaises(ValidationError) as context:
+            prompt = SystemPrompt(
+                name=f"ModelTest_MissingText_{int(time.time())}",
+                status=approved_status,
+                is_file_based=False,
+                prompt_text=None,
+            )
+            prompt.clean()
+
+        self.assertIn("prompt_text", str(context.exception))
+
+    def test_system_prompt_requires_file_name_when_file_based(self):
+        """Test that prompt_file_name is required when is_file_based=True."""
+        import time
+
+        approved_status = self._get_approved_status()
+
+        with self.assertRaises(ValidationError) as context:
+            prompt = SystemPrompt(
+                name=f"ModelTest_MissingFile_{int(time.time())}",
+                status=approved_status,
+                is_file_based=True,
+                prompt_file_name=None,
+            )
+            prompt.clean()
+
+        self.assertIn("prompt_file_name", str(context.exception))
+
+    def test_system_prompt_file_based_valid_file(self):
+        """Test that file-based prompt validates the file exists."""
+        import time
+
+        approved_status = self._get_approved_status()
+
+        # This should work - the file exists
+        prompt = SystemPrompt(
+            name=f"ModelTest_ValidFile_{int(time.time())}",
+            status=approved_status,
+            is_file_based=True,
+            prompt_file_name="multi_mcp_system_prompt",
+        )
+        prompt.clean()  # Should not raise
+
+    def test_system_prompt_file_based_invalid_file(self):
+        """Test that file-based prompt validation fails for non-existent file."""
+        import time
+
+        approved_status = self._get_approved_status()
+
+        with self.assertRaises(ValidationError) as context:
+            prompt = SystemPrompt(
+                name=f"ModelTest_InvalidFile_{int(time.time())}",
+                status=approved_status,
+                is_file_based=True,
+                prompt_file_name="nonexistent_prompt_file",
+            )
+            prompt.clean()
+
+        self.assertIn("prompt_file_name", str(context.exception))
+
+    def test_llm_model_system_prompt_assignment(self):
+        """Test assigning SystemPrompt to LLMModel."""
+        import time
+
+        approved_status = self._get_approved_status()
+
+        prompt = SystemPrompt.objects.create(
+            name=f"ModelTest_Assignment_{int(time.time())}",
+            prompt_text="You are a network expert.",
+            status=approved_status,
+        )
+
+        self.llama2_model.system_prompt = prompt
+        self.llama2_model.save()
+
+        # Refresh from database
+        self.llama2_model.refresh_from_db()
+        self.assertEqual(self.llama2_model.system_prompt, prompt)
+
+    def test_llm_model_system_prompt_nullable(self):
+        """Test that system_prompt is nullable on LLMModel."""
+        self.assertIsNone(self.llama2_model.system_prompt)
+        self.llama2_model.save()  # Should not raise

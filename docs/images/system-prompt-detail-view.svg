@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#f5f5f5" stroke="#ddd" stroke-width="2"/>
+  <text x="400" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#666">
+    Screenshot Placeholder
+  </text>
+  <text x="400" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#999">
+    System Prompt Detail View
+  </text>
+  <text x="400" y="300" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#bbb">
+    Replace with actual screenshot showing detail view
+  </text>
+  <text x="400" y="320" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#bbb">
+    with markdown preview panel
+  </text>
+</svg>

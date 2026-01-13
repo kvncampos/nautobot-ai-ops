@@ -186,3 +186,38 @@ class MCPServerTable(StatusTableMixin, BaseTable):
             "url",
             "mcp_endpoint",
         )
+
+
+class SystemPromptTable(StatusTableMixin, BaseTable):
+    # pylint: disable=R0903
+    """Table for SystemPrompt list view."""
+
+    pk = ToggleColumn()
+    name = tables.Column(linkify=True)
+    version = tables.Column(verbose_name="Version")
+    is_file_based = tables.BooleanColumn(verbose_name="File-Based")
+    prompt_file_name = tables.Column(verbose_name="File Name")
+    actions = ButtonsColumn(
+        models.SystemPrompt,
+        pk_field="pk",
+    )
+
+    class Meta(BaseTable.Meta):
+        """Meta attributes."""
+
+        model = models.SystemPrompt
+        fields = (
+            "pk",
+            "name",
+            "status",
+            "version",
+            "is_file_based",
+            "prompt_file_name",
+        )
+        default_columns = (
+            "pk",
+            "name",
+            "status",
+            "version",
+            "is_file_based",
+        )

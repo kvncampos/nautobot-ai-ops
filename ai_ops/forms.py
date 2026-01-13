@@ -106,6 +106,12 @@ class LLMModelBulkEditForm(TagsBulkEditFormMixin, NautobotBulkEditForm):  # pyli
     )
     temperature = forms.FloatField(required=False, min_value=0.0, max_value=2.0)
     cache_ttl = forms.IntegerField(required=False, min_value=60)
+    system_prompt = forms.ModelChoiceField(
+        queryset=models.SystemPrompt.objects.all(),
+        required=False,
+        label="System Prompt",
+        help_text="Assign a system prompt to selected models. Only 'Approved' prompts will be used.",
+    )
 
     class Meta:
         """Meta attributes."""
@@ -115,6 +121,7 @@ class LLMModelBulkEditForm(TagsBulkEditFormMixin, NautobotBulkEditForm):  # pyli
             "model_secret_key",
             "azure_endpoint",
             "api_version",
+            "system_prompt",
         ]
 
 
@@ -426,3 +433,98 @@ class MCPServerFilterForm(StatusModelFilterFormMixin, NautobotFilterForm):
     protocol = forms.ChoiceField(
         required=False, choices=[("", "---------")] + models.MCPServer.PROTOCOL_TYPE_CHOICES, label="Protocol"
     )
+
+
+# =============================
+# === SystemPrompt Forms === #
+# =============================
+
+
+class SystemPromptForm(NautobotModelForm):  # pylint: disable=too-many-ancestors
+    """SystemPrompt creation/edit form."""
+
+    class Meta:
+        """Meta attributes."""
+
+        model = models.SystemPrompt
+        fields = [
+            "name",
+            "status",
+            "is_file_based",
+            "prompt_file_name",
+            "prompt_text",
+        ]
+        # Exclude 'version' - it's auto-managed
+        widgets = {
+            "prompt_text": forms.Textarea(attrs={"rows": 15, "cols": 80, "class": "form-control"}),
+        }
+        help_texts = {
+            "name": "Descriptive name for this prompt. Version is auto-incremented for prompts with the same name.",
+            "is_file_based": "If enabled, loads prompt from a Python file in ai_ops/prompts/ instead of using prompt_text.",
+            "prompt_file_name": "Name of Python file in ai_ops/prompts/ (without .py). "
+            "Example: 'multi_mcp_system_prompt' loads get_multi_mcp_system_prompt().",
+            "prompt_text": "Prompt content. Supports variables: {current_date}, {current_month}, {model_name}. "
+            "Leave blank if using file-based prompt.",
+        }
+
+
+class SystemPromptBulkEditForm(TagsBulkEditFormMixin, NautobotBulkEditForm):  # pylint: disable=too-many-ancestors
+    """SystemPrompt bulk edit form."""
+
+    pk = forms.ModelMultipleChoiceField(queryset=models.SystemPrompt.objects.all(), widget=forms.MultipleHiddenInput)
+    status = forms.ModelChoiceField(
+        queryset=None,  # Will be set in __init__
+        required=False,
+        label="Status",
+    )
+    is_file_based = forms.BooleanField(
+        required=False,
+        widget=forms.Select(
+            choices=[
+                (None, "---------"),
+                (True, "Yes"),
+                (False, "No"),
+            ]
+        ),
+    )
+
+    class Meta:
+        """Meta attributes."""
+
+        nullable_fields = []
+
+    def __init__(self, *args, **kwargs):
+        """Initialize form with filtered status queryset."""
+        super().__init__(*args, **kwargs)
+        from django.contrib.contenttypes.models import ContentType
+        from nautobot.extras.models import Status
+
+        # Filter statuses to only those associated with SystemPrompt
+        system_prompt_ct = ContentType.objects.get_for_model(models.SystemPrompt)
+        self.fields["status"].queryset = Status.objects.filter(content_types=system_prompt_ct)
+
+
+class SystemPromptFilterForm(StatusModelFilterFormMixin, NautobotFilterForm):
+    """Filter form to filter SystemPrompt searches."""
+
+    model = models.SystemPrompt
+    field_order = ["q", "name", "status", "is_file_based", "version"]
+
+    q = forms.CharField(
+        required=False,
+        label="Search",
+        help_text="Search within Name or Prompt Text.",
+    )
+    name = forms.CharField(required=False, label="Name")
+    is_file_based = forms.BooleanField(
+        required=False,
+        label="File-Based",
+        widget=forms.Select(
+            choices=[
+                ("", "---------"),
+                ("true", "Yes"),
+                ("false", "No"),
+            ]
+        ),
+    )
+    version = forms.IntegerField(required=False, label="Version")

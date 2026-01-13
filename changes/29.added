@@ -1,0 +1,1 @@
+Added Dynamic System Prompts feature allowing UI-based management of AI agent prompts with support for template variables ({current_date}, {current_month}, {model_name}), file-based prompts, status-based approval workflow, and model-specific prompt assignment.

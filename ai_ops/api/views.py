@@ -78,9 +78,6 @@ class MCPServerViewSet(NautobotModelViewSet):  # pylint: disable=too-many-ancest
     serializer_class = serializers.MCPServerSerializer
     filterset_class = filters.MCPServerFilterSet
 
-    # Option for modifying the default HTTP methods:
-    # http_method_names = ["get", "post", "put", "patch", "delete", "head", "options", "trace"]
-
     @action(detail=True, methods=["post"], url_path="health-check")
     def health_check(self, request, pk=None):
         """Perform health check on MCP server."""
@@ -147,3 +144,11 @@ class MCPServerViewSet(NautobotModelViewSet):  # pylint: disable=too-many-ancest
                     "url": health_url,
                 }
             )
+
+
+class SystemPromptViewSet(NautobotModelViewSet):  # pylint: disable=too-many-ancestors
+    """SystemPrompt viewset."""
+
+    queryset = models.SystemPrompt.objects.all()
+    serializer_class = serializers.SystemPromptSerializer
+    filterset_class = filters.SystemPromptFilterSet
