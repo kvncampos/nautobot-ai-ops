@@ -36,7 +36,7 @@ include = [
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"
 # Used for local development
-nautobot = ">=2.4.22,<2.4.23"
+nautobot = ">=3.0.0"
 
 langgraph = "^1.0.4"
 langchain = "^1.1.0"
