@@ -16,18 +16,6 @@ files = [
 vine = ">=5.0.0,<6.0.0"
 
 [[package]]
-name = "aniso8601"
-version = "7.0.0"
-description = "A library for parsing ISO 8601 strings."
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "aniso8601-7.0.0-py2.py3-none-any.whl", hash = "sha256:d10a4bf949f619f719b227ef5386e31f49a2b6d453004b21f02661ccc8670c7b"},
-    {file = "aniso8601-7.0.0.tar.gz", hash = "sha256:513d2b6637b7853806ae79ffaca6f3e8754bdd547048f5ccc1420aec4b714f1e"},
-]
-
-[[package]]
 name = "annotated-types"
 version = "0.7.0"
 description = "Reusable constraint types to use with typing.Annotated"
@@ -219,14 +207,14 @@ files = [
 
 [[package]]
 name = "celery"
-version = "5.5.3"
+version = "5.6.2"
 description = "Distributed Task Queue."
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "celery-5.5.3-py3-none-any.whl", hash = "sha256:0b5761a07057acee94694464ca482416b959568904c9dfa41ce8413a7d65d525"},
-    {file = "celery-5.5.3.tar.gz", hash = "sha256:6c972ae7968c2b5281227f01c3a3f984037d21c5129d07bf3550cc2afc6b10a5"},
+    {file = "celery-5.6.2-py3-none-any.whl", hash = "sha256:3ffafacbe056951b629c7abcf9064c4a2366de0bdfc9fdba421b97ebb68619a5"},
+    {file = "celery-5.6.2.tar.gz", hash = "sha256:4a8921c3fcf2ad76317d3b29020772103581ed2454c4c042cc55dcc43585009b"},
 ]
 
 [package.dependencies]
@@ -235,13 +223,15 @@ click = ">=8.1.2,<9.0"
 click-didyoumean = ">=0.3.0"
 click-plugins = ">=1.1.1"
 click-repl = ">=0.2.0"
-kombu = ">=5.5.2,<5.6"
+exceptiongroup = {version = ">=1.3.0", markers = "python_version < \"3.11\""}
+kombu = ">=5.6.0"
 python-dateutil = ">=2.8.2"
+tzlocal = "*"
 vine = ">=5.1.0,<6.0"
 
 [package.extras]
 arangodb = ["pyArango (>=2.0.2)"]
-auth = ["cryptography (==44.0.2)"]
+auth = ["cryptography (==46.0.3)"]
 azureblockblob = ["azure-identity (>=1.19.0)", "azure-storage-blob (>=12.15.0)"]
 brotli = ["brotli (>=1.0.0) ; platform_python_implementation == \"CPython\"", "brotlipy (>=0.7.0) ; platform_python_implementation == \"PyPy\""]
 cassandra = ["cassandra-driver (>=3.25.0,<4)"]
@@ -251,15 +241,15 @@ couchbase = ["couchbase (>=3.0.0) ; platform_python_implementation != \"PyPy\" a
 couchdb = ["pycouchdb (==1.16.0)"]
 django = ["Django (>=2.2.28)"]
 dynamodb = ["boto3 (>=1.26.143)"]
-elasticsearch = ["elastic-transport (<=8.17.1)", "elasticsearch (<=8.17.2)"]
+elasticsearch = ["elastic-transport (<=9.1.0)", "elasticsearch (<=9.1.2)"]
 eventlet = ["eventlet (>=0.32.0) ; python_version < \"3.10\""]
-gcs = ["google-cloud-firestore (==2.20.1)", "google-cloud-storage (>=2.10.0)", "grpcio (==1.67.0)"]
+gcs = ["google-cloud-firestore (==2.22.0)", "google-cloud-storage (>=2.10.0)", "grpcio (==1.75.1)"]
 gevent = ["gevent (>=1.5.0)"]
 librabbitmq = ["librabbitmq (>=2.0.0) ; python_version < \"3.11\""]
 memcache = ["pylibmc (==1.6.3) ; platform_system != \"Windows\""]
 mongodb = ["kombu[mongodb]"]
 msgpack = ["kombu[msgpack]"]
-pydantic = ["pydantic (>=2.4)"]
+pydantic = ["pydantic (>=2.12.0a1) ; python_version >= \"3.14\"", "pydantic (>=2.4) ; python_version < \"3.14\""]
 pymemcache = ["python-memcached (>=1.61)"]
 pyro = ["pyro4 (==4.82) ; python_version < \"3.11\""]
 pytest = ["pytest-celery[all] (>=1.2.0,<1.3.0)"]
@@ -268,8 +258,8 @@ s3 = ["boto3 (>=1.26.143)"]
 slmq = ["softlayer_messaging (>=1.0.3)"]
 solar = ["ephem (==4.2) ; platform_python_implementation != \"PyPy\""]
 sqlalchemy = ["kombu[sqlalchemy]"]
-sqs = ["boto3 (>=1.26.143)", "kombu[sqs] (>=5.5.0)", "urllib3 (>=1.26.16)"]
-tblib = ["tblib (>=1.3.0) ; python_version < \"3.8.0\"", "tblib (>=1.5.0) ; python_version >= \"3.8.0\""]
+sqs = ["boto3 (>=1.26.143)", "kombu[sqs] (>=5.5.0)", "pycurl (>=7.43.0.5,<7.45.4) ; sys_platform != \"win32\" and platform_python_implementation == \"CPython\" and python_version < \"3.9\"", "pycurl (>=7.45.4) ; sys_platform != \"win32\" and platform_python_implementation == \"CPython\" and python_version >= \"3.9\"", "urllib3 (>=1.26.16)"]
+tblib = ["tblib (==3.2.2)"]
 yaml = ["kombu[yaml]"]
 zookeeper = ["kazoo (>=1.3.1)"]
 zstd = ["zstandard (==0.23.0)"]
@@ -1061,23 +1051,18 @@ Django = ">=4.2"
 
 [[package]]
 name = "django-health-check"
-version = "3.20.0"
+version = "3.20.8"
 description = "Monitor the health of your Django app and its connected services."
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "django_health_check-3.20.0-py3-none-any.whl", hash = "sha256:bcb2b8f36f463cead0564a028345c5b17e2a2d18e9cc88ecd611b13a26521926"},
-    {file = "django_health_check-3.20.0.tar.gz", hash = "sha256:cd69ac5facf73fe7241d9492d939b57bd20e24f46c4edea91e6a900bf22c2d8e"},
+    {file = "django_health_check-3.20.8-py3-none-any.whl", hash = "sha256:89f06fd3ecfefb13a8444cbc49508c76f1f49c816624026f720a28e0e67a458c"},
+    {file = "django_health_check-3.20.8.tar.gz", hash = "sha256:bbb7286af4b4e2079d262eeb3e68014c8980f8fcfbd295bca1ec31cbf827b83c"},
 ]
 
 [package.dependencies]
 Django = ">=4.2"
-
-[package.extras]
-docs = ["sphinx"]
-lint = ["ruff (==0.11.13)"]
-test = ["boto3", "celery", "django-storages", "pytest", "pytest-cov", "pytest-django", "redis"]
 
 [[package]]
 name = "django-ipware"
@@ -1190,14 +1175,14 @@ commands = ["django-extensions (>=1.4.9)"]
 
 [[package]]
 name = "django-tables2"
-version = "2.7.5"
+version = "2.8.0"
 description = "Table/data-grid framework for Django"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "django_tables2-2.7.5-py3-none-any.whl", hash = "sha256:d9338937797207ffb6f481be2125c5ec3a0bb1858d409c672cc25fc5d654cb22"},
-    {file = "django_tables2-2.7.5.tar.gz", hash = "sha256:fb5dcaa09379cf3947598ec7e1bd5f26ed63aafdee3b23963446763bbeac37bf"},
+    {file = "django_tables2-2.8.0-py3-none-any.whl", hash = "sha256:860633b0f448216af73fca6005c7e38dc9b46931dc36c08a9281a71ee250b1ee"},
+    {file = "django_tables2-2.8.0.tar.gz", hash = "sha256:0dea3401bb99a0164ba09e20d59a7d90856fdc05e5ae2da9a14d0fa14d99257c"},
 ]
 
 [package.dependencies]
@@ -1223,29 +1208,29 @@ Django = ">=4.1"
 
 [[package]]
 name = "django-timezone-field"
-version = "7.1"
+version = "7.2.1"
 description = "A Django app providing DB, form, and REST framework fields for zoneinfo and pytz timezone objects."
 optional = false
 python-versions = "<4.0,>=3.8"
 groups = ["main"]
 files = [
-    {file = "django_timezone_field-7.1-py3-none-any.whl", hash = "sha256:93914713ed882f5bccda080eda388f7006349f25930b6122e9b07bf8db49c4b4"},
-    {file = "django_timezone_field-7.1.tar.gz", hash = "sha256:b3ef409d88a2718b566fabe10ea996f2838bc72b22d3a2900c0aa905c761380c"},
+    {file = "django_timezone_field-7.2.1-py3-none-any.whl", hash = "sha256:276915b72c5816f57c3baf9e43f816c695ef940d1b21f91ebf6203c09bf4ad44"},
+    {file = "django_timezone_field-7.2.1.tar.gz", hash = "sha256:def846f9e7200b7b8f2a28fcce2b78fb2d470f6a9f272b07c4e014f6ba4c6d2e"},
 ]
 
 [package.dependencies]
-Django = ">=3.2,<6.0"
+Django = ">=3.2,<6.1"
 
 [[package]]
 name = "django-tree-queries"
-version = "0.21.2"
+version = "0.23.0"
 description = "Tree queries with explicit opt-in, without configurability"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "django_tree_queries-0.21.2-py3-none-any.whl", hash = "sha256:360dbe024535d34b6d15db0cf566d0f3a6c31019ee9d229b59c0dfbe91b5b72d"},
-    {file = "django_tree_queries-0.21.2.tar.gz", hash = "sha256:7b574bf64bc4950c8f7dba953fc028fdca05dd9bfe8422a20aed9899dd1a8890"},
+    {file = "django_tree_queries-0.23.0-py3-none-any.whl", hash = "sha256:7095a3b6f1c9d57485213ab7e0b2fb76b5962590300f47a9ece8deb9705ae990"},
+    {file = "django_tree_queries-0.23.0.tar.gz", hash = "sha256:11845b53f173601b98555a393cdc4924dcd67a4946e7b464aa293bb22a9bf1f6"},
 ]
 
 [package.extras]
@@ -1569,14 +1554,14 @@ smmap = ">=3.0.1,<6"
 
 [[package]]
 name = "gitpython"
-version = "3.1.45"
+version = "3.1.46"
 description = "GitPython is a Python library used to interact with Git repositories"
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "gitpython-3.1.45-py3-none-any.whl", hash = "sha256:8908cb2e02fb3b93b7eb0f2827125cb699869470432cc885f019b8fd0fccff77"},
-    {file = "gitpython-3.1.45.tar.gz", hash = "sha256:85b0ee964ceddf211c41b9f27a49086010a190fd8132a24e21f362a4b36a791c"},
+    {file = "gitpython-3.1.46-py3-none-any.whl", hash = "sha256:79812ed143d9d25b6d176a10bb511de0f9c67b1fa641d82097b0ab90398a2058"},
+    {file = "gitpython-3.1.46.tar.gz", hash = "sha256:400124c7d0ef4ea03f7310ac2fbf7151e09ff97f2a3288d64a440c584a29c37f"},
 ]
 
 [package.dependencies]
@@ -1584,7 +1569,7 @@ gitdb = ">=4.0.1,<5"
 
 [package.extras]
 doc = ["sphinx (>=7.1.2,<7.2)", "sphinx-autodoc-typehints", "sphinx_rtd_theme"]
-test = ["coverage[toml]", "ddt (>=1.1.1,!=1.4.3)", "mock ; python_version < \"3.8\"", "mypy", "pre-commit", "pytest (>=7.3.1)", "pytest-cov", "pytest-instafail", "pytest-mock", "pytest-sugar", "typing-extensions ; python_version < \"3.11\""]
+test = ["coverage[toml]", "ddt (>=1.1.1,!=1.4.3)", "mock ; python_version < \"3.8\"", "mypy (==1.18.2) ; python_version >= \"3.9\"", "pre-commit", "pytest (>=7.3.1)", "pytest-cov", "pytest-instafail", "pytest-mock", "pytest-sugar", "typing-extensions ; python_version < \"3.11\""]
 
 [[package]]
 name = "google-auth"
@@ -1627,100 +1612,89 @@ files = [
 
 [[package]]
 name = "graphene"
-version = "2.1.9"
+version = "3.4.3"
 description = "GraphQL Framework for Python"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "graphene-2.1.9-py2.py3-none-any.whl", hash = "sha256:3d446eb1237c551052bc31155cf1a3a607053e4f58c9172b83a1b597beaa0868"},
-    {file = "graphene-2.1.9.tar.gz", hash = "sha256:b9f2850e064eebfee9a3ef4a1f8aa0742848d97652173ab44c82cc8a62b9ed93"},
+    {file = "graphene-3.4.3-py2.py3-none-any.whl", hash = "sha256:820db6289754c181007a150db1f7fff544b94142b556d12e3ebc777a7bf36c71"},
+    {file = "graphene-3.4.3.tar.gz", hash = "sha256:2a3786948ce75fe7e078443d37f609cbe5bb36ad8d6b828740ad3b95ed1a0aaa"},
 ]
 
 [package.dependencies]
-aniso8601 = ">=3,<=7"
-graphql-core = ">=2.1,<3"
-graphql-relay = ">=2,<3"
-six = ">=1.10.0,<2"
+graphql-core = ">=3.1,<3.3"
+graphql-relay = ">=3.1,<3.3"
+python-dateutil = ">=2.7.0,<3"
+typing-extensions = ">=4.7.1,<5"
 
 [package.extras]
-django = ["graphene-django"]
-sqlalchemy = ["graphene-sqlalchemy"]
-test = ["coveralls", "fastdiff (==0.2.0)", "iso8601", "mock", "promise", "pytest", "pytest-benchmark", "pytest-cov", "pytest-mock", "pytz", "six", "snapshottest"]
+dev = ["coveralls (>=3.3,<5)", "mypy (>=1.10,<2)", "pytest (>=8,<9)", "pytest-asyncio (>=0.16,<2)", "pytest-benchmark (>=4,<5)", "pytest-cov (>=5,<6)", "pytest-mock (>=3,<4)", "ruff (==0.5.0)", "types-python-dateutil (>=2.8.1,<3)"]
+test = ["coveralls (>=3.3,<5)", "pytest (>=8,<9)", "pytest-asyncio (>=0.16,<2)", "pytest-benchmark (>=4,<5)", "pytest-cov (>=5,<6)", "pytest-mock (>=3,<4)"]
 
 [[package]]
 name = "graphene-django"
-version = "2.16.0"
+version = "3.2.3"
 description = "Graphene Django integration"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "graphene-django-2.16.0.tar.gz", hash = "sha256:dcf650ebfae52c2e9927d6e8bb005d06366f710b17a015c821c920eda1270566"},
-    {file = "graphene_django-2.16.0-py2.py3-none-any.whl", hash = "sha256:ec89469ec94507c1ed998f85ee087d634ec489e20fe08a72893c3ca5e646fc14"},
+    {file = "graphene-django-3.2.3.tar.gz", hash = "sha256:d831bfe8e9a6e77e477b7854faef4addb318f386119a69ee4c57b74560f3e07d"},
+    {file = "graphene_django-3.2.3-py2.py3-none-any.whl", hash = "sha256:0c673a4dad315b26b4d18eb379ad0c7027fd6a36d23a1848b7c7c09a14a9271e"},
 ]
 
 [package.dependencies]
-Django = ">=2.2"
-graphene = ">=2.1.7,<3"
-graphql-core = ">=2.1.0,<3"
+Django = ">=3.2"
+graphene = ">=3.0,<4"
+graphql-core = ">=3.1.0,<4"
+graphql-relay = ">=3.1.1,<4"
 promise = ">=2.1"
-singledispatch = ">=3.4.0.3"
 text-unidecode = "*"
 
 [package.extras]
-dev = ["black (==22.6.0)", "coveralls", "django-filter (>=2)", "djangorestframework (>=3.6.3)", "flake8 (>=5,<6)", "flake8-black (==0.3.3)", "flake8-bugbear (==22.7.1)", "mock", "pytest (>=3.6.3)", "pytest-cov", "pytest-django (>=3.3.2)", "pytz"]
+dev = ["coveralls", "django-filter (>=22.1)", "djangorestframework (>=3.6.3)", "mock", "pre-commit", "pytest (>=7.3.1)", "pytest-cov", "pytest-django (>=4.5.2)", "pytest-random-order", "pytz", "ruff (==0.1.2)"]
 rest-framework = ["djangorestframework (>=3.6.3)"]
-test = ["coveralls", "django-filter (>=2)", "djangorestframework (>=3.6.3)", "mock", "pytest (>=3.6.3)", "pytest-cov", "pytest-django (>=3.3.2)", "pytz"]
+test = ["coveralls", "django-filter (>=22.1)", "djangorestframework (>=3.6.3)", "mock", "pytest (>=7.3.1)", "pytest-cov", "pytest-django (>=4.5.2)", "pytest-random-order", "pytz"]
 
 [[package]]
 name = "graphene-django-optimizer"
-version = "0.8.0"
+version = "0.10.0"
 description = "Optimize database access inside graphene queries."
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "graphene-django-optimizer-0.8.0.tar.gz", hash = "sha256:79269880d59d0a35d41751ddcb419220c4ad3871960416371119f447cb2e1a77"},
+    {file = "graphene-django-optimizer-0.10.0.tar.gz", hash = "sha256:5a5d9d1e1abda3571bdff77a71af5e71b994e5e9d97d17a576df89181284075d"},
+    {file = "graphene_django_optimizer-0.10.0-py2.py3-none-any.whl", hash = "sha256:5b81aaa114514c9a89d064aaaf09c8e00c27d1cf6f734993f0ea5afe776041b9"},
 ]
 
 [[package]]
 name = "graphql-core"
-version = "2.3.2"
-description = "GraphQL implementation for Python"
+version = "3.2.7"
+description = "GraphQL implementation for Python, a port of GraphQL.js, the JavaScript reference implementation for GraphQL."
 optional = false
-python-versions = "*"
+python-versions = "<4,>=3.7"
 groups = ["main"]
 files = [
-    {file = "graphql-core-2.3.2.tar.gz", hash = "sha256:aac46a9ac524c9855910c14c48fc5d60474def7f99fd10245e76608eba7af746"},
-    {file = "graphql_core-2.3.2-py2.py3-none-any.whl", hash = "sha256:44c9bac4514e5e30c5a595fac8e3c76c1975cae14db215e8174c7fe995825bad"},
+    {file = "graphql_core-3.2.7-py3-none-any.whl", hash = "sha256:17fc8f3ca4a42913d8e24d9ac9f08deddf0a0b2483076575757f6c412ead2ec0"},
+    {file = "graphql_core-3.2.7.tar.gz", hash = "sha256:27b6904bdd3b43f2a0556dad5d579bdfdeab1f38e8e8788e555bdcb586a6f62c"},
 ]
-
-[package.dependencies]
-promise = ">=2.3,<3"
-rx = ">=1.6,<2"
-six = ">=1.10.0"
-
-[package.extras]
-gevent = ["gevent (>=1.1)"]
-test = ["coveralls (==1.11.1)", "cython (==0.29.17)", "gevent (==1.5.0)", "pyannotate (==1.2.0)", "pytest (==4.6.10)", "pytest-benchmark (==3.2.3)", "pytest-cov (==2.8.1)", "pytest-django (==3.9.0)", "pytest-mock (==2.0.0)", "six (==1.14.0)"]
 
 [[package]]
 name = "graphql-relay"
-version = "2.0.1"
-description = "Relay implementation for Python"
+version = "3.2.0"
+description = "Relay library for graphql-core"
 optional = false
-python-versions = "*"
+python-versions = ">=3.6,<4"
 groups = ["main"]
 files = [
-    {file = "graphql-relay-2.0.1.tar.gz", hash = "sha256:870b6b5304123a38a0b215a79eace021acce5a466bf40cd39fa18cb8528afabb"},
-    {file = "graphql_relay-2.0.1-py3-none-any.whl", hash = "sha256:ac514cb86db9a43014d7e73511d521137ac12cf0101b2eaa5f0a3da2e10d913d"},
+    {file = "graphql-relay-3.2.0.tar.gz", hash = "sha256:1ff1c51298356e481a0be009ccdff249832ce53f30559c1338f22a0e0d17250c"},
+    {file = "graphql_relay-3.2.0-py3-none-any.whl", hash = "sha256:c9b22bd28b170ba1fe674c74384a8ff30a76c8e26f88ac3aa1584dd3179953e5"},
 ]
 
 [package.dependencies]
-graphql-core = ">=2.2,<3"
-promise = ">=2.2,<3"
-six = ">=1.12"
+graphql-core = ">=3.2,<3.3"
 
 [[package]]
 name = "griffe"
@@ -2326,20 +2300,20 @@ referencing = ">=0.31.0"
 
 [[package]]
 name = "kombu"
-version = "5.5.4"
+version = "5.6.2"
 description = "Messaging library for Python."
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "kombu-5.5.4-py3-none-any.whl", hash = "sha256:a12ed0557c238897d8e518f1d1fdf84bd1516c5e305af2dacd85c2015115feb8"},
-    {file = "kombu-5.5.4.tar.gz", hash = "sha256:886600168275ebeada93b888e831352fe578168342f0d1d5833d88ba0d847363"},
+    {file = "kombu-5.6.2-py3-none-any.whl", hash = "sha256:efcfc559da324d41d61ca311b0c64965ea35b4c55cc04ee36e55386145dace93"},
+    {file = "kombu-5.6.2.tar.gz", hash = "sha256:8060497058066c6f5aed7c26d7cd0d3b574990b09de842a8c5aaed0b92cc5a55"},
 ]
 
 [package.dependencies]
 amqp = ">=5.1.1,<6.0.0"
 packaging = "*"
-tzdata = {version = ">=2025.2", markers = "python_version >= \"3.9\""}
+tzdata = ">=2025.2"
 vine = "5.1.0"
 
 [package.extras]
@@ -2347,16 +2321,16 @@ azureservicebus = ["azure-servicebus (>=7.10.0)"]
 azurestoragequeues = ["azure-identity (>=1.12.0)", "azure-storage-queue (>=12.6.0)"]
 confluentkafka = ["confluent-kafka (>=2.2.0)"]
 consul = ["python-consul2 (==0.1.5)"]
-gcpubsub = ["google-cloud-monitoring (>=2.16.0)", "google-cloud-pubsub (>=2.18.4)", "grpcio (==1.67.0)", "protobuf (==4.25.5)"]
+gcpubsub = ["google-cloud-monitoring (>=2.16.0)", "google-cloud-pubsub (>=2.18.4)", "grpcio (==1.75.1)", "protobuf (==6.32.1)"]
 librabbitmq = ["librabbitmq (>=2.0.0) ; python_version < \"3.11\""]
-mongodb = ["pymongo (==4.10.1)"]
-msgpack = ["msgpack (==1.1.0)"]
+mongodb = ["pymongo (==4.15.3)"]
+msgpack = ["msgpack (==1.1.2)"]
 pyro = ["pyro4 (==4.82)"]
-qpid = ["qpid-python (>=0.26)", "qpid-tools (>=0.26)"]
-redis = ["redis (>=4.5.2,!=4.5.5,!=5.0.2,<=5.2.1)"]
+qpid = ["qpid-python (==1.36.0-1)", "qpid-tools (==1.36.0-1)"]
+redis = ["redis (>=4.5.2,!=4.5.5,!=5.0.2,<6.5)"]
 slmq = ["softlayer_messaging (>=1.0.3)"]
 sqlalchemy = ["sqlalchemy (>=1.4.48,<2.1)"]
-sqs = ["boto3 (>=1.26.143)", "urllib3 (>=1.26.16)"]
+sqs = ["boto3 (>=1.26.143)", "pycurl (>=7.43.0.5) ; sys_platform != \"win32\" and platform_python_implementation == \"CPython\"", "urllib3 (>=1.26.16)"]
 yaml = ["PyYAML (>=3.10)"]
 zookeeper = ["kazoo (>=2.8.0)"]
 
@@ -3065,45 +3039,45 @@ dev = ["absl-py", "pyink", "pylint (>=2.6.0)", "pytest", "pytest-xdist"]
 
 [[package]]
 name = "nautobot"
-version = "2.4.22"
+version = "3.0.4"
 description = "Source of truth and network automation platform."
 optional = false
-python-versions = "<3.13,>=3.10"
+python-versions = "<3.14,>=3.10"
 groups = ["main"]
 files = [
-    {file = "nautobot-2.4.22-py3-none-any.whl", hash = "sha256:892e09d034b13d7cf5cbb2943b4a1fd172d817e3784513a51c47475b20ce5e9c"},
-    {file = "nautobot-2.4.22.tar.gz", hash = "sha256:894afd64a8fc143f43a3da17ec354f973b1634b9677d8bfb23728a57ea942145"},
+    {file = "nautobot-3.0.4-py3-none-any.whl", hash = "sha256:85456ad9d0d564a79e6477d0f6880d3fcd088b6b9a8ee8754e07c52b0915ee15"},
+    {file = "nautobot-3.0.4.tar.gz", hash = "sha256:b22f3bcefe23b85261db29f99f7004e5e85a125eadb67e1f396acb03192d54b5"},
 ]
 
 [package.dependencies]
-celery = ">=5.5.3,<5.6.0"
+celery = ">=5.6.1,<5.7.0"
 cryptography = ">=46.0.3,<46.1.0"
-Django = ">=4.2.26,<4.3.0"
+Django = ">=4.2.27,<4.3.0"
 django-ajax-tables = ">=1.1.1,<1.2.0"
 django-celery-beat = ">=2.7.0,<2.8.0"
 django-celery-results = ">=2.6.0,<2.7.0"
-django-constance = ">=4.3.3,<4.4.0"
+django-constance = ">=4.3.4,<4.4.0"
 django-cors-headers = ">=4.9.0,<4.10.0"
 django-db-file-storage = ">=0.5.6.1,<0.6.0.0"
 django-extensions = ">=4.1,<4.2"
 django-filter = ">=25.1,<25.2"
-django-health-check = ">=3.20.0,<3.21.0"
+django-health-check = ">=3.20.8,<3.21.0"
 django-jinja = ">=2.11.0,<2.12.0"
 django-prometheus = ">=2.4.1,<2.5.0"
 django-redis = ">=6.0.0,<6.1.0"
 django-silk = ">=5.4.3,<5.5.0"
 django-structlog = {version = ">=10.0.0,<10.1.0", extras = ["celery"]}
-django-tables2 = ">=2.7.5,<2.8.0"
+django-tables2 = ">=2.8.0,<2.9.0"
 django-taggit = ">=6.1.0,<6.2.0"
-django-timezone-field = ">=7.1,<7.2"
-django-tree-queries = ">=0.21.2,<0.22.0"
+django-timezone-field = ">=7.2.1,<7.3.0"
+django-tree-queries = ">=0.23.0,<0.24.0"
 django-webserver = ">=1.2.0,<1.3.0"
 djangorestframework = ">=3.16.1,<3.17.0"
 drf-spectacular = {version = ">=0.28.0,<0.29.0", extras = ["sidecar"]}
 emoji = ">=2.15.0,<2.16.0"
-GitPython = ">=3.1.45,<3.2.0"
-graphene-django = ">=2.16.0,<2.17.0"
-graphene-django-optimizer = ">=0.8.0,<0.9.0"
+GitPython = ">=3.1.46,<3.2.0"
+graphene-django = ">=3.2.3,<3.3.0"
+graphene-django-optimizer = ">=0.10.0,<0.11.0"
 Jinja2 = ">=3.1.6,<3.2.0"
 jsonschema = ">=4.7.0,<5.0.0"
 kubernetes = ">=33.1.0,<34.0.0"
@@ -3122,12 +3096,12 @@ social-auth-app-django = ">=5.4.3,<5.5.0"
 svgwrite = ">=1.4.3,<1.5.0"
 
 [package.extras]
-all = ["django-auth-ldap (>=5.2.0,<5.3.0)", "django-storages (>=1.14.6,<1.15.0)", "mysqlclient (>=2.2.7,<2.3.0)", "napalm (>=4.1.0,<6.0.0)", "social-auth-core[saml] (>=4.8.1,<4.9.0)"]
+all = ["django-auth-ldap (>=5.2.0,<5.3.0)", "django-storages (>=1.14.6,<1.15.0)", "mysqlclient (>=2.2.7,<2.3.0)", "napalm (>=4.1.0,<6.0.0)", "social-auth-core[saml] (>=4.8.3,<4.9.0)"]
 ldap = ["django-auth-ldap (>=5.2.0,<5.3.0)"]
 mysql = ["mysqlclient (>=2.2.7,<2.3.0)"]
 napalm = ["napalm (>=4.1.0,<6.0.0)"]
 remote-storage = ["django-storages (>=1.14.6,<1.15.0)"]
-sso = ["social-auth-core[saml] (>=4.8.1,<4.9.0)"]
+sso = ["social-auth-core[saml] (>=4.8.3,<4.9.0)"]
 
 [[package]]
 name = "netaddr"
@@ -5241,37 +5215,6 @@ files = [
 ]
 
 [[package]]
-name = "rx"
-version = "1.6.3"
-description = "Reactive Extensions (Rx) for Python"
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "Rx-1.6.3.tar.gz", hash = "sha256:ca71b65d0fc0603a3b5cfaa9e33f5ba81e4aae10a58491133595088d7734b2da"},
-]
-
-[[package]]
-name = "singledispatch"
-version = "4.1.2"
-description = "Backport functools.singledispatch to older Pythons."
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "singledispatch-4.1.2-py3-none-any.whl", hash = "sha256:24802c4e743a252645c461e71abcaa95c3f678a96688e72bb0bf63e663018c7a"},
-    {file = "singledispatch-4.1.2.tar.gz", hash = "sha256:0ad18e5a55c54a836a695a4e7c12faa05adfe88c7eeb64dcd331a4b13934c3b6"},
-]
-
-[package.extras]
-check = ["pytest-checkdocs (>=2.4)", "pytest-ruff (>=0.2.1) ; sys_platform != \"cygwin\""]
-cover = ["pytest-cov"]
-doc = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-lint"]
-enabler = ["pytest-enabler (>=2.2)"]
-test = ["pytest (>=6,!=8.1.*)"]
-type = ["pytest-mypy"]
-
-[[package]]
 name = "six"
 version = "1.17.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -5796,6 +5739,24 @@ files = [
 markers = {dev = "sys_platform == \"win32\""}
 
 [[package]]
+name = "tzlocal"
+version = "5.3.1"
+description = "tzinfo object for the local timezone"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "tzlocal-5.3.1-py3-none-any.whl", hash = "sha256:eb1a66c3ef5847adf7a834f1be0800581b683b5608e74f86ecbcef8ab91bb85d"},
+    {file = "tzlocal-5.3.1.tar.gz", hash = "sha256:cceffc7edecefea1f595541dbd6e990cb1ea3d19bf01b2809f362a03dd7921fd"},
+]
+
+[package.dependencies]
+tzdata = {version = "*", markers = "platform_system == \"Windows\""}
+
+[package.extras]
+devenv = ["check-manifest", "pytest (>=4.3)", "pytest-cov", "pytest-mock (>=3.3)", "zest.releaser"]
+
+[[package]]
 name = "uritemplate"
 version = "4.2.0"
 description = "Implementation of RFC 6570 URI Templates"
@@ -6271,4 +6232,4 @@ all = []
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "30f34fac518a8ab41c4f4f69489d6a7c3aeb35983b8638f019cfe0bf77ef48f2"
+content-hash = "f142f34ce640084d075cc670cb1a021d86c8e30ea3e8281f202264b7b080f985"
