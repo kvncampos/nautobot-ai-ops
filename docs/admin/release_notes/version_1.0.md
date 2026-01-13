@@ -25,6 +25,20 @@ This document describes all new features and changes in the release. The format 
 <!-- towncrier release notes start -->
 
 
+## [v1.0.4 (2026-01-13)](https://github.com/kvncampos/nautobot-ai-ops/releases/tag/v1.0.4)
+
+### Added
+
+- [#29](https://github.com/kvncampos/nautobot-ai-ops/issues/29) - Added Dynamic System Prompts feature allowing UI-based management of AI agent prompts with support for template variables ({current_date}, {current_month}, {model_name}), file-based prompts, status-based approval workflow, and model-specific prompt assignment.
+
+### Changed
+
+- [#30](https://github.com/kvncampos/nautobot-ai-ops/issues/30) - Enhanced chat widget markdown rendering with comprehensive CSS styling for tables, code blocks, lists, blockquotes, and all markdown elements. Added intelligent query handling to request clarification for ambiguous identifiers (e.g., "DFW-ATO" could be device/site/circuit) before searching. Improved system prompt with explicit filtering examples for specific items and detailed markdown formatting requirements including proper table syntax with separator rows and blank lines between elements. Added MCP server logging to warn when GET requests are made without filter parameters for debugging LLM behavior.
+
+### Documentation
+
+- [#28](https://github.com/kvncampos/nautobot-ai-ops/issues/28) - Updated documentation to reflect removal of TTL field from LLMMiddleware model and transition to fresh middleware instantiation per request from LangChain graph to prevent state leaks between conversations.
+
 ## [v1.0.3 (2026-01-12)](https://github.com/kvncampos/nautobot-ai-ops/releases/tag/v1.0.3)
 
 ### Added
