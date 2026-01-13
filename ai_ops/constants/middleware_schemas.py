@@ -83,6 +83,49 @@ MIDDLEWARE_SCHEMAS = {
         "priority_rationale": "Should run early to prevent PII from being processed by downstream middleware",
         "tested_version": "1.1.0",
     },
+    "PROMPT_INJECTION_DETECTION": {
+        "schema": {
+            "type": "object",
+            "properties": {
+                "patterns": {
+                    "type": "object",
+                    "patternProperties": {
+                        ".*": {"type": "string"},
+                    },
+                    "description": "Named regex patterns for prompt injection detection",
+                },
+                "strategy": {
+                    "type": "string",
+                    "enum": ["block", "warn", "sanitize"],
+                    "description": "Strategy for handling detected injection attempts: block (reject), warn (log and allow), sanitize (remove pattern)",
+                },
+                "apply_to_input": {
+                    "type": "boolean",
+                    "description": "Whether to apply injection detection to user input",
+                },
+                "block_message": {
+                    "type": "string",
+                    "description": "Message to return when blocking detected injection",
+                },
+            },
+            "required": ["patterns", "strategy"],
+        },
+        "example": {
+            "patterns": {
+                "ignore_instructions": r"(?i)(ignore|disregard|forget|override)\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions?|prompts?|rules?|context)",
+                "role_manipulation": r"(?i)(you\s+are\s+now|act\s+as\s+if|pretend\s+(to\s+be|you\s+are)|switch\s+to|become)\s+(a|an)?\s*(different|new|evil|malicious)",
+                "system_prompt_extraction": r"(?i)(show|reveal|display|print|output|tell\s+me)\s+(your|the)\s+(system\s+)?(prompt|instructions?|rules?|guidelines?)",
+                "jailbreak_attempt": r"(?i)(DAN|do\s+anything\s+now|jailbreak|bypass\s+(safety|restrictions?|filters?))",
+                "delimiter_injection": r"(```system|<\|system\|>|<\|assistant\|>|\[INST\]|\[/INST\]|<<SYS>>|<</SYS>>)",
+            },
+            "strategy": "warn",
+            "apply_to_input": True,
+            "block_message": "I cannot process this request as it appears to contain instruction manipulation attempts.",
+        },
+        "recommended_priority": 10,
+        "priority_rationale": "Should run first to detect and handle injection attempts before any other processing",
+        "tested_version": "1.1.0",
+    },
     "TODO_LIST": {
         "schema": {
             "type": "object",
@@ -363,6 +406,12 @@ MIDDLEWARE_TYPE_DEFAULTS = {
         "max_file_size_mb": "number",  # Maximum file size to search (in MB)
         "excluded_dirs": "array|null",  # Optional: List of directory patterns to exclude
         "excluded_files": "array|null",  # Optional: List of file patterns to exclude
+    },
+    "PromptInjectionDetectionMiddleware": {
+        "patterns": "object",  # Dict of pattern_name: regex_pattern for injection detection
+        "strategy": "string",  # Strategy: "block", "warn", or "sanitize"
+        "apply_to_input": "boolean",  # Whether to scan user input
+        "block_message": "string|null",  # Message to return when blocking (null = default message)
     },
 }
 

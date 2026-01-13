@@ -1,5 +1,6 @@
 """Filtering for ai_ops."""
 
+import django_filters
 from django.db.models import Q
 from nautobot.apps.filters import NameSearchFilterSet, NautobotFilterSet, StatusModelFilterSetMixin
 
@@ -62,3 +63,21 @@ class MCPServerFilterSet(NautobotFilterSet, NameSearchFilterSet, StatusModelFilt
         if not value.strip():
             return queryset
         return queryset.filter(Q(name__icontains=value) | Q(url__icontains=value))
+
+
+class SystemPromptFilterSet(NautobotFilterSet, NameSearchFilterSet, StatusModelFilterSetMixin):  # pylint: disable=too-many-ancestors
+    """Filter for SystemPrompt."""
+
+    q = django_filters.CharFilter(method="search", label="Search")
+
+    class Meta:
+        """Meta attributes for filter."""
+
+        model = models.SystemPrompt
+        fields = ["id", "name", "status", "version", "is_file_based", "prompt_file_name"]
+
+    def search(self, queryset, name, value):
+        """Override search to include prompt_text field in Q search."""
+        if not value.strip():
+            return queryset
+        return queryset.filter(Q(name__icontains=value) | Q(prompt_text__icontains=value))

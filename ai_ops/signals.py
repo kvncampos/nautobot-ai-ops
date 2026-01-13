@@ -37,6 +37,45 @@ def assign_mcp_server_statuses(sender, apps=global_apps, **kwargs):  # pylint: d
             status.content_types.add(mcpserver_ct)
 
 
+def assign_system_prompt_statuses(sender, apps=global_apps, **kwargs):  # pylint: disable=unused-argument
+    """Assign default statuses for SystemPrompt model and create default prompt."""
+    system_prompt_ct = ContentType.objects.get_for_model(models.SystemPrompt)
+
+    # Define statuses for SystemPrompt lifecycle
+    status_configs = [
+        {"name": "Approved", "color": ColorChoices.COLOR_GREEN},
+        {"name": "Testing", "color": ColorChoices.COLOR_AMBER},
+        {"name": "Deprecated", "color": ColorChoices.COLOR_GREY},
+    ]
+
+    approved_status = None
+    for config in status_configs:
+        status, _ = Status.objects.get_or_create(
+            name=config["name"],
+            defaults={
+                "name": config["name"],
+                "color": config["color"],
+            },
+        )
+        # Always ensure the content type is associated with the SystemPrompt model
+        if system_prompt_ct not in status.content_types.all():
+            status.content_types.add(system_prompt_ct)
+
+        if config["name"] == "Approved":
+            approved_status = status
+
+    # Create default file-based system prompt if none exists
+    if approved_status and not models.SystemPrompt.objects.exists():
+        models.SystemPrompt.objects.create(
+            name="Multi-MCP Default",
+            is_file_based=True,
+            prompt_file_name="multi_mcp_system_prompt",
+            status=approved_status,
+            prompt_text=None,
+        )
+        logger.info("Created default file-based system prompt: Multi-MCP Default")
+
+
 def setup_checkpoint_cleanup_schedule(sender, **kwargs):  # pylint: disable=unused-argument
     """Enable and schedule the checkpoint cleanup job after migrations."""
     try:
@@ -232,6 +271,11 @@ def create_default_middleware_types(sender, apps=global_apps, **kwargs):  # pyli
             "name": "FilesystemFileSearchMiddleware",
             "description": "Provide Glob and Grep search tools over a filesystem. "
             "Useful for code exploration and analysis.",
+        },
+        {
+            "name": "PromptInjectionDetectionMiddleware",
+            "description": "Detect and handle prompt injection attempts in user input. "
+            "Configurable patterns for common injection techniques with block, warn, or sanitize strategies.",
         },
     ]
 

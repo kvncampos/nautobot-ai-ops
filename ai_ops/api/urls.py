@@ -11,6 +11,7 @@ router.register("llm-models", views.LLMModelViewSet)
 router.register("middleware-types", views.MiddlewareTypeViewSet)
 router.register("llm-middleware", views.LLMMiddlewareViewSet)
 router.register("mcp-servers", views.MCPServerViewSet)
+router.register("system-prompts", views.SystemPromptViewSet)
 
 app_name = "ai_ops-api"
 urlpatterns = router.urls

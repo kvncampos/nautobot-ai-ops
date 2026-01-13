@@ -16,6 +16,7 @@ router.register("llm-models", views.LLMModelUIViewSet)
 router.register("middleware-types", views.MiddlewareTypeUIViewSet)
 router.register("llm-middleware", views.LLMMiddlewareUIViewSet)
 router.register("mcp-servers", views.MCPServerUIViewSet)
+router.register("system-prompts", views.SystemPromptUIViewSet)
 
 
 urlpatterns = [

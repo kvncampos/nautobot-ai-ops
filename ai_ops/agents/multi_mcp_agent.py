@@ -11,8 +11,7 @@ from typing import Annotated
 import httpx
 from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from langgraph.graph import StateGraph, add_messages
-from langgraph.prebuilt import ToolNode
+from langgraph.graph import add_messages
 from typing_extensions import TypedDict
 
 from ai_ops.helpers.common.asyncio_utils import get_or_create_event_loop_lock
@@ -295,8 +294,8 @@ async def build_agent(llm_model=None, checkpointer=None, provider: str | None = 
     from langchain.agents import create_agent
 
     from ai_ops.helpers.get_middleware import get_middleware
+    from ai_ops.helpers.get_prompt import get_active_prompt
     from ai_ops.models import LLMModel
-    from ai_ops.prompts.multi_mcp_system_prompt import get_multi_mcp_system_prompt
 
     # Get LLM model
     if llm_model is None:
@@ -321,8 +320,9 @@ async def build_agent(llm_model=None, checkpointer=None, provider: str | None = 
 
     logger.info(f"Creating agent for {llm_model.name}: {len(tools)} tools, {len(middleware)} middleware")
 
-    # Generate dynamic system prompt with actual tool information and model name
-    system_prompt = get_multi_mcp_system_prompt(model_name=llm_model.name)
+    # Get system prompt from database or fallback to code-based prompt
+    # Uses the SystemPrompt model with status='Approved' if available
+    system_prompt = await sync_to_async(get_active_prompt)(llm_model)
 
     # Create agent with middleware
     # If no tools are available, the agent will still work for basic conversation
@@ -336,66 +336,6 @@ async def build_agent(llm_model=None, checkpointer=None, provider: str | None = 
     )
 
     return graph
-
-
-async def build_workflow() -> StateGraph | None:
-    """Build the LangGraph workflow without compiling.
-
-    DEPRECATED: This function is no longer used. Use build_agent() instead.
-
-    This older approach manually constructs the workflow and doesn't properly
-    integrate the checkpointer, leading to loss of conversation context.
-
-    Kept temporarily for reference - safe to delete after migration verification.
-
-    This creates the workflow structure that will be compiled per-request
-    with the checkpointer context manager. Removed singleton pattern to
-    allow proper context manager lifecycle per LangGraph documentation.
-
-    Returns:
-        StateGraph: Uncompiled workflow, or None if no MCP tools available
-    """
-    # Get MCP client and tools
-    client, tools = await get_or_create_mcp_client()
-
-    if not client or not tools:
-        logger.warning("Cannot build workflow without MCP tools")
-        return None
-
-    # Initialize LLM
-    llm = await get_llm_model_async()
-    llm_with_tools = llm.bind_tools(tools)
-
-    # Define agent logic
-    def call_model(state: MessagesState):
-        from langchain_core.messages import SystemMessage
-
-        from ai_ops.prompts.multi_mcp_system_prompt import get_multi_mcp_system_prompt
-
-        messages = state["messages"]
-
-        # Add system prompt if not already present
-        if not any(isinstance(msg, SystemMessage) for msg in messages):
-            system_message = SystemMessage(content=get_multi_mcp_system_prompt(model_name=llm.model_name))
-            messages = [system_message] + messages
-
-        response = llm_with_tools.invoke(messages)
-        return {"messages": [response]}
-
-    # Build graph
-    workflow = StateGraph(MessagesState)
-    workflow.add_node("agent", call_model)
-    workflow.add_node("tools", ToolNode(tools))
-
-    workflow.set_entry_point("agent")
-    workflow.add_conditional_edges(
-        "agent",
-        lambda state: "tools" if state["messages"][-1].tool_calls else "__end__",
-    )
-    workflow.add_edge("tools", "agent")
-
-    logger.debug("Built LangGraph workflow structure")
-    return workflow
 
 
 async def process_message(user_input: str, thread_id: str, provider: str | None = None) -> str:
