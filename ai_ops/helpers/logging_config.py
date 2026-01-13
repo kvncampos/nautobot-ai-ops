@@ -77,8 +77,20 @@ def setup_ai_ops_logging() -> None:
     ai_ops_logger = logging.getLogger("ai_ops")
 
     # Avoid duplicate handlers if called multiple times
-    if any(isinstance(h, logging.StreamHandler) and hasattr(h, "_ai_ops_json_handler") for h in ai_ops_logger.handlers):
-        return
+    # Check for existing StreamHandler with our marker or with JsonFormatter
+    for handler in ai_ops_logger.handlers:
+        if isinstance(handler, logging.StreamHandler):
+            # Check if it's already our handler (via marker or formatter type)
+            if hasattr(handler, "_ai_ops_json_handler"):
+                return
+            # Also check if it has a JsonFormatter (in case marker was lost)
+            try:
+                from pythonjsonlogger.json import JsonFormatter
+
+                if isinstance(getattr(handler, "formatter", None), JsonFormatter):
+                    return
+            except ImportError:
+                pass
 
     # Create handler
     handler = logging.StreamHandler()

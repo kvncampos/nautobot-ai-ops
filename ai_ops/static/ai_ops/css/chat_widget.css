@@ -421,21 +421,13 @@
     margin: 12px 0;
 }
 
-/* Info/Warning/Error blockquotes (detected by emoji) */
-.message-content blockquote:has(p:first-child:is(:contains("💡"), :contains("ℹ️"), :contains("📌"))) {
-    border-left-color: #17a2b8;
-    background-color: #e7f5f7;
-}
-
-.message-content blockquote:has(p:first-child:is(:contains("⚠️"), :contains("⚡"), :contains("🔔"))) {
-    border-left-color: #ffc107;
-    background-color: #fff9e6;
-}
-
-.message-content blockquote:has(p:first-child:is(:contains("❌"), :contains("🚫"), :contains("⛔"))) {
-    border-left-color: #dc3545;
-    background-color: #ffe6e6;
-}
+/* Note: Special blockquote styling based on emoji content would require JavaScript
+ * to add data attributes or classes. CSS :contains() is not a valid selector.
+ * Consider implementing via JS if needed:
+ *   - Detect emoji at start of blockquote text
+ *   - Add data-blockquote-type="info|warning|error" attribute
+ *   - Style via: blockquote[data-blockquote-type="info"] { ... }
+ */
 
 /* ============================================================================
    HORIZONTAL RULES - Section dividers
@@ -607,10 +599,12 @@
    SPECIAL CONTENT - Emojis and Icons
    ============================================================================ */
 
-.message-content :is(✅, ❌, ⚠️, 💡, 📌, 🔔, ⚡, 🚫, ⛔) {
-    font-size: 1.1em;
-    margin-right: 4px;
-}
+/* Note: Direct emoji selectors are not valid CSS and are ignored by browsers.
+ * Emojis inherit their styling from their parent elements.
+ * To style emojis specifically, wrap them in elements with classes:
+ *   <span class="emoji">✅</span>
+ * Then style with: .message-content .emoji { font-size: 1.1em; }
+ */
 
 /* ============================================================================
    PRINT STYLES
