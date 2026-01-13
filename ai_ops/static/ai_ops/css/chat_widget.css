@@ -288,7 +288,11 @@
     line-height: 1.5;
 }
 
-/* Syntax highlighting compatibility */
+/* Syntax highlighting styles - requires JavaScript library to add classes
+ * These selectors only work if a syntax highlighter (like Prism.js or highlight.js)
+ * adds classes like .keyword, .string, .comment, .number to code elements.
+ * Without JavaScript, code blocks will use default pre/code styling above.
+ */
 .message-content pre code .keyword { color: #f92672; }
 .message-content pre code .string { color: #a6e22e; }
 .message-content pre code .comment { color: #75715e; }

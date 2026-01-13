@@ -18,6 +18,9 @@ correlation_id_var: ContextVar[str] = ContextVar("correlation_id", default="")
 # Context variable for async-safe user tracking
 user_var: ContextVar[str] = ContextVar("user", default="")
 
+# Module-level flag to track if logging has been configured
+_logging_configured = False
+
 
 def get_correlation_id() -> str:
     """Get current correlation ID, or generate a new one if not set."""
@@ -73,28 +76,17 @@ def setup_ai_ops_logging() -> None:
 
     JSON format is default; set AI_OPS_JSON_LOGGING=false for text format.
     """
+    global _logging_configured
+
+    # Avoid duplicate configuration
+    if _logging_configured:
+        return
+
     # Get the ai_ops logger (parent of all ai_ops.* loggers)
     ai_ops_logger = logging.getLogger("ai_ops")
 
-    # Avoid duplicate handlers if called multiple times
-    # Check for existing StreamHandler with our marker or with JsonFormatter
-    for handler in ai_ops_logger.handlers:
-        if isinstance(handler, logging.StreamHandler):
-            # Check if it's already our handler (via marker or formatter type)
-            if hasattr(handler, "_ai_ops_json_handler"):
-                return
-            # Also check if it has a JsonFormatter (in case marker was lost)
-            try:
-                from pythonjsonlogger.json import JsonFormatter
-
-                if isinstance(getattr(handler, "formatter", None), JsonFormatter):
-                    return
-            except ImportError:
-                pass
-
     # Create handler
     handler = logging.StreamHandler()
-    handler._ai_ops_json_handler = True  # type: ignore[attr-defined]  # Mark to avoid duplicates
 
     if _is_json_logging_enabled():
         try:
@@ -139,6 +131,9 @@ def setup_ai_ops_logging() -> None:
     # Don't propagate to root logger to avoid duplicate logs
     # But allow INFO and above to still show
     ai_ops_logger.setLevel(logging.DEBUG)
+
+    # Mark as configured
+    _logging_configured = True
 
     # Log setup confirmation
     mode = "JSON" if _is_json_logging_enabled() else "text"
