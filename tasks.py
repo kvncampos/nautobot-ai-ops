@@ -52,7 +52,7 @@ namespace = Collection("ai_ops")
 namespace.configure(
     {
         "ai_ops": {
-            "nautobot_ver": "2.4.22",
+            "nautobot_ver": "3.0.3",
             "project_name": "ai-ops",
             "python_ver": "3.11",
             "local": False,

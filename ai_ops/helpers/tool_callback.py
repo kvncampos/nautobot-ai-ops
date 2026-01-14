@@ -98,6 +98,10 @@ class ToolLoggingCallback(BaseCallbackHandler):
         # Try to get tool name from kwargs or use unknown
         tool_name = kwargs.get("name", "unknown")
 
+        # Skip logging for mcp_nautobot_openapi_api_request_schema
+        if tool_name == "mcp_nautobot_openapi_api_request_schema":
+            return
+
         # Get output size for logging (without logging actual content)
         output_size = len(str(output)) if output else 0
 

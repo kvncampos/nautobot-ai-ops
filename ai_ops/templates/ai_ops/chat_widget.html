@@ -15,41 +15,35 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-12">
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <h3 class="panel-title">
+                <div class="card">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <span class="card-title h4 mb-0">
                             <i class="mdi mdi-chat"></i> AI Chat Agent
-                            <button id="clear-chat" class="btn btn-danger btn-sm pull-right" title="Clear chat history" {% if not chat_enabled %}disabled{% endif %}>
-                                <i class="mdi mdi-delete"></i> Clear History
-                            </button>
-                        </h3>
+                        </span>
+                        <button id="clear-chat" class="btn btn-danger btn-sm float-end ms-2" title="Clear chat history" {% if not chat_enabled %}disabled{% endif %}>
+                            <i class="mdi mdi-delete"></i> Clear History
+                        </button>
                     </div>
-                    <div class="panel-body" style="padding: 0;">
+                    <div class="card-body p-0">
                     <!-- Chat Messages Container -->
-                        <div id="chat-messages" style="overflow-y: auto; padding: 20px; background-color: #f5f5f5; border-bottom: 1px solid #ddd;">
+                        <div id="chat-messages" class="overflow-auto p-3" aria-live="polite">
                         <!-- Messages will be dynamically added here -->
                         </div>
 
                     <!-- Chat Input Area -->
-                        <div style="padding: 15px; background-color: #fff;">
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <div class="input-group">
-                                    <input type="text"
-                                           id="chat-input"
-                                           class="form-control"
-                                           placeholder="{% if chat_enabled %}Type your message here...{% elif not has_default_model %}Chat disabled - configure default LLM model first{% else %}Chat disabled{% endif %}"
-                                           style="height: 45px;"
-                                           {% if not chat_enabled %}disabled{% endif %}>
-                                    <span class="input-group-btn">
-                                        <button id="send-message"
-                                                class="btn btn-primary"
-                                                type="button"
-                                                style="height: 45px;"
-                                                {% if not chat_enabled %}disabled{% endif %}>
-                                            <i class="mdi mdi-send"></i> Send
-                                        </button>
-                                    </span>
-                                </div>
+                        <div class="p-3 bg-transparent">
+                            <div class="input-group">
+                                <input type="text"
+                                       id="chat-input"
+                                       class="form-control"
+                                       placeholder="{% if chat_enabled %}Type your message here...{% elif not has_default_model %}Chat disabled - configure default LLM model first{% else %}Chat disabled{% endif %}"
+                                       {% if not chat_enabled %}disabled{% endif %}>
+                                <button id="send-message"
+                                        class="btn btn-primary"
+                                        type="button"
+                                        {% if not chat_enabled %}disabled{% endif %}>
+                                    <i class="mdi mdi-send"></i> Send
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -71,4 +65,5 @@
         window.CHAT_TTL_MINUTES = {{ chat_session_ttl_minutes }};
     </script>
     <script src="{% static 'ai_ops/js/chat_widget.js' %}"></script>
+    <!-- Note: sanitize-html is required for secure Markdown rendering. -->
 {% endblock %}

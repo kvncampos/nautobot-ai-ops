@@ -4,10 +4,11 @@ This is the production-ready agent that supports multiple MCP servers with
 enterprise features including caching, health checks, and checkpointing.
 """
 
+import asyncio
 import logging
 import time
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Callable
 
 import httpx
 from langchain_core.messages import BaseMessage, HumanMessage
@@ -40,6 +41,10 @@ _mcp_client_cache = {
     "timestamp": None,
     "server_count": 0,
 }
+
+# Note: This module is used in both sync and async contexts.
+# All ORM and Nautobot model access is wrapped with sync_to_async.
+# Shutdown is handled via async_shutdown and atexit/signal handlers.
 
 
 class MessagesState(TypedDict):
@@ -358,7 +363,11 @@ async def build_agent(llm_model=None, checkpointer=None, provider: str | None = 
 
 
 async def process_message(
-    user_input: str, thread_id: str, provider: str | None = None, username: str | None = None
+    user_input: str,
+    thread_id: str,
+    provider: str | None = None,
+    username: str | None = None,
+    cancellation_check: Callable[[], bool] | None = None,
 ) -> str:
     """Process a user message through the agent with checkpointed conversation history.
 
@@ -381,6 +390,8 @@ async def process_message(
         provider: Optional provider name override. If specified, uses this provider instead of default.
                  Only admin users should be allowed to specify this parameter.
         username: Optional username of the logged-in Nautobot user (for logging/debugging).
+        cancellation_check: Optional callable that returns True if the request should be cancelled.
+                           Used by ChatClearView to signal cancellation when user clears history.
 
     Returns:
         Assistant's response text
@@ -398,7 +409,24 @@ async def process_message(
         f"user={username or 'anonymous'} input_length={len(user_input)}"
     )
 
+    # Check for cancellation before starting
+    # TODO: Enhance with interrupt support within graph execution
+    if cancellation_check and cancellation_check():
+        logger.info(f"[request_cancelled] thread={thread_id} correlation_id={correlation_id} stage=pre_start")
+        return "Request was cancelled. Starting fresh conversation."
+
     try:
+        # Get timeout and recursion limit settings with sensible defaults
+        from asgiref.sync import sync_to_async
+        from nautobot.apps.config import get_app_settings_or_config
+
+        request_timeout: int = (
+            await sync_to_async(get_app_settings_or_config)("ai_ops", "agent_request_timeout_seconds") or 120
+        )  # Default: 2 minutes
+        recursion_limit: int = (
+            await sync_to_async(get_app_settings_or_config)("ai_ops", "agent_recursion_limit") or 25
+        )  # Default: 25 steps
+
         # Use context manager for proper checkpointer lifecycle
         from ai_ops.checkpointer import get_checkpointer, track_checkpoint_creation
 
@@ -442,17 +470,46 @@ async def process_message(
             graph = await build_agent(checkpointer=checkpointer, provider=provider)
 
             # Configuration with thread_id for conversation isolation
-            config = {"configurable": {"thread_id": thread_id}}
+            # Include recursion_limit from settings to prevent infinite loops
+            config = {"configurable": {"thread_id": thread_id}, "recursion_limit": recursion_limit}
 
-            logger.debug(f"Processing message for thread: {thread_id}")
+            logger.debug(
+                f"Processing message for thread: {thread_id} (timeout={request_timeout}s, recursion_limit={recursion_limit})"
+            )
+
+            # Check for cancellation before invoking the agent
+            if cancellation_check and cancellation_check():
+                logger.info(f"[request_cancelled] thread={thread_id} correlation_id={correlation_id} stage=pre_invoke")
+                return "Request was cancelled. Starting fresh conversation."
 
             # Only pass the new user message
             # Graph automatically loads conversation history from checkpointer
             # Type ignore: LangGraph accepts dict config but types show RunnableConfig
             # Include ToolLoggingCallback for real-time tool call logging
             config["callbacks"] = [ToolLoggingCallback()]
-            logger.info(f"[llm_invoke] thread={thread_id} correlation_id={correlation_id}")
-            result = await graph.ainvoke({"messages": [HumanMessage(content=user_input)]}, config=config)  # type: ignore[arg-type]
+            logger.info(f"[llm_invoke] thread={thread_id} correlation_id={correlation_id} timeout={request_timeout}s")
+
+            # Wrap ainvoke with timeout to prevent long-running requests
+
+            try:
+                result = await asyncio.wait_for(
+                    graph.ainvoke({"messages": [HumanMessage(content=user_input)]}, config=config),  # type: ignore[arg-type]
+                    timeout=float(request_timeout),
+                )
+            except asyncio.TimeoutError:
+                logger.warning(
+                    f"[request_timeout] thread={thread_id} correlation_id={correlation_id} "
+                    f"timeout_seconds={request_timeout}"
+                )
+                return (
+                    f"Request timed out after {request_timeout} seconds. "
+                    "Please try a simpler query or break your request into smaller parts."
+                )
+
+            # Check for cancellation immediately after agent invocation
+            if cancellation_check and cancellation_check():
+                logger.info(f"[request_cancelled] thread={thread_id} correlation_id={correlation_id} stage=post_invoke")
+                return "Request was cancelled. Starting fresh conversation."
 
             # Log conversation state after processing
             logger.debug(f"Message processed for thread_id: {thread_id}, total messages: {len(result['messages'])}")

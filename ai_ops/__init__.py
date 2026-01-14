@@ -55,6 +55,16 @@ class AiOpsConfig(NautobotAppConfig):
             help_text="Retention period in days for conversation checkpoints. Used by cleanup jobs when migrated to Redis Stack or PostgreSQL persistent storage. Not enforced for current MemorySaver implementation which uses chat_session_ttl_minutes instead. Valid range: 1-365 days.",
             field_type=int,
         ),
+        "agent_request_timeout_seconds": ConstanceConfigItem(
+            default=120,
+            help_text="Maximum time in seconds for agent request processing. If the agent takes longer than this to respond, the request will be cancelled and a timeout error returned. Valid range: 10-600 seconds (10 seconds to 10 minutes).",
+            field_type=int,
+        ),
+        "agent_recursion_limit": ConstanceConfigItem(
+            default=25,
+            help_text="Maximum recursion depth for agent graph traversal. Limits the number of steps the agent can take in a single request to prevent infinite loops. Valid range: 5-100.",
+            field_type=int,
+        ),
     }
     docs_view_name = "plugins:ai_ops:docs"
     searchable_models = ["llmmodel", "mcpserver"]
@@ -63,6 +73,7 @@ class AiOpsConfig(NautobotAppConfig):
         """Connect signal handlers when the app is ready."""
         import logging
 
+        from .helpers.async_shutdown import register_shutdown_handlers
         from .helpers.logging_config import setup_ai_ops_logging
         from .signals import (
             assign_mcp_server_statuses,
@@ -78,6 +89,10 @@ class AiOpsConfig(NautobotAppConfig):
 
         # Setup structured JSON logging for ai_ops.* loggers
         setup_ai_ops_logging()
+
+        # Register graceful shutdown handlers for async resources (MCP clients, checkpointers)
+        # Handles both development (auto-reloader) and production (SIGTERM/SIGINT) scenarios
+        register_shutdown_handlers()
 
         nautobot_database_ready.connect(assign_mcp_server_statuses, sender=self)
         nautobot_database_ready.connect(assign_system_prompt_statuses, sender=self)
