@@ -11,11 +11,11 @@
     const INACTIVITY_TIMEOUT = (window.CHAT_TTL_MINUTES || 5) * 60000; // Convert minutes to milliseconds
     const GRACE_PERIOD = 30000; // 30 seconds grace period
     
-    // DOM elements (bound on DOMContentLoaded to avoid null refs if script runs early)
-    let chatMessages = null;
-    let chatInput = null;
-    let sendButton = null;
-    let clearButton = null;
+    // DOM elements
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const sendButton = document.getElementById('send-message');
+    const clearButton = document.getElementById('clear-chat');
     
     // Get CSRF token
     function getCSRFToken() {
@@ -29,18 +29,7 @@
         try {
             const saved = localStorage.getItem('nautobot_gpt_chat_history');
             if (saved) {
-                let parsed = null;
-                try {
-                    parsed = JSON.parse(saved);
-                } catch (err) {
-                    console.warn('Failed to parse saved chat history, clearing corrupt data.', err);
-                    // If corrupted, remove to avoid repeatedly throwing
-                    localStorage.removeItem('nautobot_gpt_chat_history');
-                    parsed = null;
-                }
-                if (!parsed || !Array.isArray(parsed)) {
-                    return;
-                }
+                const parsed = JSON.parse(saved);
                 const now = new Date();
                 const ttlMs = (window.CHAT_TTL_MINUTES || 5) * 60000 + GRACE_PERIOD;
                 
@@ -93,30 +82,40 @@
     
     // Parse markdown to HTML using Marked.js and sanitize output
     function parseMarkdown(text) {
-        marked.setOptions({
-            breaks: true,
-            gfm: true,
-            headerIds: false,
-            mangle: false,
-            sanitize: false
-        });
+        // Configure marked when available to support GFM (tables, lists, task lists)
         let html = '';
         try {
-            html = marked.parse(text);
+            if (window.marked && typeof window.marked.parse === 'function') {
+                window.marked.setOptions({
+                    breaks: true,
+                    gfm: true,
+                    headerIds: false,
+                    mangle: false,
+                    smartLists: true
+                });
+                html = window.marked.parse(text || '');
+            } else {
+                // Fallback: escape HTML and preserve newlines
+                html = (text || '').replace(/&/g, '&amp;')
+                                   .replace(/</g, '&lt;')
+                                   .replace(/>/g, '&gt;')
+                                   .replace(/\n/g, '<br>');
+            }
         } catch (e) {
             console.error('Markdown parsing error:', e);
-            html = text.replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;')
-                        .replace(/\n/g, '<br>');
+            html = (text || '').replace(/&/g, '&amp;')
+                               .replace(/</g, '&lt;')
+                               .replace(/>/g, '&gt;')
+                               .replace(/\n/g, '<br>');
         }
         // Sanitize HTML output (requires sanitize-html library)
+        // Sanitize HTML output if sanitize-html is present. Keep table/list tags.
         if (window.sanitizeHtml) {
             html = window.sanitizeHtml(html, {
                 allowedTags: [
                     'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'p', 'a', 'ul', 'ol', 'nl', 'li',
                     'b', 'i', 'strong', 'em', 'strike', 'code', 'hr', 'br', 'div', 'table', 'thead', 'caption',
-                    'tbody', 'tr', 'th', 'td', 'pre', 'img', 'span'
+                    'tbody', 'tr', 'th', 'td', 'pre', 'img', 'span', 'input'
                 ],
                 allowedAttributes: {
                     a: ['href', 'name', 'target', 'title', 'rel'],
@@ -125,12 +124,61 @@
                     td: ['colspan', 'rowspan', 'style'],
                     span: ['class', 'style'],
                     div: ['class', 'style'],
+                    input: ['type', 'checked', 'disabled'],
                     '*': ['style']
                 },
                 allowedSchemes: ['http', 'https', 'mailto'],
                 allowProtocolRelative: true
             });
         }
+            // Post-process: re-parse fenced code blocks that look like pipe tables
+            // (or are tagged as mermaid) so tables render instead of remaining as
+            // literal code blocks. This helps when upstream formatting wraps
+            // table markdown inside ``` blocks.
+            try {
+                if (typeof window.DOMParser !== 'undefined') {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const codes = Array.from(doc.querySelectorAll('pre > code'));
+                    codes.forEach(code => {
+                        const codeText = code.textContent || '';
+                        const className = (code.className || '').toLowerCase();
+
+                        const hasPipe = /\|/.test(codeText);
+                        const hasSeparator = /(^|\n)\s*[:\-]*[:\-\s]*\|/.test(codeText) || /---/.test(codeText);
+                        const looksLikeTable = hasPipe && (hasSeparator || /^\s*\|/.test(codeText));
+                        const isMermaid = className.indexOf('language-mermaid') !== -1 || className.indexOf('lang-mermaid') !== -1;
+
+                        if (looksLikeTable || isMermaid) {
+                            // Re-parse the inner text as Markdown
+                            let replacementHtml = '';
+                            try {
+                                if (window.marked && typeof window.marked.parse === 'function') {
+                                    replacementHtml = window.marked.parse(codeText);
+                                } else {
+                                    replacementHtml = codeText.replace(/&/g, '&amp;')
+                                                               .replace(/</g, '&lt;')
+                                                               .replace(/>/g, '&gt;')
+                                                               .replace(/\n/g, '<br>');
+                                }
+                            } catch (err) {
+                                replacementHtml = codeText.replace(/&/g, '&amp;')
+                                                           .replace(/</g, '&lt;')
+                                                           .replace(/>/g, '&gt;')
+                                                           .replace(/\n/g, '<br>');
+                            }
+
+                            const wrapper = doc.createElement('div');
+                            wrapper.innerHTML = replacementHtml;
+                            const pre = code.parentElement;
+                            if (pre && pre.parentNode) pre.parentNode.replaceChild(wrapper, pre);
+                        }
+                    });
+                    html = doc.body.innerHTML;
+                }
+            } catch (e) {
+                console.warn('Post-processing markdown failed', e);
+            }
         return html;
     }
     
@@ -144,9 +192,7 @@
         
         // Apply error styling if needed
         if (message.isError) {
-            messageDiv.style.backgroundColor = '#ffebee';
-            messageDiv.style.borderColor = '#ef5350';
-            messageDiv.style.color = '#c62828';
+            messageDiv.classList.add('error-message');
         }
         
         const label = document.createElement('div');
@@ -349,71 +395,90 @@
     }
     
     // Event listeners
-    // Theme sync: update chat widget dark/light mode based on Nautobot core theme
-    function updateChatTheme() {
-        // Nautobot sets data-bs-theme or data-theme on <body> or <html>
-        const theme = document.body.getAttribute('data-bs-theme') || document.body.getAttribute('data-theme') || document.documentElement.getAttribute('data-bs-theme') || document.documentElement.getAttribute('data-theme');
-        if (!chatMessages) return;
-        if (theme === 'dark') {
-            chatMessages.classList.add('dark-mode');
-        } else {
-            chatMessages.classList.remove('dark-mode');
+    sendButton.addEventListener('click', sendMessage);
+    clearButton.addEventListener('click', clearChat);
+    
+    chatInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
         }
+    });
+    
+    // Initialize
+
+    // Ensure Marked.js is available before rendering markdown-heavy content.
+    function loadMarkedScript() {
+        return new Promise((resolve, reject) => {
+            if (window.marked) return resolve(window.marked);
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js';
+            script.async = true;
+            script.onload = () => resolve(window.marked);
+            script.onerror = () => reject(new Error('Failed to load Marked.js'));
+            document.head.appendChild(script);
+        });
     }
 
-    // Initialize once DOM is ready
-    document.addEventListener('DOMContentLoaded', () => {
-        // Bind DOM elements now that they exist
-        chatMessages = document.getElementById('chat-messages');
-        chatInput = document.getElementById('chat-input');
-        sendButton = document.getElementById('send-message');
-        clearButton = document.getElementById('clear-chat');
-
-        // Hook up event listeners
-        if (sendButton) sendButton.addEventListener('click', sendMessage);
-        if (clearButton) clearButton.addEventListener('click', clearChat);
-        if (chatInput) {
-            chatInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    sendMessage();
-                }
-            });
-        }
-
-        // Load saved history
-        try {
-            loadChatHistory();
-        } catch (e) {
-            console.error('Error during loadChatHistory:', e);
-        }
-
-        // Initial theme sync and observer
-        updateChatTheme();
-        const themeObserver = new MutationObserver(updateChatTheme);
-        themeObserver.observe(document.body, { attributes: true, attributeFilter: ['data-bs-theme', 'data-theme'] });
-        themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme', 'data-theme'] });
-
-        // If no messages, show welcome message
-        if (chatHistory.length === 0) {
-            const chatEnabled = window.CHAT_ENABLED !== undefined ? window.CHAT_ENABLED : true;
-
-            if (chatEnabled) {
-                addMessage("Welcome to Nautobot GPT! I can help you query and interact with Nautobot APIs. Type a message to get started.", 'ai');
-            } else {
-                const hasDefaultModel = window.HAS_DEFAULT_MODEL !== undefined ? window.HAS_DEFAULT_MODEL : true;
-                let errorMessage = "Chat is currently disabled. ";
-                if (!hasDefaultModel) {
-                    errorMessage += "Please configure a default LLM model to enable the AI Chat Agent.";
-                } else {
-                    errorMessage += "Please check your configuration.";
-                }
-                addMessage(errorMessage, 'ai', true);
-            }
-        }
-
+    // Try to load marked (if not already present) and then initialize rendering.
+    loadMarkedScript().catch((err) => {
+        console.warn('Marked.js not available, messages will use plain text fallback.', err);
+    }).finally(() => {
+        loadChatHistory();
         // Start inactivity timer only if chat is enabled
         if (window.CHAT_ENABLED !== false) {
             resetInactivityTimer();
         }
     });
+
+    // Theme sync: update chat widget dark/light mode based on Nautobot core theme
+    function updateChatTheme() {
+        // Nautobot sets data-bs-theme or data-theme on <body> or <html>
+        const theme = document.body.getAttribute('data-bs-theme') || document.body.getAttribute('data-theme') || document.documentElement.getAttribute('data-bs-theme') || document.documentElement.getAttribute('data-theme');
+        const container = document.getElementById('chat-messages');
+        if (!container) return;
+        if (theme === 'dark') {
+            container.setAttribute('data-theme', 'dark');
+        } else if (theme === 'light') {
+            container.setAttribute('data-theme', 'light');
+        } else {
+            // Remove explicit attribute to inherit defaults
+            container.removeAttribute('data-theme');
+        }
+    }
+
+    // Initial theme sync
+    updateChatTheme();
+
+    // Listen for theme changes (MutationObserver)
+    const themeObserver = new MutationObserver(updateChatTheme);
+    themeObserver.observe(document.body, { attributes: true, attributeFilter: ['data-bs-theme', 'data-theme'] });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme', 'data-theme'] });
+
+    // If no messages, show welcome message
+    if (chatHistory.length === 0) {
+        // Check if chat is enabled (set by template)
+        const chatEnabled = window.CHAT_ENABLED !== undefined ? window.CHAT_ENABLED : true;
+
+        if (chatEnabled) {
+            addMessage("Welcome to Nautobot GPT! I can help you query and interact with Nautobot APIs. Type a message to get started.", 'ai');
+        } else {
+            // Determine what's missing and show appropriate error message
+            const hasDefaultModel = window.HAS_DEFAULT_MODEL !== undefined ? window.HAS_DEFAULT_MODEL : true;
+
+            let errorMessage = "Chat is currently disabled. ";
+
+            if (!hasDefaultModel) {
+                errorMessage += "Please configure a default LLM model to enable the AI Chat Agent.";
+            } else {
+                errorMessage += "Please check your configuration.";
+            }
+
+            addMessage(errorMessage, 'ai', true);
+        }
+    }
+
+    // Start inactivity timer only if chat is enabled
+    if (window.CHAT_ENABLED !== false) {
+        resetInactivityTimer();
+    }
 })();
