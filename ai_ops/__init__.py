@@ -46,7 +46,7 @@ class AiOpsConfig(NautobotAppConfig):
     default_settings = {}
     constance_config = {
         "chat_session_ttl_minutes": ConstanceConfigItem(
-            default=5,
+            default=10,
             help_text="Time-to-live (TTL) for chat sessions in minutes. Chat sessions automatically expire after this period of inactivity or message age. Applies to both frontend (localStorage) and backend (MemorySaver) cleanup. Valid range: 1-1440 minutes (1 minute to 24 hours).",
             field_type=int,
         ),

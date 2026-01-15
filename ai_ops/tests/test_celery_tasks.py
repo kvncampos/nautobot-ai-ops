@@ -201,13 +201,13 @@ class CleanupExpiredChatSessionsTaskTestCase(TestCase):
             "success": True,
             "processed_count": 0,
             "deleted_count": 0,
-            "ttl_minutes": 5,
+            "ttl_minutes": 10,
         }
 
         result = cleanup_expired_chat_sessions()
 
         self.assertTrue(result["success"])
-        # Should use default of 5 minutes
+        # Should use default of 10 minutes
         mock_cleanup.assert_called_once_with(ttl_minutes=10)
 
     @patch("ai_ops.checkpointer.cleanup_expired_checkpoints")
