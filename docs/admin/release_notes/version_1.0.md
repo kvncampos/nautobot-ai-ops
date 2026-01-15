@@ -25,6 +25,12 @@ This document describes all new features and changes in the release. The format 
 <!-- towncrier release notes start -->
 
 
+## [v1.0.6 (2026-01-15)](https://github.com/kvncampos/nautobot-ai-ops/releases/tag/v1.0.6)
+
+### Added
+
+- [#33](https://github.com/kvncampos/nautobot-ai-ops/issues/33) - Updated documentation, updated bootstrap 5 UI and updated default prompt.
+
 ## [v1.0.4 (2026-01-13)](https://github.com/kvncampos/nautobot-ai-ops/releases/tag/v1.0.4)
 
 ### Added
