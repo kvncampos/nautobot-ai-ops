@@ -1,3 +1,14 @@
+/* Accessible link colors for chat links in light and dark mode */
+
+:root[data-bs-theme="dark"],
+:root[data-theme="dark"],
+body[data-bs-theme="dark"],
+body[data-theme="dark"],
+html[data-bs-theme="dark"],
+html[data-theme="dark"] {
+    --chat-link-fg: #4dabff; /* FIXED: not white anymore */
+}
+
 /* ============================================================================
    NAUTOBOT AI CHAT WIDGET - COMPREHENSIVE MARKDOWN STYLES
    Beautiful, bulletproof styling for all markdown elements
@@ -439,19 +450,19 @@ html[data-theme="dark"] {
    ============================================================================ */
 
 .message-content a {
-    color: var(--chat-human-fg);
+    color: var(--chat-link-fg);
     text-decoration: none;
     border-bottom: 1px solid transparent;
     transition: all 0.2s ease;
 }
 
 .message-content a:hover {
-    color: var(--chat-human-fg);
+    color: var(--chat-link-fg);
     border-bottom-color: var(--chat-human-fg);
 }
 
 .message-content a:visited {
-    color: #6610f2;
+    color: var(--chat-link-fg);
 }
 
 /* External link indicator */
@@ -462,12 +473,12 @@ html[data-theme="dark"] {
 }
 
 .human-message a {
-    color: var(--chat-human-fg);
+    color: var(--chat-link-fg);
     border-bottom-color: rgba(255, 255, 255, 0.5);
 }
 
 .human-message a:hover {
-    border-bottom-color: var(--chat-human-fg);
+    border-bottom-color: var(--chat-link-fg);
 }
 
 /* ============================================================================
@@ -618,4 +629,16 @@ html[data-theme="dark"] {
     .message-content code {
         border: 1px solid #000;
     }
+}
+
+
+/* LIGHT MODE — proper clickable link blue */
+:root:not([data-bs-theme="dark"]):not([data-theme="dark"]) {
+    --chat-link-fg: #007bff; /* classic accessible blue */
+}
+
+/* DARK MODE — brighter blue for contrast */
+:root[data-bs-theme="dark"],
+:root[data-theme="dark"] {
+    --chat-link-fg: #4dabff; /* readable & bright */
 }
