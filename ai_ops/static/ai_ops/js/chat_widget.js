@@ -7,8 +7,9 @@
     // AbortController for cancelling in-flight fetch requests
     // When user clears history, we abort any pending request to avoid orphaned operations
     let currentRequestController = null;
-    // Get TTL from server config (default 5 minutes if not set)
-    const INACTIVITY_TIMEOUT = (window.CHAT_TTL_MINUTES || 5) * 60000; // Convert minutes to milliseconds
+    // Unify TTL config
+    const CHAT_TTL_MINUTES = window.CHAT_TTL_MINUTES || 10; // Default to 10 minutes if not set
+    const INACTIVITY_TIMEOUT = CHAT_TTL_MINUTES * 60000; // Convert minutes to milliseconds
     const GRACE_PERIOD = 30000; // 30 seconds grace period
     
     // DOM elements
@@ -31,28 +32,47 @@
             if (saved) {
                 const parsed = JSON.parse(saved);
                 const now = new Date();
-                const ttlMs = (window.CHAT_TTL_MINUTES || 5) * 60000 + GRACE_PERIOD;
-                
-                // Filter out messages older than TTL + grace period
+                const ttlMs = CHAT_TTL_MINUTES * 60000 + GRACE_PERIOD;
+                // Debug: print message ages and expiration
                 const originalLength = parsed.length;
                 chatHistory = parsed.filter(msg => {
                     const messageAge = now - new Date(msg.timestamp);
-                    return messageAge < ttlMs;
+                    const expired = messageAge >= ttlMs;
+                    if (expired) {
+                        console.debug('[ChatWidget] Expiring message:', msg, 'Age(ms):', messageAge, 'TTL(ms):', ttlMs);
+                    }
+                    return !expired;
                 });
-                
                 // If messages were filtered out due to expiry, clear backend and show message
                 if (chatHistory.length < originalLength && chatHistory.length === 0) {
-                    const expiredMinutes = window.CHAT_TTL_MINUTES || 5;
-                    clearChatWithMessage(`Previous conversation expired (older than ${expiredMinutes} minutes).`);
+                    clearChatWithMessage(`Previous conversation expired (older than ${CHAT_TTL_MINUTES} minutes).`);
+                    return;
                 } else if (chatHistory.length < originalLength) {
                     // Some messages expired, update storage
                     saveChatHistory();
                 }
-                
                 renderMessages();
             }
         } catch (e) {
             console.error('Error loading chat history:', e);
+        }
+        // Show welcome message if no messages exist
+        if (chatHistory.length === 0) {
+            // Check if chat is enabled (set by template)
+            const chatEnabled = window.CHAT_ENABLED !== undefined ? window.CHAT_ENABLED : true;
+            if (chatEnabled) {
+                addMessage("Welcome to Nautobot GPT! I can help you query and interact with Nautobot APIs. Type a message to get started.", 'ai');
+            } else {
+                // Determine what's missing and show appropriate error message
+                const hasDefaultModel = window.HAS_DEFAULT_MODEL !== undefined ? window.HAS_DEFAULT_MODEL : true;
+                let errorMessage = "Chat is currently disabled. ";
+                if (!hasDefaultModel) {
+                    errorMessage += "Please configure a default LLM model to enable the AI Chat Agent.";
+                } else {
+                    errorMessage += "Please check your configuration.";
+                }
+                addMessage(errorMessage, 'ai', true);
+            }
         }
     }
     
@@ -270,8 +290,7 @@
         }
         inactivityTimer = setTimeout(() => {
             // Auto-clear after configured minutes of inactivity
-            const ttlMinutes = window.CHAT_TTL_MINUTES || 5;
-            clearChatWithMessage(`Session timed out after ${ttlMinutes} minutes of inactivity.`);
+            clearChatWithMessage(`Session timed out after ${CHAT_TTL_MINUTES} minutes of inactivity.`);
         }, INACTIVITY_TIMEOUT);
     }
     
@@ -454,29 +473,7 @@
     themeObserver.observe(document.body, { attributes: true, attributeFilter: ['data-bs-theme', 'data-theme'] });
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme', 'data-theme'] });
 
-    // If no messages, show welcome message
-    if (chatHistory.length === 0) {
-        // Check if chat is enabled (set by template)
-        const chatEnabled = window.CHAT_ENABLED !== undefined ? window.CHAT_ENABLED : true;
-
-        if (chatEnabled) {
-            addMessage("Welcome to Nautobot GPT! I can help you query and interact with Nautobot APIs. Type a message to get started.", 'ai');
-        } else {
-            // Determine what's missing and show appropriate error message
-            const hasDefaultModel = window.HAS_DEFAULT_MODEL !== undefined ? window.HAS_DEFAULT_MODEL : true;
-
-            let errorMessage = "Chat is currently disabled. ";
-
-            if (!hasDefaultModel) {
-                errorMessage += "Please configure a default LLM model to enable the AI Chat Agent.";
-            } else {
-                errorMessage += "Please check your configuration.";
-            }
-
-            addMessage(errorMessage, 'ai', true);
-        }
-    }
-
+    // (Welcome message logic now handled in loadChatHistory)
     // Start inactivity timer only if chat is enabled
     if (window.CHAT_ENABLED !== false) {
         resetInactivityTimer();

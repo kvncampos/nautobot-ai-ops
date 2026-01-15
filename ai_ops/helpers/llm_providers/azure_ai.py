@@ -25,8 +25,6 @@ class AzureAIHandler(BaseLLMProviderHandler):
         Raises:
             ValueError: If required configuration is missing
         """
-        import os
-
         # Check if azure_endpoint is provided via config or environment
         azure_endpoint = self.config.get("azure_endpoint") or os.getenv("AZURE_OPENAI_ENDPOINT")
         if not azure_endpoint:

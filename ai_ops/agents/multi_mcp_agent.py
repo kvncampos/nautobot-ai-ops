@@ -8,13 +8,13 @@ import asyncio
 import logging
 import time
 from datetime import datetime
-from typing import Annotated, Callable
+from typing import Callable
 
 import httpx
-from langchain_core.messages import BaseMessage, HumanMessage
+from asgiref.sync import sync_to_async
+from langchain_core.messages import HumanMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from langgraph.graph import add_messages
-from typing_extensions import TypedDict
 
 from ai_ops.helpers.common.asyncio_utils import get_or_create_event_loop_lock
 from ai_ops.helpers.get_llm_model import get_llm_model_async
@@ -28,6 +28,10 @@ from ai_ops.helpers.tool_callback import ToolLoggingCallback
 from ai_ops.models import MCPServer
 
 logger = logging.getLogger(__name__)
+
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 # Lazy lock initialization to avoid event loop binding issues
 # Use list to allow modification via get_or_create_event_loop_lock
@@ -45,16 +49,6 @@ _mcp_client_cache = {
 # Note: This module is used in both sync and async contexts.
 # All ORM and Nautobot model access is wrapped with sync_to_async.
 # Shutdown is handled via async_shutdown and atexit/signal handlers.
-
-
-class MessagesState(TypedDict):
-    """State for the agent graph.
-
-    Uses add_messages reducer to properly handle message accumulation
-    and persistence with checkpointers.
-    """
-
-    messages: Annotated[list[BaseMessage], add_messages]
 
 
 async def get_or_create_mcp_client(force_refresh: bool = False) -> tuple[MultiServerMCPClient | None, list]:
@@ -75,8 +69,6 @@ async def get_or_create_mcp_client(force_refresh: bool = False) -> tuple[MultiSe
 
             # Get cache TTL from default LLM model
             try:
-                from asgiref.sync import sync_to_async
-
                 from ai_ops.models import LLMModel
 
                 default_model = await sync_to_async(LLMModel.get_default_model)()
@@ -94,7 +86,6 @@ async def get_or_create_mcp_client(force_refresh: bool = False) -> tuple[MultiSe
 
             # Query for enabled, healthy MCP servers
             try:
-                from asgiref.sync import sync_to_async
                 from nautobot.extras.models import Status
 
                 healthy_status = await sync_to_async(Status.objects.get)(name="Healthy")
@@ -314,7 +305,6 @@ async def build_agent(llm_model=None, checkpointer=None, provider: str | None = 
     """
     logger.debug("Building agent with middleware and tools")
 
-    from asgiref.sync import sync_to_async
     from langchain.agents import create_agent
 
     from ai_ops.helpers.get_middleware import get_middleware
@@ -328,12 +318,6 @@ async def build_agent(llm_model=None, checkpointer=None, provider: str | None = 
     # Get MCP client and tools
     client, tools = await get_or_create_mcp_client()
 
-    # Log tool availability
-    if tools:
-        logger.debug(f"Loaded {len(tools)} MCP tools")
-    else:
-        logger.warning("No MCP tools available - agent will work for conversation only")
-
     # Get LLM model with optional provider override
     # If provider is specified, it will be used instead of the model's configured provider
     llm = await get_llm_model_async(model_name=llm_model.name, provider=provider)
@@ -346,7 +330,8 @@ async def build_agent(llm_model=None, checkpointer=None, provider: str | None = 
 
     # Get system prompt from database or fallback to code-based prompt
     # Uses the SystemPrompt model with status='Approved' if available
-    system_prompt = await sync_to_async(get_active_prompt)(llm_model)
+    # Inject tool info into the prompt for LLM grounding
+    system_prompt = await sync_to_async(get_active_prompt)(llm_model, tools=tools)
 
     # Create agent with middleware
     # If no tools are available, the agent will still work for basic conversation
@@ -369,199 +354,59 @@ async def process_message(
     username: str | None = None,
     cancellation_check: Callable[[], bool] | None = None,
 ) -> str:
-    """Process a user message through the agent with checkpointed conversation history.
-
-    This implementation follows Approach 1: compile graph per-request within checkpointer
-    context manager. This ensures proper connection lifecycle management per LangGraph
-    documentation best practices.
-
-    Performance Note: Per-request compilation adds ~10-50ms latency compared to singleton
-    pattern, but ensures proper context manager cleanup and connection management.
-    If load testing shows unacceptable latency, consider Approach 2 (singleton with
-    long-lived checkpointer + application shutdown hook).
-
-    Connection Pooling Note: RedisSaver uses default connection settings. If experiencing
-    high concurrent request volume, may need to tune max_connections or implement
-    connection pooling. Monitor Redis connection count in production.
+    """
+    Asynchronously processes a user message within a conversational thread using a specified provider and optional user context.
 
     Args:
-        user_input: User's input message
-        thread_id: Unique conversation thread identifier (e.g., session key)
-        provider: Optional provider name override. If specified, uses this provider instead of default.
-                 Only admin users should be allowed to specify this parameter.
-        username: Optional username of the logged-in Nautobot user (for logging/debugging).
-        cancellation_check: Optional callable that returns True if the request should be cancelled.
-                           Used by ChatClearView to signal cancellation when user clears history.
+        user_input (str): The user's input message to process.
+        thread_id (str): Identifier for the conversation thread.
+        provider (str | None, optional): The provider to use for processing the message. Defaults to None.
+        username (str | None, optional): The username associated with the request. Defaults to None.
+        cancellation_check (Callable[[], bool] | None, optional): A callable that returns True if the request should be cancelled. Defaults to None.
 
     Returns:
-        Assistant's response text
+        str: The response generated by the agent, or an error/cancellation message.
+
+    Raises:
+        Exception: Logs and returns an error message if message processing fails.
     """
-    # Generate correlation ID for end-to-end request tracing
     correlation_id = generate_correlation_id()
     request_start_time = time.perf_counter()
 
-    # Set user context for logging
     if username:
         set_user(username)
 
     logger.info(
-        f"[request_start] thread={thread_id} correlation_id={correlation_id} "
-        f"user={username or 'anonymous'} input_length={len(user_input)}"
+        f"[RequestStart] correlation_id={correlation_id} thread={thread_id} user={username or 'anonymous'} input_len={len(user_input)}"
     )
 
-    # Check for cancellation before starting
-    # TODO: Enhance with interrupt support within graph execution
     if cancellation_check and cancellation_check():
-        logger.info(f"[request_cancelled] thread={thread_id} correlation_id={correlation_id} stage=pre_start")
         return "Request was cancelled. Starting fresh conversation."
 
     try:
-        # Get timeout and recursion limit settings with sensible defaults
-        from asgiref.sync import sync_to_async
-        from nautobot.apps.config import get_app_settings_or_config
-
-        request_timeout: int = (
-            await sync_to_async(get_app_settings_or_config)("ai_ops", "agent_request_timeout_seconds") or 120
-        )  # Default: 2 minutes
-        recursion_limit: int = (
-            await sync_to_async(get_app_settings_or_config)("ai_ops", "agent_recursion_limit") or 25
-        )  # Default: 25 steps
-
-        # Use context manager for proper checkpointer lifecycle
-        from ai_ops.checkpointer import get_checkpointer, track_checkpoint_creation
+        from ai_ops.checkpointer import get_checkpointer
 
         async with get_checkpointer() as checkpointer:
-            # Handle case where checkpointer is None (during shutdown)
-            if checkpointer is None:
-                logger.warning("Checkpointer unavailable during shutdown, using stateless response")
-                return "Server is currently shutting down. Please try again in a moment."
-
-            # Track checkpoint creation for TTL enforcement
-            track_checkpoint_creation(thread_id)
-
-            # Check if this is a fresh conversation (no previous messages)
-            # This happens after clearing conversation history or starting a new session
-            config = {"configurable": {"thread_id": thread_id}}
-
-            try:
-                # DIAGNOSTIC: Log storage keys if available
-                if hasattr(checkpointer, "storage"):
-                    all_keys = list(checkpointer.storage.keys())
-                    matching_keys = [k for k in all_keys if isinstance(k, tuple) and len(k) > 0 and k[0] == thread_id]
-                    logger.info(
-                        f"[STATE_CHECK] Storage has {len(all_keys)} total keys, {len(matching_keys)} match this thread"
-                    )
-                    logger.debug(f"[STATE_CHECK] Matching keys: {matching_keys}")
-
-                # Type ignore: LangGraph accepts dict config but types show RunnableConfig
-                state = await checkpointer.aget(config)  # type: ignore[arg-type]
-
-                # DIAGNOSTIC: Log state check result
-                state_exists = state is not None
-                logger.info(f"[STATE_CHECK] State exists: {state_exists}")
-                if state_exists:
-                    logger.debug(f"[STATE_CHECK] State details: {state}")
-
-            except Exception as e:
-                logger.warning(f"[STATE_CHECK] Error checking conversation state: {e}")
-
-            # Build agent v2 with checkpointer integration
-            # If provider is specified, the LLM model selection will use it
             graph = await build_agent(checkpointer=checkpointer, provider=provider)
 
-            # Configuration with thread_id for conversation isolation
-            # Include recursion_limit from settings to prevent infinite loops
-            config = {"configurable": {"thread_id": thread_id}, "recursion_limit": recursion_limit}
-
-            logger.debug(
-                f"Processing message for thread: {thread_id} (timeout={request_timeout}s, recursion_limit={recursion_limit})"
+            config = RunnableConfig(
+                configurable={"thread_id": thread_id}, callbacks=[ToolLoggingCallback()], tags=["mcp-agent"]
             )
 
-            # Check for cancellation before invoking the agent
-            if cancellation_check and cancellation_check():
-                logger.info(f"[request_cancelled] thread={thread_id} correlation_id={correlation_id} stage=pre_invoke")
-                return "Request was cancelled. Starting fresh conversation."
+            result = await asyncio.wait_for(
+                graph.ainvoke({"messages": [HumanMessage(content=user_input)]}, config=config), timeout=120
+            )
 
-            # Only pass the new user message
-            # Graph automatically loads conversation history from checkpointer
-            # Type ignore: LangGraph accepts dict config but types show RunnableConfig
-            # Include ToolLoggingCallback for real-time tool call logging
-            config["callbacks"] = [ToolLoggingCallback()]
-            logger.info(f"[llm_invoke] thread={thread_id} correlation_id={correlation_id} timeout={request_timeout}s")
+            last_message = result["messages"][-1]
+            response_text = getattr(last_message, "content", None) or "No response generated"
 
-            # Wrap ainvoke with timeout to prevent long-running requests
-
-            try:
-                result = await asyncio.wait_for(
-                    graph.ainvoke({"messages": [HumanMessage(content=user_input)]}, config=config),  # type: ignore[arg-type]
-                    timeout=float(request_timeout),
-                )
-            except asyncio.TimeoutError:
-                logger.warning(
-                    f"[request_timeout] thread={thread_id} correlation_id={correlation_id} "
-                    f"timeout_seconds={request_timeout}"
-                )
-                return (
-                    f"Request timed out after {request_timeout} seconds. "
-                    "Please try a simpler query or break your request into smaller parts."
-                )
-
-            # Check for cancellation immediately after agent invocation
-            if cancellation_check and cancellation_check():
-                logger.info(f"[request_cancelled] thread={thread_id} correlation_id={correlation_id} stage=post_invoke")
-                return "Request was cancelled. Starting fresh conversation."
-
-            # Log conversation state after processing
-            logger.debug(f"Message processed for thread_id: {thread_id}, total messages: {len(result['messages'])}")
-
-            # Stage: tool_call - Log summary of tool calls made
-            tool_calls_made = []
-
-            for message in result["messages"]:
-                if hasattr(message, "tool_calls") and message.tool_calls:
-                    for tc in message.tool_calls:
-                        name = tc.get("name", "unknown") if isinstance(tc, dict) else getattr(tc, "name", "unknown")
-                        tool_calls_made.append(name)
-
-            if tool_calls_made:
-                logger.info(f"[tool_call] thread={thread_id} tools_used={tool_calls_made}")
-            else:
-                logger.debug(f"[tool_call] thread={thread_id} no_tools_used")
-
-            # Stage: response - Extract and return final response
-            # Find the last AI message that has actual content (not just tool calls)
-            response_text = None
-            for message in reversed(result["messages"]):
-                # Check if it's an AI message with content (and not just tool calls)
-                if hasattr(message, "content") and message.content:
-                    # Skip messages that are only tool calls without text content
-                    if hasattr(message, "tool_calls") and message.tool_calls and not message.content.strip():
-                        continue
-                    response_text = message.content
-                    break
-
-            # Fallback to last message if no suitable message found
-            if response_text is None:
-                response_text = result["messages"][-1].content if result["messages"] else "No response generated"
-
-            # Log request completion with timing
-            request_duration_ms = (time.perf_counter() - request_start_time) * 1000
             logger.info(
-                f"[request_complete] thread={thread_id} correlation_id={correlation_id} "
-                f"duration_ms={request_duration_ms:.1f} response_chars={len(response_text)} "
-                f"tools_used={len(tool_calls_made)}"
+                f"[RequestCompleted] correlation_id={correlation_id} duration_ms={(time.perf_counter() - request_start_time) * 1000:.1f}"
             )
-            return response_text
+            return str(response_text)
 
-    except RuntimeError as e:
-        if "cannot schedule new futures after interpreter shutdown" in str(e):
-            logger.warning(f"Cannot process message during interpreter shutdown: {e}")
-            return "Server is shutting down. Please try again in a moment."
-        else:
-            logger.error(f"Runtime error in process_message: {e}", exc_info=True)
-            return f"Runtime error processing message: {str(e)}"
     except Exception as e:
-        logger.error(f"Error in process_message: {e}", exc_info=True)
+        logger.error(f"[error] correlation_id={correlation_id} details={e}", exc_info=True)
         return f"Error processing message: {str(e)}"
 
 
