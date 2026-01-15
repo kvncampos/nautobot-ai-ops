@@ -101,23 +101,28 @@ class SystemPrompt(PrimaryModel):  # pylint: disable=too-many-ancestors
         if self.is_file_based and not self.prompt_file_name:
             raise ValidationError({"prompt_file_name": "File name is required when using a file-based prompt."})
 
-        # Validate file exists if file-based
+        # Validate template file exists if file-based
         if self.is_file_based and self.prompt_file_name:
-            try:
-                import importlib
+            from pathlib import Path
 
-                module = importlib.import_module(f"ai_ops.prompts.{self.prompt_file_name}")
-                # All prompt files use standardized 'get_prompt' function
-                if not hasattr(module, "get_prompt"):
-                    raise ValidationError(
-                        {
-                            "prompt_file_name": f"Function 'get_prompt' not found in ai_ops.prompts.{self.prompt_file_name}"
-                        }
-                    )
-            except ImportError as e:
-                raise ValidationError(
-                    {"prompt_file_name": f"Could not import ai_ops.prompts.{self.prompt_file_name}: {e}"}
-                ) from e
+            template_dir = Path(__file__).parent / "prompts" / "templates"
+            filename = self.prompt_file_name
+            # If no extension, try .md and .j2
+            if not (filename.endswith(".md") or filename.endswith(".j2")):
+                md_path = template_dir / f"{filename}.md"
+                j2_path = template_dir / f"{filename}.j2"
+                if md_path.exists():
+                    filename = f"{filename}.md"
+                elif j2_path.exists():
+                    filename = f"{filename}.j2"
+                else:
+                    raise ValidationError({"prompt_file_name": f"Template file not found: {md_path} or {j2_path}"})
+            else:
+                template_path = template_dir / filename
+                if not template_path.exists():
+                    raise ValidationError({"prompt_file_name": f"Template file not found: {template_path}"})
+            # Save resolved filename for use in rendered_prompt
+            self._resolved_prompt_file_name = filename
 
     def save(self, *args, **kwargs):
         """Override save to auto-increment version when prompt_text is updated."""
@@ -132,10 +137,10 @@ class SystemPrompt(PrimaryModel):  # pylint: disable=too-many-ancestors
 
     @property
     def rendered_prompt(self) -> str:
-        """Get the prompt content, loading from file if necessary.
+        """Get the prompt content, loading from template file if necessary.
 
         For database-stored prompts, returns prompt_text directly.
-        For file-based prompts, dynamically loads and executes the prompt function.
+        For file-based prompts (.md/.j2), renders using PromptTemplateRenderer.
 
         Returns:
             str: The prompt content (may include template variables like {model_name}).
@@ -143,31 +148,30 @@ class SystemPrompt(PrimaryModel):  # pylint: disable=too-many-ancestors
         if not self.is_file_based:
             return self.prompt_text or ""
 
-        # Load from file
         if not self.prompt_file_name:
             return "*No prompt file specified*"
 
-        try:
-            import importlib
-            import inspect
+        # Use resolved filename from clean(), or resolve here if not set
+        filename = getattr(self, "_resolved_prompt_file_name", None)
+        if not filename:
+            filename = self.prompt_file_name
+            if not (filename.endswith(".md") or filename.endswith(".j2")):
+                from pathlib import Path
 
-            module = importlib.import_module(f"ai_ops.prompts.{self.prompt_file_name}")
-            # All prompt files use standardized 'get_prompt' function
-            if hasattr(module, "get_prompt"):
-                func = module.get_prompt
-                # Check if function accepts model_name argument
-                sig = inspect.signature(func)
-                if "model_name" in sig.parameters:
-                    # Call with a placeholder model name for preview purposes
-                    return func(model_name="[Model Name]")
-                else:
-                    # Call without arguments
-                    return func()
-            return "*Function 'get_prompt' not found in module*"
-        except ImportError as e:
-            return f"*Error loading prompt file: {e}*"
-        except Exception as e:  # pylint: disable=broad-except
-            return f"*Error executing prompt function: {e}*"
+                template_dir = Path(__file__).parent / "prompts" / "templates"
+                md_path = template_dir / f"{filename}.md"
+                j2_path = template_dir / f"{filename}.j2"
+                if md_path.exists():
+                    filename = f"{filename}.md"
+                elif j2_path.exists():
+                    filename = f"{filename}.j2"
+        try:
+            from ai_ops.prompts.template_renderer import PromptTemplateRenderer
+
+            renderer = PromptTemplateRenderer()
+            return renderer.render(filename, model_name="[Model Name]")
+        except Exception as e:
+            return f"*Error rendering template: {e}*"
 
 
 class LLMProviderChoice(models.TextChoices):

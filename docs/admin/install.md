@@ -95,6 +95,16 @@ PLUGINS_CONFIG = {
         # Used by Redis/PostgreSQL checkpoint cleanup (if migrated from MemorySaver)
         # Default: 7 days
         "checkpoint_retention_days": 7,
+        
+        # Optional: Maximum time in seconds for agent request processing
+        # Requests exceeding this timeout will be cancelled with a friendly message
+        # Default: 120 seconds (2 minutes)
+        "agent_request_timeout_seconds": 120,
+        
+        # Optional: Maximum recursion depth for agent graph traversal
+        # Limits steps to prevent infinite loops in agent reasoning chains
+        # Default: 25 steps
+        "agent_recursion_limit": 25,
     }
 }
 ```
@@ -124,6 +134,58 @@ PLUGINS_CONFIG = {
     }
 }
 ```
+
+#### agent_request_timeout_seconds
+
+Controls the maximum time in seconds for agent request processing:
+
+- **Purpose**: Prevents long-running requests from consuming resources indefinitely
+- **Behavior**: If the agent takes longer than this to respond, the request is cancelled
+- **User Message**: Returns a friendly timeout message suggesting to simplify the query
+- **Default**: 120 seconds (2 minutes)
+- **Valid Range**: 10-600 seconds (10 seconds to 10 minutes)
+
+**Example Use Cases:**
+- Development/Testing: Set to 30-60 seconds for faster feedback
+- Production with complex queries: Set to 180-300 seconds
+- High-traffic environments: Set to 60-90 seconds to prevent resource exhaustion
+
+```python
+# Example: Allow longer requests for complex operations
+PLUGINS_CONFIG = {
+    "ai_ops": {
+        "agent_request_timeout_seconds": 180,  # 3 minutes
+    }
+}
+```
+
+!!! note
+    This setting can also be configured at runtime via Nautobot Admin UI → Constance Config.
+
+#### agent_recursion_limit
+
+Controls the maximum recursion depth for agent graph traversal:
+
+- **Purpose**: Prevents infinite loops in agent reasoning chains
+- **Behavior**: Limits the number of steps the agent can take in a single request
+- **Default**: 25 steps
+- **Valid Range**: 5-100 steps
+
+**When to Adjust:**
+- Increase for complex multi-step workflows requiring many tool calls
+- Decrease for simpler use cases or to enforce faster responses
+
+```python
+# Example: Allow more complex agent workflows
+PLUGINS_CONFIG = {
+    "ai_ops": {
+        "agent_recursion_limit": 50,
+    }
+}
+```
+
+!!! tip "Runtime Configuration"
+    Both `agent_request_timeout_seconds` and `agent_recursion_limit` can be changed at runtime through the Nautobot Admin UI under **Constance Config** without restarting services.
 
 #### checkpoint_retention_days
 

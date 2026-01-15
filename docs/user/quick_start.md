@@ -4,7 +4,7 @@ Get the AI Ops App up and running in 5 minutes!
 
 ## Prerequisites
 
-- Nautobot 2.4.22+ installed
+- Nautobot 3.0.0+ installed
 - Azure OpenAI subscription with a deployed model
 - Redis server accessible
 - Admin access to Nautobot

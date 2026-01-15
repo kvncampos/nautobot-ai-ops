@@ -53,7 +53,7 @@ More screenshots and detailed use cases can be found in the [Using the App](http
 
 ## Requirements
 
-- Nautobot 2.4.22+
+- Nautobot 3.0.0+
 - Python 3.10 - 3.12
 - Redis (for conversation checkpointing and caching)
 - At least one LLM provider:

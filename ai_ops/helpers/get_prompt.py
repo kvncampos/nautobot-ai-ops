@@ -1,13 +1,13 @@
 """Helper functions for loading system prompts."""
 
-import importlib
 import logging
 from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 
-def get_active_prompt(llm_model) -> str:
+def get_active_prompt(llm_model, tools=None) -> str:
     """Load the active system prompt for an LLM model.
 
     Retrieves the prompt using the following fallback hierarchy:
@@ -20,11 +20,15 @@ def get_active_prompt(llm_model) -> str:
 
     Args:
         llm_model: The LLMModel instance to get the prompt for.
+        tools: Optional list of tools available to the model.
 
     Returns:
         str: The rendered system prompt content.
     """
     from ai_ops.models import SystemPrompt
+
+    if tools is None:
+        tools = []
 
     prompt_obj = None
     model_name = llm_model.name if llm_model else "Unknown"
@@ -55,78 +59,149 @@ def get_active_prompt(llm_model) -> str:
     # 3. If we have a valid prompt object, load it
     if prompt_obj:
         logger.info(f"Using system prompt: {prompt_obj.name} (model={model_name})")
-        return _load_prompt_content(prompt_obj, model_name)
+        return _load_prompt_content(prompt_obj, model_name, tools=tools)
 
     # 4. Ultimate fallback to code-based prompt
     logger.info(f"Using code fallback prompt for model '{model_name}'")
-    return _get_fallback_prompt(model_name)
+    return _get_fallback_prompt(model_name, tools=tools)
 
 
-def _load_prompt_content(prompt_obj, model_name: str) -> str:
+def _load_prompt_content(prompt_obj, model_name: str, tools=None) -> str:
     """Load prompt content from either file or database.
 
     Args:
         prompt_obj: SystemPrompt instance.
         model_name: Name of the LLM model (for variable substitution).
+        tools: Optional list of tools available to the model.
 
     Returns:
         str: The rendered prompt content.
     """
+    if tools is None:
+        tools = []
     if prompt_obj.is_file_based and prompt_obj.prompt_file_name:
-        # Dynamic import from ai_ops/prompts/{prompt_file_name}.py
-        try:
-            module = importlib.import_module(f"ai_ops.prompts.{prompt_obj.prompt_file_name}")
-            # All prompt files use standardized 'get_prompt' function
-            func = module.get_prompt
-            logger.debug(f"Loading file-based prompt: {prompt_obj.prompt_file_name}")
-            return func(model_name=model_name)
-        except (ImportError, AttributeError) as e:
-            logger.error(f"Failed to load file-based prompt '{prompt_obj.prompt_file_name}': {e}")
-            return _get_fallback_prompt(model_name)
+        # Check if there's a .md template
+        template_path = Path(__file__).parent.parent / "prompts" / "templates" / f"{prompt_obj.prompt_file_name}.md"
+
+        if template_path.exists():
+            # Use template rendering
+            logger.debug(f"Loading template-based prompt: {prompt_obj.prompt_file_name}.md")
+            return _render_template(prompt_obj.prompt_file_name, model_name, prompt_obj, tools=tools)
+        else:
+            logger.error(f"Template file not found: {template_path}")
+            return _get_fallback_prompt(model_name, tools=tools)
     else:
         # Render variables in prompt_text at runtime
         logger.debug(f"Loading database prompt: {prompt_obj.name} v{prompt_obj.version}")
-        return _render_prompt_variables(prompt_obj.prompt_text, model_name)
+        return _render_prompt_variables(prompt_obj.prompt_text, model_name, tools=tools)
 
 
-def _render_prompt_variables(prompt_text: str, model_name: str) -> str:
+def _render_prompt_variables(prompt_text: str, model_name: str, tools=None) -> str:
     """Render runtime variables in prompt text.
 
     Supported variables:
     - {current_date}: Current date in "Month DD, YYYY" format
-    - {current_month}: Current month in "Month YYYY" format
     - {model_name}: Name of the LLM model
 
     Args:
         prompt_text: Raw prompt text with variable placeholders.
         model_name: Name of the LLM model.
+        tools: Optional list of tools available to the model.
 
     Returns:
         str: Prompt text with variables substituted.
     """
-    current_date = datetime.now().strftime("%B %d, %Y")  # e.g., "January 13, 2026"
-    current_month = datetime.now().strftime("%B %Y")  # e.g., "January 2026"
+    if tools is None:
+        tools = []
+    current_date = datetime.now().strftime("%B %d, %Y")  # e.g., "January 14, 2026"
 
     try:
         return prompt_text.format(
             current_date=current_date,
-            current_month=current_month,
             model_name=model_name,
+            tools=tools,
         )
     except KeyError as e:
         logger.warning(f"Unknown variable in prompt text: {e}. Returning raw text.")
         return prompt_text
 
 
-def _get_fallback_prompt(model_name: str) -> str:
-    """Get the fallback prompt from code.
+def _render_template(prompt_file_name: str, model_name: str, prompt_obj=None, tools=None) -> str:
+    """Render a Jinja2 template with dynamic context.
+
+    Args:
+        prompt_file_name: Name of the template file (without .md extension)
+        model_name: Name of the LLM model
+        prompt_obj: Optional SystemPrompt object for additional config
+        tools: Optional list of tools available to the model
+
+    Returns:
+        str: Rendered prompt content
+    """
+    if tools is None:
+        tools = []
+    try:
+        from ai_ops.prompts.template_renderer import get_renderer
+
+        renderer = get_renderer()
+
+        # Build context from prompt_obj if available
+        context = {}
+        timezone = "UTC"
+        date_format = "%B %d, %Y"
+
+        if prompt_obj and hasattr(prompt_obj, "additional_kwargs") and prompt_obj.additional_kwargs:
+            config = prompt_obj.additional_kwargs
+            timezone = config.get("timezone", timezone)
+            date_format = config.get("date_format", date_format)
+            # Add any additional custom variables from additional_kwargs
+            context.update(config.get("template_vars", {}))
+
+        context["tools"] = tools
+
+        return renderer.render(
+            template_name=f"{prompt_file_name}.md",
+            model_name=model_name,
+            timezone=timezone,
+            date_format=date_format,
+            context=context,
+        )
+    except Exception as e:
+        logger.error(f"Failed to render template '{prompt_file_name}.md': {e}")
+        return _get_fallback_prompt(model_name, tools=tools)
+
+
+def _get_fallback_prompt(model_name: str, tools=None) -> str:
+    """Get the hardcoded fallback prompt as last resort.
 
     Args:
         model_name: Name of the LLM model.
+        tools: Optional list of tools available to the model.
 
     Returns:
-        str: The fallback system prompt.
+        str: A basic fallback system prompt.
     """
-    from ai_ops.prompts.system_prompt import get_prompt
+    if tools is None:
+        tools = []
+    current_date = datetime.now().strftime("%B %d, %Y")
 
-    return get_prompt(model_name=model_name)
+    tool_section = ""
+    if tools:
+        tool_section = "\nTOOLS AVAILABLE:\n" + "\n".join(
+            [f"- {t.get('name', str(t))}: {t.get('description', '')}" for t in tools]
+        )
+    else:
+        tool_section = "\nNO TOOLS ARE CURRENTLY AVAILABLE."
+
+    return f"""You are an AI assistant with access to specialized tools.
+
+MODEL NAME: {model_name}
+CURRENT DATE: {current_date}
+{tool_section}
+
+Use the available tools to help users accomplish their goals. Always:
+- Call discovery/search tools before data retrieval tools
+- Provide comprehensive, well-formatted responses
+- Never fabricate information
+- Handle errors gracefully
+"""

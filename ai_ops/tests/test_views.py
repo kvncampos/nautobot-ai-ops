@@ -468,7 +468,7 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
                 self.assertEqual(context["chat_session_ttl_minutes"], 10)
 
     def test_get_default_ttl_when_not_configured(self):
-        """Test that default TTL (5 minutes) is used when not configured."""
+        """Test that default TTL (10 minutes) is used when not configured."""
         request = self._create_request_with_user(self.regular_user)
 
         # Mock render to avoid template rendering
@@ -490,4 +490,4 @@ class AIChatBotGenericViewTestCase(TestCase, TestDataMixin):
 
                 # Verify default TTL is used
                 context = mock_render.call_args[0][2]
-                self.assertEqual(context["chat_session_ttl_minutes"], 5)
+                self.assertEqual(context["chat_session_ttl_minutes"], 10)

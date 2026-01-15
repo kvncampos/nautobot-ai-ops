@@ -25,6 +25,10 @@ _memory_saver_lock: list = [None]
 # Global dict to track checkpoint creation timestamps for TTL enforcement
 _checkpoint_timestamps = {}
 
+# Note: This module is used in both sync and async contexts.
+# All Redis and MemorySaver access is wrapped with sync_to_async or async_to_sync as needed.
+# Shutdown is handled via async_shutdown and atexit/signal handlers.
+
 
 def get_redis_uri() -> str:
     """Build Redis URI from environment variables.

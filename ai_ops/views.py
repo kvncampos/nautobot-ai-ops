@@ -3,8 +3,10 @@
 import logging
 
 from asgiref.sync import sync_to_async
+from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
-from django.http import HttpResponse, JsonResponse
+from django.core.cache import cache
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from nautobot.apps.config import get_app_settings_or_config
@@ -26,6 +28,26 @@ from ai_ops.helpers.common.enums import NautobotEnvironment
 from ai_ops.helpers.common.helpers import get_environment
 
 logger = logging.getLogger(__name__)
+
+# Redis cache key prefix for cancellation tracking
+# Uses Django's cache (backed by Redis) for multi-worker support
+CANCELLATION_CACHE_PREFIX = "ai_ops:cancel:"
+CANCELLATION_CACHE_TIMEOUT = 300  # 5 minutes - enough time for any request to complete
+
+
+def set_cancellation_flag(thread_id: str) -> None:
+    """Set cancellation flag for a thread in Redis cache."""
+    cache.set(f"{CANCELLATION_CACHE_PREFIX}{thread_id}", True, timeout=CANCELLATION_CACHE_TIMEOUT)
+
+
+def clear_cancellation_flag(thread_id: str) -> None:
+    """Clear cancellation flag for a thread from Redis cache."""
+    cache.delete(f"{CANCELLATION_CACHE_PREFIX}{thread_id}")
+
+
+def is_cancelled(thread_id: str) -> bool:
+    """Check if a thread has been cancelled via Redis cache."""
+    return cache.get(f"{CANCELLATION_CACHE_PREFIX}{thread_id}", False)
 
 
 class LLMProviderUIViewSet(NautobotUIViewSet):
@@ -145,12 +167,23 @@ class LLMMiddlewareUIViewSet(NautobotUIViewSet):
 
 
 class AIChatBotGenericView(GenericView):
-    """View for displaying LLMChatBot."""
+    """
+    View for displaying LLMChatBot.
+
+    This view is async, but bridges to sync Django ORM and template rendering
+    using sync_to_async. This is a hybrid approach to support both WSGI and ASGI.
+    Shutdown errors are handled gracefully with a redirect and flash message.
+    """
 
     template_name = "ai_ops/chat_widget.html"
 
     async def get(self, request, *args, **kwargs):
-        """Render the chat widget template."""
+        """
+        Render the chat widget template.
+
+        Async view, but all ORM and template calls are wrapped with sync_to_async.
+        Handles shutdown errors by redirecting with a flash message.
+        """
         try:
             # Check if there's a default LLM model configured
             has_default_model = await sync_to_async(models.LLMModel.objects.filter(is_default=True).exists)()
@@ -198,13 +231,19 @@ class AIChatBotGenericView(GenericView):
         except RuntimeError as e:
             if "cannot schedule new futures after interpreter shutdown" in str(e):
                 logger.warning(f"Cannot render chat view during interpreter shutdown: {e}")
-                # Return a simple error page instead of trying to render the full template
-                return HttpResponse(
-                    "<html><body><h1>Service Unavailable</h1>"
-                    "<p>The application is currently shutting down. Please try again in a moment.</p>"
-                    "</body></html>",
-                    status=503,
-                )
+                # Use sync redirect with flash message - async context is unavailable
+                # Add flash message for user feedback using Django's messages framework
+                try:
+                    await sync_to_async(messages.warning)(
+                        request,
+                        "The AI chat service is temporarily unavailable due to a server restart. "
+                        "Please wait a moment and try again.",
+                    )
+                except Exception as msg_err:
+                    # If messages framework fails during shutdown, continue with redirect
+                    logger.debug(f"Could not add flash message during shutdown: {msg_err}")
+                # Redirect to home page - graceful degradation
+                return HttpResponseRedirect("/")
             else:
                 raise
 
@@ -215,7 +254,11 @@ class AIChatBotGenericView(GenericView):
 
 
 class ChatMessageView(GenericView):
-    """Handle chat message processing via agent with checkpointed conversation history."""
+    """
+    Handle chat message processing via agent with checkpointed conversation history.
+
+    This view is async, but bridges to sync ORM and admin logic as needed.
+    """
 
     async def post(self, request, *args, **kwargs):
         """Process user message through LangGraph agent with PostgreSQL checkpointing.
@@ -268,10 +311,20 @@ class ChatMessageView(GenericView):
             # Get username for logging (use 'anonymous' if not authenticated)
             username = request.user.username if request.user.is_authenticated else None
 
+            # Create cancellation check function that reads from Redis cache
+            # This allows ChatClearView to signal cancellation during processing
+            # Works across multiple workers since it uses shared Redis backend
+            def check_cancellation() -> bool:
+                return is_cancelled(thread_id)
+
             # Process message through checkpointed agent with optional provider override
             # Checkpointer automatically loads/saves conversation history
             response_text = await process_message(
-                user_message, thread_id, provider=provider_override, username=username
+                user_message,
+                thread_id,
+                provider=provider_override,
+                username=username,
+                cancellation_check=check_cancellation,
             )
 
             return JsonResponse({"response": response_text, "error": None})
@@ -293,7 +346,12 @@ class ChatMessageView(GenericView):
 
 
 class ChatClearView(GenericView):
-    """Clear chat conversation history from checkpointer."""
+    """
+    Clear the conversation checkpoint for this session.
+
+    This is a sync view to avoid asgiref RuntimeError during interpreter shutdown.
+    Uses async_to_sync internally to call async checkpoint clearing.
+    """
 
     def post(self, request, *args, **kwargs):
         """Clear the conversation checkpoint for this session.
@@ -311,6 +369,13 @@ class ChatClearView(GenericView):
             if not thread_id:
                 return JsonResponse({"success": False, "message": "No active session to clear"}, status=400)
 
+            # Signal cancellation to any in-progress request for this thread via Redis
+            # This allows process_message to detect cancellation and exit early
+            # Works across multiple workers since it uses shared Redis backend
+            # TODO: Enhance with interrupt support within graph execution
+            set_cancellation_flag(thread_id)
+            logger.info(f"Cancellation requested for thread: {thread_id}")
+
             # Import here to avoid circular dependencies
             from asgiref.sync import async_to_sync
 
@@ -319,6 +384,9 @@ class ChatClearView(GenericView):
             # Clear the conversation history for this thread
             # Use async_to_sync to call the async function from sync context
             cleared = async_to_sync(clear_checkpointer_for_thread)(thread_id)
+
+            # Clear the cancellation flag after clearing is complete
+            clear_cancellation_flag(thread_id)
 
             if cleared:
                 return JsonResponse({"success": True, "message": "Conversation history cleared successfully"})

@@ -818,7 +818,7 @@ PLUGINS_CONFIG = {
 - Python 3.10+
 - PostgreSQL 12+ or MySQL 8+
 - Redis 6+
-- Nautobot 2.4.22+
+- Nautobot 3.0.0+
 
 **Recommended**:
 - Python 3.11+

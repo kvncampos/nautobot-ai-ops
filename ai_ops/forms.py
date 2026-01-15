@@ -460,9 +460,12 @@ class SystemPromptForm(NautobotModelForm):  # pylint: disable=too-many-ancestors
         }
         help_texts = {
             "name": "Descriptive name for this prompt. Version is auto-incremented for prompts with the same name.",
-            "is_file_based": "If enabled, loads prompt from a Python file in ai_ops/prompts/ instead of using prompt_text.",
-            "prompt_file_name": "Name of Python file in ai_ops/prompts/ (without .py). "
-            "Example: 'multi_mcp_system_prompt' loads get_prompt() from that file.",
+            "is_file_based": "If enabled, loads prompt from a file instead of using prompt_text. Supports Python (.py) and template (.md/.j2) files.",
+            "prompt_file_name": (
+                "Name of file in ai_ops/prompts/ (for Python, omit .py; for templates, include .md or .j2). "
+                "Example: 'multi_mcp_system_prompt' loads get_prompt() from ai_ops/prompts/multi_mcp_system_prompt.py. "
+                "Example: 'multi_mcp_system_prompt.md' loads template from ai_ops/prompts/templates/multi_mcp_system_prompt.md."
+            ),
             "prompt_text": "Prompt content. Supports variables: {current_date}, {current_month}, {model_name}. "
             "Leave blank if using file-based prompt.",
         }
