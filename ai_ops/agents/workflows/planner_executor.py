@@ -120,7 +120,14 @@ async def executor_node(state: PlanExecuteState) -> PlanExecuteState:
     logger.info(f"[Executor] Step {state['current_step_index'] + 1}/{len(state['plan'])}")
     state["workflow_status"] = WorkflowStatus.EXECUTING
 
-    # Get current step before try block to ensure it's available in exception handler
+    # Validate that we have a valid step to execute
+    if not state["plan"] or state["current_step_index"] >= len(state["plan"]):
+        logger.error(f"[Executor] Invalid step index {state['current_step_index']} for plan with {len(state['plan'])} steps")
+        state["error_count"] += 1
+        state["workflow_status"] = WorkflowStatus.FAILED
+        return state
+    
+    # Get current step (validated above)
     current_step = state["plan"][state["current_step_index"]]
     
     try:
