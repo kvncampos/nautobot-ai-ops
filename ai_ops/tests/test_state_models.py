@@ -261,7 +261,7 @@ class TestStateValidation:
         assert isinstance(state["messages"][1], AIMessage)
 
 
-class TestStateSerializ:
+class TestStateSerialization:
     """Test state serialization for checkpointing."""
 
     def test_state_dict_conversion(self):
