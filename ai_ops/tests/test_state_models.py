@@ -3,6 +3,7 @@
 import pytest
 from datetime import datetime
 from langchain_core.messages import HumanMessage, AIMessage
+from pydantic import ValidationError
 
 from ai_ops.agents.state_models import (
     NautobotAgentState,
@@ -53,7 +54,7 @@ class TestNautobotAgentState:
         assert state["error_count"] == 3
 
         # Error count should be non-negative (enforced by Pydantic)
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             state = NautobotAgentState(
                 messages=[HumanMessage(content="Test")],
                 error_count=-1
@@ -233,7 +234,7 @@ class TestStateValidation:
 
     def test_negative_error_count_rejected(self):
         """Test that negative error counts are rejected."""
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             NautobotAgentState(
                 messages=[HumanMessage(content="Test")],
                 error_count=-1
@@ -241,7 +242,7 @@ class TestStateValidation:
 
     def test_negative_step_index_rejected(self):
         """Test that negative step indices are rejected."""
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             PlanExecuteState(
                 messages=[HumanMessage(content="Test")],
                 current_step_index=-1

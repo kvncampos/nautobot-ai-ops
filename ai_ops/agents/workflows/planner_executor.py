@@ -120,8 +120,10 @@ async def executor_node(state: PlanExecuteState) -> PlanExecuteState:
     logger.info(f"[Executor] Step {state['current_step_index'] + 1}/{len(state['plan'])}")
     state["workflow_status"] = WorkflowStatus.EXECUTING
 
+    # Get current step before try block to ensure it's available in exception handler
+    current_step = state["plan"][state["current_step_index"]]
+    
     try:
-        current_step = state["plan"][state["current_step_index"]]
         executor_llm = await get_llm_model_async()
         _, tools = await get_or_create_mcp_client()
 

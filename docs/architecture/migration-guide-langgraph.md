@@ -75,7 +75,17 @@ assert state.error_count == 0
 **File:** `ai_ops/agents/compat.py`
 
 ```python
-"""Compatibility layer for gradual migration to LangGraph."""
+"""Compatibility layer for gradual migration from v1 to v2 agent architecture.
+
+This module provides a compatibility wrapper to enable incremental migration
+from the current agent architecture (v1) to the improved v2 architecture
+with explicit LangGraph StateGraphs, typed state models, and advanced patterns.
+
+Note: Both v1 and v2 use LangGraph's create_agent() function, but v2 adds:
+- Typed Pydantic state models
+- Explicit StateGraph workflows for complex operations
+- Conditional routing and multi-agent patterns
+"""
 
 from typing import Any, Optional
 from ai_ops.agents.multi_mcp_agent import build_agent as build_agent_v1
@@ -88,16 +98,17 @@ async def build_agent_compat(
     provider: Optional[str] = None,
     use_v2: bool = False
 ) -> Any:
-    """Build agent with backward compatibility.
+    """Build agent with backward compatibility between v1 and v2 architectures.
     
     Args:
         llm_model: LLMModel instance
         checkpointer: Checkpointer for conversation persistence
         provider: Optional provider override
-        use_v2: If True, use new LangGraph-based agent (requires feature flag)
+        use_v2: If True, use v2 agent architecture with explicit StateGraphs
+                If False, use v1 agent architecture (default)
     
     Returns:
-        Compiled agent graph
+        Compiled agent graph (compatible interface for both v1 and v2)
     """
     if use_v2:
         # Import v2 when ready
