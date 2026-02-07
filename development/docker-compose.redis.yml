@@ -1,11 +1,19 @@
 ---
 services:
   redis:
-    image: "redis:6-alpine"
+    # Using Redis Stack for RediSearch module (required for semantic cache vector search)
+    # See: https://redis.io/docs/stack/
+    image: "redis/redis-stack-server:latest"
     command:
       - "sh"
       - "-c"  # this is to evaluate the $NAUTOBOT_REDIS_PASSWORD from the env
-      - "redis-server --appendonly yes --requirepass $$NAUTOBOT_REDIS_PASSWORD"
+      - "redis-stack-server --appendonly yes --requirepass $$NAUTOBOT_REDIS_PASSWORD"
     env_file:
       - "development.env"
       - "creds.env"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$NAUTOBOT_REDIS_PASSWORD ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s

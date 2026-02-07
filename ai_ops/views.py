@@ -21,7 +21,7 @@ from nautobot.apps.ui import (
 from nautobot.apps.views import GenericView, NautobotUIViewSet
 
 from ai_ops import filters, forms, models, tables
-from ai_ops.agents.multi_mcp_agent import process_message
+from ai_ops.agents.deep_mcp_agent import process_message
 from ai_ops.api import serializers
 from ai_ops.helpers.common.constants import ErrorMessages
 from ai_ops.helpers.common.enums import NautobotEnvironment
@@ -311,6 +311,26 @@ class ChatMessageView(GenericView):
             # Get username for logging (use 'anonymous' if not authenticated)
             username = request.user.username if request.user.is_authenticated else None
 
+            # Get user's API token for MCP authentication
+            user_token = None
+            if request.user.is_authenticated:
+                from asgiref.sync import sync_to_async
+                from nautobot.users.models import Token
+
+                # Get the first active token for this user
+                token = await sync_to_async(Token.objects.filter(user=request.user).first)()
+                if token:
+                    user_token = token.key
+                    logger.info(
+                        f"[ChatMessageView] user={username} has_token=True token_length={len(user_token) if user_token else 0}"
+                    )
+                else:
+                    logger.warning(
+                        f"[ChatMessageView] user={username} has_token=False - No API token found for user {username} - MCP tools may fail"
+                    )
+            else:
+                logger.warning("[ChatMessageView] user=anonymous has_token=False - User not authenticated")
+
             # Create cancellation check function that reads from Redis cache
             # This allows ChatClearView to signal cancellation during processing
             # Works across multiple workers since it uses shared Redis backend
@@ -324,6 +344,7 @@ class ChatMessageView(GenericView):
                 thread_id,
                 provider=provider_override,
                 username=username,
+                user_token=user_token,
                 cancellation_check=check_cancellation,
             )
 

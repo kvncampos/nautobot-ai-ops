@@ -102,31 +102,31 @@ def setup_checkpoint_cleanup_schedule(sender, **kwargs):  # pylint: disable=unus
         logger.error(f"Failed to setup checkpoint cleanup schedule: {e}")
 
 
-def setup_mcp_health_check_schedule(sender, **kwargs):  # pylint: disable=unused-argument
-    """Enable and schedule the MCP health check job after migrations."""
-    try:
-        # Enable job and get all necessary details
-        job, job_user, default_queue, task_class_path = enable_job_and_get_details(
-            module_name="ai_ops.jobs.mcp_health_check",
-            job_class_name="MCPServerHealthCheckJob",
-        )
+# def setup_mcp_health_check_schedule(sender, **kwargs):  # pylint: disable=unused-argument
+#     """Enable and schedule the MCP health check job after migrations."""
+#     try:
+#         # Enable job and get all necessary details
+#         job, job_user, default_queue, task_class_path = enable_job_and_get_details(
+#             module_name="ai_ops.jobs.mcp_health_check",
+#             job_class_name="MCPServerHealthCheckJob",
+#         )
 
-        if not job:
-            return
+#         if not job:
+#             return
 
-        # Create or update the scheduled job
-        create_or_update_scheduled_job(
-            schedule_name="MCP Server Health Check",
-            job=job,
-            job_user=job_user,
-            default_queue=default_queue,
-            task_class_path=task_class_path,
-            crontab="*/5 * * * *",  # Run every 5 minutes (POC frequency)
-            description="Automatically perform health checks on HTTP MCP servers with retry logic and cache invalidation",
-        )
+#         # Create or update the scheduled job
+#         create_or_update_scheduled_job(
+#             schedule_name="MCP Server Health Check",
+#             job=job,
+#             job_user=job_user,
+#             default_queue=default_queue,
+#             task_class_path=task_class_path,
+#             crontab="*/5 * * * *",  # Run every 5 minutes (POC frequency)
+#             description="Automatically perform health checks on HTTP MCP servers with retry logic and cache invalidation",
+#         )
 
-    except Exception as e:
-        logger.error(f"Failed to setup MCP health check schedule: {e}")
+#     except Exception as e:
+#         logger.error(f"Failed to setup MCP health check schedule: {e}")
 
 
 def setup_chat_session_cleanup_schedule(sender, **kwargs):  # pylint: disable=unused-argument

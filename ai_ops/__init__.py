@@ -82,7 +82,7 @@ class AiOpsConfig(NautobotAppConfig):
             create_default_middleware_types,
             setup_chat_session_cleanup_schedule,
             setup_checkpoint_cleanup_schedule,
-            setup_mcp_health_check_schedule,
+            # setup_mcp_health_check_schedule,
         )
 
         logger = logging.getLogger(__name__)
@@ -99,7 +99,7 @@ class AiOpsConfig(NautobotAppConfig):
         nautobot_database_ready.connect(create_default_llm_providers, sender=self)
         nautobot_database_ready.connect(create_default_middleware_types, sender=self)
         nautobot_database_ready.connect(setup_checkpoint_cleanup_schedule, sender=self)
-        nautobot_database_ready.connect(setup_mcp_health_check_schedule, sender=self)
+        # nautobot_database_ready.connect(setup_mcp_health_check_schedule, sender=self)
         nautobot_database_ready.connect(setup_chat_session_cleanup_schedule, sender=self)
 
         # Note: Periodic tasks are handled via Nautobot Jobs (ai_agents.jobs).
