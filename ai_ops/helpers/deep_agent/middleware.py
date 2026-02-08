@@ -17,6 +17,8 @@ from langchain_core.messages import AIMessage, ToolMessage
 from redisvl.extensions.llmcache import SemanticCache
 from redisvl.utils.vectorize import BaseVectorizer
 
+from ai_ops.helpers.common.asyncio_utils import get_or_create_event_loop_lock
+
 logger = logging.getLogger(__name__)
 
 
@@ -179,17 +181,20 @@ class SemanticCacheMiddleware(AgentMiddleware):
         self.cache_name = cache_name
         self.cache = None
         self._initialized = False
-        self._init_lock = None
+        # Use list container for event-loop-aware lock management
+        # This allows get_or_create_event_loop_lock to modify the reference
+        self._init_lock: list = [None]
 
     async def _ensure_cache_initialized(self) -> bool:
         """Lazy initialization of cache. Returns True if available, False otherwise."""
         if self._initialized:
             return self.cache is not None
 
-        if self._init_lock is None:
-            self._init_lock = asyncio.Lock()
+        # Get lock bound to current event loop
+        # This prevents "bound to a different event loop" errors in Django async views
+        lock = get_or_create_event_loop_lock(self._init_lock, "semantic_cache_init")
 
-        async with self._init_lock:
+        async with lock:
             # Double-check after acquiring lock
             if self._initialized:
                 return self.cache is not None
