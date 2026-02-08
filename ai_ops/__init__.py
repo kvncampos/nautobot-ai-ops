@@ -76,10 +76,6 @@ class AiOpsConfig(NautobotAppConfig):
         from .helpers.async_shutdown import register_shutdown_handlers
         from .helpers.logging_config import setup_ai_ops_logging
         from .signals import (
-            assign_mcp_server_statuses,
-            assign_system_prompt_statuses,
-            create_default_llm_providers,
-            create_default_middleware_types,
             setup_chat_session_cleanup_schedule,
             setup_checkpoint_cleanup_schedule,
             # setup_mcp_health_check_schedule,
@@ -94,10 +90,10 @@ class AiOpsConfig(NautobotAppConfig):
         # Handles both development (auto-reloader) and production (SIGTERM/SIGINT) scenarios
         register_shutdown_handlers()
 
-        nautobot_database_ready.connect(assign_mcp_server_statuses, sender=self)
-        nautobot_database_ready.connect(assign_system_prompt_statuses, sender=self)
-        nautobot_database_ready.connect(create_default_llm_providers, sender=self)
-        nautobot_database_ready.connect(create_default_middleware_types, sender=self)
+        # NOTE: Default data (providers, middleware types, statuses) is now populated via
+        # migration 0006_populate_default_data.py instead of signals for better consistency
+
+        # Job scheduling signals (still run on app ready)
         nautobot_database_ready.connect(setup_checkpoint_cleanup_schedule, sender=self)
         # nautobot_database_ready.connect(setup_mcp_health_check_schedule, sender=self)
         nautobot_database_ready.connect(setup_chat_session_cleanup_schedule, sender=self)
