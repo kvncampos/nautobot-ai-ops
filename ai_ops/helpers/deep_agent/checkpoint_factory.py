@@ -6,6 +6,7 @@ Supports both Redis and PostgreSQL checkpointers.
 Adapted from network-agent to work with Django configuration.
 """
 
+import asyncio
 import logging
 from datetime import datetime, timedelta
 from typing import Union
@@ -27,6 +28,11 @@ _pool_creation_times: dict[str, datetime] = {}
 
 # Global Redis checkpointers per agent - initialized once and reused
 _redis_checkpointers: dict[str, AsyncRedisSaver] = {}
+
+# Track which event loop each checkpointer/pool was created in
+# This prevents "Event loop is closed" errors when Django switches event loops
+_checkpointer_event_loops: dict[str, int] = {}
+_pool_event_loops: dict[str, int] = {}
 
 
 async def _get_connection_string_from_django(agent_name: str) -> str:
@@ -112,6 +118,13 @@ async def get_checkpointer(agent_name: str = "deep_agent") -> Union[AsyncRedisSa
 
     # Use Redis if REDIS_URL is configured
     if redis_url:
+        # Check if we need to recreate checkpointer due to event loop change
+        try:
+            current_loop = asyncio.get_running_loop()
+            current_loop_id = id(current_loop)
+        except RuntimeError:
+            current_loop_id = None
+
         # Get or create Redis checkpointer for this agent
         if agent_name not in _redis_checkpointers:
             logger.info(f"[{agent_name}] Creating new AsyncRedisSaver with TTL={default_ttl}s")
@@ -122,6 +135,7 @@ async def get_checkpointer(agent_name: str = "deep_agent") -> Union[AsyncRedisSa
                 await checkpointer.asetup()
 
                 _redis_checkpointers[agent_name] = checkpointer
+                _checkpointer_event_loops[agent_name] = current_loop_id
                 logger.info(f"[{agent_name}] ✓ Redis checkpointer created successfully")
                 return _redis_checkpointers[agent_name]
             except Exception as redis_error:
@@ -141,11 +155,68 @@ async def get_checkpointer(agent_name: str = "deep_agent") -> Union[AsyncRedisSa
                     )
                     # Fall through to PostgreSQL below
         else:
-            return _redis_checkpointers[agent_name]
+            # Checkpointer exists - verify it's compatible with current event loop
+            stored_loop_id = _checkpointer_event_loops.get(agent_name)
+            if stored_loop_id is not None and current_loop_id is not None and stored_loop_id != current_loop_id:
+                logger.warning(
+                    f"[{agent_name}] Event loop changed (old={stored_loop_id}, new={current_loop_id}). "
+                    f"Recreating Redis checkpointer to prevent 'Event loop is closed' errors."
+                )
+                # Close old checkpointer
+                try:
+                    if hasattr(_redis_checkpointers[agent_name], "_redis"):
+                        await _redis_checkpointers[agent_name]._redis.aclose()
+                except Exception as close_error:
+                    logger.debug(f"[{agent_name}] Error closing old checkpointer: {close_error}")
+
+                # Recreate checkpointer with new event loop
+                try:
+                    checkpointer = AsyncRedisSaver(redis_url, ttl=ttl_config)
+                    await checkpointer.asetup()
+                    _redis_checkpointers[agent_name] = checkpointer
+                    _checkpointer_event_loops[agent_name] = current_loop_id
+                    logger.info(f"[{agent_name}] ✓ Redis checkpointer recreated for new event loop")
+                except Exception as redis_error:
+                    logger.warning(f"[{agent_name}] Failed to recreate Redis checkpointer: {redis_error}")
+                    # Fall through to PostgreSQL below
+                    # Remove failed checkpointer from cache
+                    del _redis_checkpointers[agent_name]
+                    del _checkpointer_event_loops[agent_name]
+                else:
+                    return _redis_checkpointers[agent_name]
+            else:
+                # Event loop hasn't changed, return cached checkpointer
+                return _redis_checkpointers[agent_name]
 
     # Fall back to PostgreSQL
     # Check if using Azure service principal authentication
     auth_method = os.environ.get("DB_AUTH_METHOD", "basic").lower()
+
+    # Get current event loop for pool binding check
+    try:
+        current_loop = asyncio.get_running_loop()
+        current_loop_id = id(current_loop)
+    except RuntimeError:
+        current_loop_id = None
+
+    # Check if pool needs to be recreated due to event loop change
+    if agent_name in _connection_pools:
+        stored_loop_id = _pool_event_loops.get(agent_name)
+        if stored_loop_id is not None and current_loop_id is not None and stored_loop_id != current_loop_id:
+            logger.warning(
+                f"[{agent_name}] Event loop changed for connection pool (old={stored_loop_id}, new={current_loop_id}). "
+                f"Recreating pool to prevent 'Event loop is closed' errors."
+            )
+            # Close old pool
+            try:
+                await _connection_pools[agent_name].close()
+            except Exception as close_error:
+                logger.debug(f"[{agent_name}] Error closing old connection pool: {close_error}")
+            del _connection_pools[agent_name]
+            if agent_name in _pool_creation_times:
+                del _pool_creation_times[agent_name]
+            if agent_name in _pool_event_loops:
+                del _pool_event_loops[agent_name]
 
     # For Azure auth, check if pool needs to be recreated due to token expiry
     if auth_method == "service_principal" and agent_name in _connection_pools:
@@ -157,6 +228,8 @@ async def get_checkpointer(agent_name: str = "deep_agent") -> Union[AsyncRedisSa
             await _connection_pools[agent_name].close()
             del _connection_pools[agent_name]
             del _pool_creation_times[agent_name]
+            if agent_name in _pool_event_loops:
+                del _pool_event_loops[agent_name]
 
     # Get or create connection pool for this agent
     if agent_name not in _connection_pools:
@@ -185,6 +258,7 @@ async def get_checkpointer(agent_name: str = "deep_agent") -> Union[AsyncRedisSa
 
         await pool.open()
         _connection_pools[agent_name] = pool
+        _pool_event_loops[agent_name] = current_loop_id  # Track event loop binding
 
         logger.info(
             f"[{agent_name}] AsyncPostgresConnection pool created: max_size={pool_max_size}, min_size={pool_min_size}"
@@ -210,6 +284,7 @@ async def close_all_pools():
             await checkpointer._redis.aclose()
 
     _redis_checkpointers.clear()
+    _checkpointer_event_loops.clear()
 
     # Close PostgreSQL connection pools
     for agent_name, pool in _connection_pools.items():
@@ -217,4 +292,6 @@ async def close_all_pools():
         await pool.close()
 
     _connection_pools.clear()
+    _pool_creation_times.clear()
+    _pool_event_loops.clear()
     logger.info("All checkpointer pools closed successfully")

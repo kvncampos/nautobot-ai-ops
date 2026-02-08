@@ -73,11 +73,16 @@ class AzureAIHandler(BaseLLMProviderHandler):
                 "langchain-openai is required for Azure AI provider. Install it with: pip install langchain-openai"
             ) from e
 
-        # Get endpoint from config or environment
-        azure_endpoint = self.config.get("azure_endpoint") or os.getenv("AZURE_OPENAI_ENDPOINT")
+        # Get endpoint - prioritize kwargs (model_config), then provider config, then environment
+        azure_endpoint = (
+            kwargs.pop("azure_endpoint", None)
+            or kwargs.pop("endpoint", None)  # Support both azure_endpoint and endpoint
+            or self.config.get("azure_endpoint")
+            or os.getenv("AZURE_OPENAI_ENDPOINT")
+        )
         if not azure_endpoint:
             raise ValueError(
-                "Azure endpoint not provided. Set via config or AZURE_OPENAI_ENDPOINT environment variable."
+                "Azure endpoint not provided. Set via model_config, provider config, or AZURE_OPENAI_ENDPOINT environment variable."
             )
 
         # Get API key from parameter or environment
@@ -87,8 +92,12 @@ class AzureAIHandler(BaseLLMProviderHandler):
                 "Azure OpenAI API key not provided. Set via parameter or AZURE_OPENAI_API_KEY environment variable."
             )
 
-        # Get API version from config or environment
-        api_version = self.config.get("api_version") or os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
+        # Get API version - prioritize kwargs (model_config), then provider config, then environment
+        api_version = (
+            kwargs.pop("api_version", None)
+            or self.config.get("api_version")
+            or os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
+        )
 
         logger.info(
             f"Initializing AzureChatOpenAI with deployment={model_name}, "

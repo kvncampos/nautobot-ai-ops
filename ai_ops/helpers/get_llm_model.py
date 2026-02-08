@@ -82,14 +82,19 @@ async def get_llm_model_async(
             f"Getting chat model: name={llm_model.name}, provider={provider_instance.name}, temperature={temperature}"
         )
 
+        # Merge model_config from database with runtime kwargs
+        # Runtime kwargs take precedence over model_config
+        merged_kwargs = {**llm_model.model_config, **kwargs}
+
         # Get the chat model from the provider handler
         chat_model = await handler.get_chat_model(
             model_name=llm_model.name,
             api_key=api_key,
             temperature=temperature,
-            **kwargs,
+            **merged_kwargs,  # Passes both DB config and runtime overrides
         )
 
+        logger.debug(f"Model config merged: db={llm_model.model_config}, runtime={kwargs}")
         logger.info(f"Successfully initialized chat model: {llm_model.name} ({provider_instance.name})")
         return chat_model
 

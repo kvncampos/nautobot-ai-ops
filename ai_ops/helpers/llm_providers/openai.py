@@ -76,6 +76,14 @@ class OpenAIHandler(BaseLLMProviderHandler):
         if not api_key:
             raise ValueError("OpenAI API key not provided. Set via parameter or OPENAI_API_KEY environment variable.")
 
+        # Get base_url - prioritize kwargs (model_config), then provider config, then default
+        # Support both 'base_url' and 'endpoint' as aliases
+        base_url = (
+            kwargs.pop("base_url", None) or kwargs.pop("endpoint", None) or self.config.get("base_url") or None
+        )
+        if base_url:
+            kwargs["base_url"] = base_url
+
         logger.info(f"Initializing ChatOpenAI with model={model_name}, temperature={temperature}")
 
         return ChatOpenAI(

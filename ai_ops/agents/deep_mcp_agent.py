@@ -38,6 +38,7 @@ from ai_ops.helpers.deep_agent import (
     load_agents,
 )
 from ai_ops.helpers.get_llm_model import get_llm_model_async
+from ai_ops.helpers.get_middleware import get_middleware
 from ai_ops.helpers.logging_config import (
     generate_correlation_id,
     set_user,
@@ -147,34 +148,37 @@ async def build_deep_agent(
             )
             raise
 
-        # Create middleware
-        middleware = []
+        # Get middleware from database (fresh instances to prevent state leaks)
+        middleware = await get_middleware(llm_model)
+        logger.info(f"[{AGENT_NAME}] ✓ Middleware loaded from database: {len(middleware)} middleware components")
 
-        # Add semantic cache if enabled (requires Redis)
-        import os
+        # BACKWARD COMPATIBILITY: Fallback to env vars if no DB middleware configured
+        if len(middleware) == 0:
+            logger.warning(f"[{AGENT_NAME}] No database middleware configured, using env var fallback")
 
-        if os.getenv("SEMANTIC_CACHE_REDIS_URL") or os.getenv("REDIS_URL"):
-            try:
-                embed_model = create_embedding_model(AGENT_NAME)
-                ttl = int(os.getenv("SEMANTIC_CACHE_TTL", "30"))
-                threshold = float(os.getenv("SEMANTIC_CACHE_THRESHOLD", "0.05"))
+            # Add semantic cache if Redis configured
+            if os.getenv("SEMANTIC_CACHE_REDIS_URL") or os.getenv("REDIS_URL"):
+                try:
+                    embed_model = create_embedding_model(AGENT_NAME)
+                    ttl = int(os.getenv("SEMANTIC_CACHE_TTL", "30"))
+                    threshold = float(os.getenv("SEMANTIC_CACHE_THRESHOLD", "0.05"))
 
-                middleware.append(
-                    SemanticCacheMiddleware(
-                        embed_model=embed_model,
-                        ttl=ttl,
-                        distance_threshold=threshold,
-                        cache_name=f"{AGENT_NAME}_llm_cache",
+                    middleware.append(
+                        SemanticCacheMiddleware(
+                            embed_model=embed_model,
+                            ttl=ttl,
+                            distance_threshold=threshold,
+                            cache_name=f"{AGENT_NAME}_llm_cache",
+                        )
                     )
-                )
-                logger.info(f"[{AGENT_NAME}] Semantic caching enabled (ttl={ttl}s, threshold={threshold})")
-            except Exception as e:
-                logger.warning(f"[{AGENT_NAME}] Failed to enable semantic caching: {e}")
+                    logger.info(f"[{AGENT_NAME}] Semantic cache enabled from env vars (ttl={ttl}s, threshold={threshold})")
+                except Exception as e:
+                    logger.warning(f"[{AGENT_NAME}] Failed to enable semantic caching from env vars: {e}")
 
-        # Add tool error handler
-        max_retries = int(os.getenv("TOOL_MAX_RETRIES", "2"))
-        middleware.append(ToolErrorHandlerMiddleware(max_retries=max_retries))
-        logger.info(f"[{AGENT_NAME}] ✓ Middleware stack created: {len(middleware)} middleware components")
+            # Add tool error handler
+            max_retries = int(os.getenv("TOOL_MAX_RETRIES", "2"))
+            middleware.append(ToolErrorHandlerMiddleware(max_retries=max_retries))
+            logger.info(f"[{AGENT_NAME}] Tool error handler enabled from env vars (max_retries={max_retries})")
 
         # Get system prompt with tool info injected
         system_prompt = await sync_to_async(get_active_prompt)(llm_model, tools=mcp_tools)
@@ -314,6 +318,32 @@ async def process_message(
     except asyncio.TimeoutError:
         logger.error(f"[{AGENT_NAME}] [timeout] correlation_id={correlation_id}")
         return "Request timed out after 120 seconds. Please try a simpler query."
+
+    except RuntimeError as e:
+        # Handle event loop errors (closed loop, wrong loop, etc.)
+        if "event loop" in str(e).lower() or "loop" in str(e).lower():
+            logger.error(
+                f"[{AGENT_NAME}] [event_loop_error] correlation_id={correlation_id} "
+                f"details={e}. This may indicate cached resources bound to a closed event loop.",
+                exc_info=True,
+            )
+            # Clear cached resources to force recreation on next request
+            from ai_ops.helpers.deep_agent.checkpoint_factory import _connection_pools, _redis_checkpointers
+            from ai_ops.helpers.deep_agent.store_factory import _redis_stores
+
+            # Clear caches to force fresh connections next time
+            _redis_checkpointers.clear()
+            _connection_pools.clear()
+            _redis_stores.clear()
+            logger.warning(f"[{AGENT_NAME}] Cleared cached checkpointers and stores due to event loop error")
+
+            return (
+                "An internal error occurred (event loop issue). "
+                "The system has been reset. Please try your request again."
+            )
+        else:
+            # Re-raise if not an event loop error
+            raise
 
     except Exception as e:
         logger.error(f"[{AGENT_NAME}] [error] correlation_id={correlation_id} details={e}", exc_info=True)

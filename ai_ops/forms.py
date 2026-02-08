@@ -79,6 +79,29 @@ class LLMProviderFilterForm(NautobotFilterForm):
 class LLMModelForm(NautobotModelForm):  # pylint: disable=too-many-ancestors
     """LLMModel creation/edit form."""
 
+    model_config = forms.JSONField(
+        required=False,
+        initial=dict,
+        help_text=(
+            "Model-specific configuration as JSON. See Documentation URL field for provider-specific parameters.<br><br>"
+            "<strong>Common parameters:</strong><br>"
+            "• max_tokens: Maximum tokens in response<br>"
+            "• top_p: Nucleus sampling threshold (0.0-1.0)<br>"
+            "• top_k: Top-k sampling limit<br>"
+            "• presence_penalty: Penalize token repetition (-2.0 to 2.0)<br>"
+            "• frequency_penalty: Penalize frequent tokens (-2.0 to 2.0)<br><br>"
+            "<strong>Provider-specific parameters:</strong><br>"
+            "• azure_endpoint: Azure OpenAI endpoint URL (e.g., 'https://your-resource.openai.azure.com/')<br>"
+            "• api_version: Azure API version (e.g., '2024-02-15-preview')<br>"
+            "• base_url: Custom endpoint for OpenAI/Ollama (e.g., 'http://localhost:11434')<br><br>"
+            "<strong>Example for Azure:</strong><br>"
+            "<code>{'azure_endpoint': 'https://my-resource.openai.azure.com/', 'api_version': '2024-02-15-preview', 'max_tokens': 4096}</code><br>"
+            "<strong>Example for Ollama:</strong><br>"
+            "<code>{'base_url': 'http://localhost:11434', 'num_predict': 2048}</code>"
+        ),
+        widget=forms.Textarea(attrs={'rows': 8, 'class': 'json-field'}),
+    )
+
     class Meta:
         """Meta attributes."""
 
@@ -91,9 +114,11 @@ class LLMModelBulkEditForm(TagsBulkEditFormMixin, NautobotBulkEditForm):  # pyli
 
     pk = forms.ModelMultipleChoiceField(queryset=models.LLMModel.objects.all(), widget=forms.MultipleHiddenInput)
     description = forms.CharField(required=False, max_length=CHARFIELD_MAX_LENGTH)
+    documentation_url = forms.URLField(
+        required=False,
+        help_text="Link to LangChain documentation for this model's provider",
+    )
     model_secret_key = forms.CharField(required=False, max_length=CHARFIELD_MAX_LENGTH)
-    azure_endpoint = forms.URLField(required=False)
-    api_version = forms.CharField(required=False, max_length=50)
     is_default = forms.BooleanField(
         required=False,
         widget=forms.Select(
@@ -112,16 +137,24 @@ class LLMModelBulkEditForm(TagsBulkEditFormMixin, NautobotBulkEditForm):  # pyli
         label="System Prompt",
         help_text="Assign a system prompt to selected models. Only 'Approved' prompts will be used.",
     )
+    model_config = forms.JSONField(
+        required=False,
+        help_text=(
+            "Model configuration parameters (JSON). "
+            "Includes max_tokens, top_p, azure_endpoint, api_version, base_url, etc."
+        ),
+        widget=forms.Textarea(attrs={'rows': 4}),
+    )
 
     class Meta:
         """Meta attributes."""
 
         nullable_fields = [
             "description",
+            "documentation_url",
             "model_secret_key",
-            "azure_endpoint",
-            "api_version",
             "system_prompt",
+            "model_config",
         ]
 
 
