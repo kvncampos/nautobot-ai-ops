@@ -2,7 +2,6 @@
 
 This agent provides advanced features from network-agent including:
 - Langfuse LLM observability
-- Semantic caching with embeddings
 - Tool error retry with backoff
 - Subagent delegation
 - Skills system
@@ -25,13 +24,12 @@ from typing import Callable
 from asgiref.sync import sync_to_async
 from deepagents import create_deep_agent
 from deepagents.backends import CompositeBackend, FilesystemBackend, StoreBackend
-from langchain_core.messages import HumanMessage
+from langchain_anthropic import ChatAnthropic
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 
 from ai_ops.helpers.deep_agent import (
-    SemanticCacheMiddleware,
     ToolErrorHandlerMiddleware,
-    create_embedding_model,
     get_checkpointer,
     get_mcp_tools_with_auth,
     get_store,
@@ -152,28 +150,9 @@ async def build_deep_agent(
         middleware = await get_middleware(llm_model)
         logger.info(f"[{AGENT_NAME}] ✓ Middleware loaded from database: {len(middleware)} middleware components")
 
-        # BACKWARD COMPATIBILITY: Fallback to env vars if no DB middleware configured
+        # Fallback to env vars if no DB middleware configured
         if len(middleware) == 0:
             logger.warning(f"[{AGENT_NAME}] No database middleware configured, using env var fallback")
-
-            # Add semantic cache if Redis configured
-            if os.getenv("SEMANTIC_CACHE_REDIS_URL") or os.getenv("REDIS_URL"):
-                try:
-                    embed_model = create_embedding_model(AGENT_NAME)
-                    ttl = int(os.getenv("SEMANTIC_CACHE_TTL", "30"))
-                    threshold = float(os.getenv("SEMANTIC_CACHE_THRESHOLD", "0.05"))
-
-                    middleware.append(
-                        SemanticCacheMiddleware(
-                            embed_model=embed_model,
-                            ttl=ttl,
-                            distance_threshold=threshold,
-                            cache_name=f"{AGENT_NAME}_llm_cache",
-                        )
-                    )
-                    logger.info(f"[{AGENT_NAME}] Semantic cache enabled from env vars (ttl={ttl}s, threshold={threshold})")
-                except Exception as e:
-                    logger.warning(f"[{AGENT_NAME}] Failed to enable semantic caching from env vars: {e}")
 
             # Add tool error handler
             max_retries = int(os.getenv("TOOL_MAX_RETRIES", "2"))
@@ -187,7 +166,20 @@ async def build_deep_agent(
         if not mcp_tools:
             system_prompt += "\n\nNote: You currently have no tools available. Respond directly to user queries without attempting to call any functions or tools."
 
-        logger.info(f"[{AGENT_NAME}] ✓ System prompt loaded: {len(system_prompt)} chars")
+        # For Anthropic models, structure system prompt as SystemMessage with explicit
+        # cache_control breakpoints so the large system prompt is cached at the API level
+        if isinstance(llm, ChatAnthropic):
+            system_prompt_input = SystemMessage(content=[
+                {
+                    "type": "text",
+                    "text": system_prompt,
+                    "cache_control": {"type": "ephemeral"},
+                },
+            ])
+            logger.info(f"[{AGENT_NAME}] ✓ System prompt structured as SystemMessage with cache_control: {len(system_prompt)} chars")
+        else:
+            system_prompt_input = system_prompt
+            logger.info(f"[{AGENT_NAME}] ✓ System prompt loaded: {len(system_prompt)} chars")
 
         # Load subagents if configuration exists
         subagents_path = AGENT_DIR / "agents" / "subagents.yaml"
@@ -232,7 +224,7 @@ async def build_deep_agent(
             ),
             model=llm,
             subagents=subagents if subagents else None,
-            system_prompt=system_prompt,
+            system_prompt=system_prompt_input,
         )
         logger.info(f"[{AGENT_NAME}] ✓ create_deep_agent completed successfully")
 
@@ -310,6 +302,19 @@ async def process_message(
         response_text = getattr(last_message, "content", None) or "No response generated"
 
         duration_ms = (time.perf_counter() - request_start_time) * 1000
+
+        # Log prompt cache performance metrics if available (Anthropic)
+        usage_metadata = getattr(last_message, "usage_metadata", None)
+        if usage_metadata:
+            cache_creation = usage_metadata.get("cache_creation_input_tokens", 0)
+            cache_read = usage_metadata.get("cache_read_input_tokens", 0)
+            input_tokens = usage_metadata.get("input_tokens", 0)
+            logger.info(
+                f"[{AGENT_NAME}] [CacheMetrics] correlation_id={correlation_id} "
+                f"cache_creation={cache_creation} cache_read={cache_read} "
+                f"input_tokens={input_tokens}"
+            )
+
         logger.info(f"[{AGENT_NAME}] [RequestCompleted] correlation_id={correlation_id} duration_ms={duration_ms:.1f}")
 
         return str(response_text)

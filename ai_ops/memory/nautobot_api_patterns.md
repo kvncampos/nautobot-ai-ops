@@ -36,6 +36,7 @@
 - `/api/circuits/` - Circuits, providers, circuit terminations
 - `/api/tenancy/` - Tenants, tenant groups
 - `/api/extras/` - Tags, custom fields, config contexts, jobs
+- `/api/plugins/` - Path to Custom Nautobot Plugins
 
 ## Common 404/400 Causes
 

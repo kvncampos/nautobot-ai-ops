@@ -31,30 +31,6 @@ class Command(BaseCommand):
 
         created = 0
 
-        # Migrate SemanticCacheMiddleware if Redis configured
-        if os.getenv("SEMANTIC_CACHE_REDIS_URL") or os.getenv("REDIS_URL"):
-            mw_type, _ = MiddlewareType.objects.get_or_create(
-                name="SemanticCacheMiddleware",
-                defaults={"description": "LLM response caching using semantic similarity", "is_custom": True},
-            )
-
-            config = {
-                "ttl": int(os.getenv("SEMANTIC_CACHE_TTL", "30")),
-                "distance_threshold": float(os.getenv("SEMANTIC_CACHE_THRESHOLD", "0.05")),
-                "cache_name": "deep_agent_llm_cache",
-            }
-
-            LLMMiddleware.objects.create(
-                llm_model=default_model,
-                middleware=mw_type,
-                config=config,
-                priority=10,
-                is_active=True,
-                is_critical=False,
-            )
-            created += 1
-            self.stdout.write(self.style.SUCCESS(f"✓ Created SemanticCacheMiddleware with config: {config}"))
-
         # Migrate ToolErrorHandlerMiddleware (always added)
         mw_type, _ = MiddlewareType.objects.get_or_create(
             name="ToolErrorHandlerMiddleware",
