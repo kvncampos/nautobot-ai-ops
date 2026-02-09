@@ -199,13 +199,12 @@ async def build_deep_agent(
         skills_path = str(skills_dir) if skills_dir.exists() else None
         logger.info(f"[{AGENT_NAME}] ✓ Skills {'found' if skills_path else 'not found'}: {skills_path}")
 
-        # Get prompts directory for memory
-        prompts_dir = AGENT_DIR / "prompts"
+        # Get memory directory for agent context
+        memory_dir = AGENT_DIR / "memory"
         memory_files = []
-        if prompts_dir.exists():
-            # Look for system prompt markdown files
-            for prompt_file in prompts_dir.glob("*.md"):
-                memory_files.append(str(prompt_file))
+        if memory_dir.exists():
+            for memory_file in memory_dir.glob("*.md"):
+                memory_files.append(str(memory_file))
         logger.info(f"[{AGENT_NAME}] ✓ Memory files loaded: {len(memory_files)} files")
 
         logger.info(
