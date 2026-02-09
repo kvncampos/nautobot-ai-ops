@@ -169,14 +169,18 @@ async def build_deep_agent(
         # For Anthropic models, structure system prompt as SystemMessage with explicit
         # cache_control breakpoints so the large system prompt is cached at the API level
         if isinstance(llm, ChatAnthropic):
-            system_prompt_input = SystemMessage(content=[
-                {
-                    "type": "text",
-                    "text": system_prompt,
-                    "cache_control": {"type": "ephemeral"},
-                },
-            ])
-            logger.info(f"[{AGENT_NAME}] ✓ System prompt structured as SystemMessage with cache_control: {len(system_prompt)} chars")
+            system_prompt_input = SystemMessage(
+                content=[
+                    {
+                        "type": "text",
+                        "text": system_prompt,
+                        "cache_control": {"type": "ephemeral"},
+                    },
+                ]
+            )
+            logger.info(
+                f"[{AGENT_NAME}] ✓ System prompt structured as SystemMessage with cache_control: {len(system_prompt)} chars"
+            )
         else:
             system_prompt_input = system_prompt
             logger.info(f"[{AGENT_NAME}] ✓ System prompt loaded: {len(system_prompt)} chars")
