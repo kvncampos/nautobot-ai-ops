@@ -199,9 +199,9 @@ def populate_system_prompt_statuses(apps, schema_editor):
     # Create default file-based system prompt if none exists
     if approved_status and not SystemPrompt.objects.exists():
         SystemPrompt.objects.create(
-            name="Multi-MCP Default",
+            name="Default System Prompt",
             is_file_based=True,
-            prompt_file_name="multi_mcp_system_prompt",
+            prompt_file_name="system_prompt",
             status=approved_status,
             prompt_text=None,
         )
@@ -220,7 +220,7 @@ def reverse_populate_system_prompt_statuses(apps, schema_editor):
             status_record.content_types.remove(ContentType.objects.get_for_model(model_class))
 
     # Remove default system prompt
-    SystemPrompt.objects.filter(name="Multi-MCP Default").delete()
+    SystemPrompt.objects.filter(name="Default System Prompt").delete()
 
 
 def populate_mcp_server_statuses(apps, schema_editor):
