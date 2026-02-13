@@ -314,7 +314,6 @@ class ChatMessageView(GenericView):
             # Get user's API token for MCP authentication
             user_token = None
             if request.user.is_authenticated:
-                from asgiref.sync import sync_to_async
                 from nautobot.users.models import Token
 
                 # Get the first active token for this user

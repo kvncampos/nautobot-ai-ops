@@ -1,5 +1,6 @@
 """
 Checkpoint factory utilities for LangGraph deep agents in ai-ops.
+
 Provides reusable checkpoint configuration with connection pooling.
 Supports both Redis and PostgreSQL checkpointers.
 
@@ -274,6 +275,7 @@ async def get_checkpointer(agent_name: str = "deep_agent") -> Union[AsyncRedisSa
 async def close_all_pools():
     """
     Close all connection pools and Redis checkpointers gracefully.
+
     Should be called during application shutdown.
     """
     # Close Redis checkpointers

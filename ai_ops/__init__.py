@@ -78,7 +78,6 @@ class AiOpsConfig(NautobotAppConfig):
         from .signals import (
             setup_chat_session_cleanup_schedule,
             setup_checkpoint_cleanup_schedule,
-            # setup_mcp_health_check_schedule,
         )
 
         logger = logging.getLogger(__name__)

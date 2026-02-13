@@ -493,7 +493,7 @@ class SystemPromptTestCase(TestCase, TestDataMixin):
             name=f"ModelTest_ValidFile_{int(time.time())}",
             status=approved_status,
             is_file_based=True,
-            prompt_file_name="multi_mcp_system_prompt",
+            prompt_file_name="system_prompt",
         )
         prompt.clean()  # Should not raise
 

@@ -54,11 +54,9 @@ class Command(BaseCommand):
             is_critical=False,
         )
 
-        self.stdout.write(self.style.SUCCESS(f"✓ Created ToolResultCacheMiddleware with config:"))
-        self.stdout.write(f"  Schema tool (mcp_nautobot_openapi_api_request_schema): TTL=600s")
-        self.stdout.write(f"  API tool (mcp_nautobot_dynamic_api_request): TTL=60s, skip POST/PUT/DELETE/PATCH")
-        self.stdout.write(f"  Priority: 15 (runs before ToolErrorHandler)")
-        self.stdout.write(
-            self.style.SUCCESS(f"\n✓ Registered for model '{default_model.name}'")
-        )
+        self.stdout.write(self.style.SUCCESS("✓ Created ToolResultCacheMiddleware with config:"))
+        self.stdout.write("  Schema tool (mcp_nautobot_openapi_api_request_schema): TTL=600s")
+        self.stdout.write("  API tool (mcp_nautobot_dynamic_api_request): TTL=60s, skip POST/PUT/DELETE/PATCH")
+        self.stdout.write("  Priority: 15 (runs before ToolErrorHandler)")
+        self.stdout.write(self.style.SUCCESS(f"\n✓ Registered for model '{default_model.name}'"))
         self.stdout.write("Configure via Nautobot UI under AI Ops > LLM Middleware")

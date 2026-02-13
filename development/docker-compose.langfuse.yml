@@ -1,6 +1,6 @@
 ---
 # Langfuse Observability Stack for Nautobot AI Ops
-# 
+
 # This compose file adds Langfuse LLM observability to the development environment.
 # Langfuse provides LLM tracing, prompt management, and evaluation capabilities.
 #
@@ -24,16 +24,16 @@
 
 services:
   langfuse-web:
-    image: langfuse/langfuse:3
+    image: "langfuse/langfuse:3"
     depends_on:
       db:
-        condition: service_healthy
+        condition: "service_healthy"
       clickhouse:
-        condition: service_healthy
+        condition: "service_healthy"
       redis:
-        condition: service_healthy
+        condition: "service_healthy"
       minio:
-        condition: service_healthy
+        condition: "service_healthy"
     ports:
       - "8000:3000"
     env_file:
@@ -41,77 +41,74 @@ services:
       - "creds.env"
 
   langfuse-worker:
-    image: langfuse/langfuse-worker:3
+    image: "langfuse/langfuse-worker:3"
     depends_on:
       db:
-        condition: service_healthy
+        condition: "service_healthy"
       clickhouse:
-        condition: service_healthy
+        condition: "service_healthy"
       redis:
-        condition: service_healthy
+        condition: "service_healthy"
       minio:
-        condition: service_healthy
+        condition: "service_healthy"
     env_file:
       - "development.env"
       - "creds.env"
 
   # ClickHouse for Langfuse analytics (separate from Nautobot DB)
   clickhouse:
-    image: clickhouse/clickhouse-server:latest
-    restart: unless-stopped
+    image: "clickhouse/clickhouse-server:latest"
+    restart: "unless-stopped"
     user: "101:101"
     ports:
       - "8123:8123"
       - "9000:9000"
     environment:
-      CLICKHOUSE_DB: default
-      CLICKHOUSE_USER: default
-      CLICKHOUSE_PASSWORD: changeme
+      CLICKHOUSE_DB: "default"
+    env_file:
+      - "creds.env"
     volumes:
-      - clickhouse_data:/var/lib/clickhouse
-      - clickhouse_logs:/var/log/clickhouse-server
+      - "clickhouse_data:/var/lib/clickhouse"
+      - "clickhouse_logs:/var/log/clickhouse-server"
     ulimits:
       nofile:
         soft: 262144
         hard: 262144
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
-      interval: 10s
-      timeout: 5s
+      interval: "10s"
+      timeout: "5s"
       retries: 5
-      start_period: 10s
+      start_period: "10s"
 
   # MinIO - Local S3-compatible storage
   # Can be disabled when using Azure Blob (LANGFUSE_USE_AZURE_BLOB=true)
   minio:
-    image: cgr.dev/chainguard/minio:latest
-    restart: unless-stopped
-    entrypoint: sh
+    image: "cgr.dev/chainguard/minio:latest"
+    restart: "unless-stopped"
+    entrypoint: "sh"
     # Create all required buckets: events, media, and batch export
-    command: -c 'mkdir -p /data/langfuse-events /data/langfuse-media /data/langfuse-batch && minio server --address ":9000" --console-address ":9001" /data'
+
+    command: -c 'mkdir -p /data/langfuse-events /data/langfuse-media /data/langfuse-batch && minio server --address ":9000" --console-address ":9001" /data'  # yamllint disable-line rule:quoted-strings
     environment:
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: miniosecret
+      MINIO_ROOT_USER: "minio"
+      MINIO_ROOT_PASSWORD: "miniosecret"
     ports:
       - "9002:9000"  # S3 API
       - "9003:9001"  # Web Console
     volumes:
-      - minio_data:/data
+      - "minio_data:/data"
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
-      timeout: 5s
+      interval: "5s"
+      timeout: "5s"
       retries: 5
-      start_period: 5s
-
-  # Note: Ollama service removed - using host machine's Ollama instance instead
-  # No need to run a separate Ollama in Docker when it's already available locally
-  # Configure EMBEDDING_BASE_URL in development.env to point to host.docker.internal
+      start_period: "5s"
 
 volumes:
   clickhouse_data:
-    driver: local
+    driver: "local"
   clickhouse_logs:
-    driver: local
+    driver: "local"
   minio_data:
-    driver: local
+    driver: "local"

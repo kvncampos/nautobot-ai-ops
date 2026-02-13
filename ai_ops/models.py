@@ -286,13 +286,6 @@ class LLMModel(PrimaryModel):  # pylint: disable=too-many-ancestors
     description = models.CharField(
         max_length=CHARFIELD_MAX_LENGTH, blank=True, help_text="Description of the LLM and its capabilities"
     )
-    documentation_url = models.URLField(
-        max_length=500,
-        blank=True,
-        help_text="Link to LangChain documentation for this model's provider (e.g., "
-        "https://python.langchain.com/docs/integrations/chat/openai). "
-        "Helps users understand available model_config parameters.",
-    )
     model_secret_key = models.CharField(
         max_length=CHARFIELD_MAX_LENGTH,
         blank=True,
@@ -375,7 +368,7 @@ class LLMModel(PrimaryModel):  # pylint: disable=too-many-ancestors
                 "is_default": model.is_default,
                 "llm_provider": model.llm_provider.name,
                 "model_config": model.model_config,
-                "documentation_url": model.documentation_url,
+                "documentation_url": model.llm_provider.documentation_url,
             }
             for model in models
         ]

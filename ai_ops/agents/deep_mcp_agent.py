@@ -37,10 +37,12 @@ from ai_ops.helpers.deep_agent import (
 )
 from ai_ops.helpers.get_llm_model import get_llm_model_async
 from ai_ops.helpers.get_middleware import get_middleware
+from ai_ops.helpers.get_prompt import get_active_prompt
 from ai_ops.helpers.logging_config import (
     generate_correlation_id,
     set_user,
 )
+from ai_ops.models import LLMModel
 
 logger = logging.getLogger(__name__)
 
@@ -101,9 +103,6 @@ async def build_deep_agent(
     )
 
     try:
-        from ai_ops.helpers.get_prompt import get_active_prompt
-        from ai_ops.models import LLMModel
-
         # Get LLM model
         if llm_model is None:
             llm_model = await sync_to_async(LLMModel.get_default_model)()

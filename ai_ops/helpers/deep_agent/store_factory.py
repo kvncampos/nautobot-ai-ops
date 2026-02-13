@@ -1,5 +1,6 @@
 """
 Memory store factory utilities for LangGraph deep agents in ai-ops.
+
 Provides reusable memory store configuration for cross-conversation memory.
 Supports both Redis and InMemory stores.
 
@@ -140,6 +141,7 @@ async def get_store(agent_name: str = "deep_agent") -> Union[AsyncRedisStore, In
 async def close_all_stores():
     """
     Close all Redis stores gracefully.
+
     Should be called during application shutdown.
     """
     # Close Redis stores

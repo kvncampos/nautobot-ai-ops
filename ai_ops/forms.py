@@ -99,7 +99,7 @@ class LLMModelForm(NautobotModelForm):  # pylint: disable=too-many-ancestors
             "<strong>Example for Ollama:</strong><br>"
             "<code>{'base_url': 'http://localhost:11434', 'num_predict': 2048}</code>"
         ),
-        widget=forms.Textarea(attrs={'rows': 8, 'class': 'json-field'}),
+        widget=forms.Textarea(attrs={"rows": 8, "class": "json-field"}),
     )
 
     class Meta:
@@ -114,10 +114,6 @@ class LLMModelBulkEditForm(TagsBulkEditFormMixin, NautobotBulkEditForm):  # pyli
 
     pk = forms.ModelMultipleChoiceField(queryset=models.LLMModel.objects.all(), widget=forms.MultipleHiddenInput)
     description = forms.CharField(required=False, max_length=CHARFIELD_MAX_LENGTH)
-    documentation_url = forms.URLField(
-        required=False,
-        help_text="Link to LangChain documentation for this model's provider",
-    )
     model_secret_key = forms.CharField(required=False, max_length=CHARFIELD_MAX_LENGTH)
     is_default = forms.BooleanField(
         required=False,
@@ -143,7 +139,7 @@ class LLMModelBulkEditForm(TagsBulkEditFormMixin, NautobotBulkEditForm):  # pyli
             "Model configuration parameters (JSON). "
             "Includes max_tokens, top_p, azure_endpoint, api_version, base_url, etc."
         ),
-        widget=forms.Textarea(attrs={'rows': 4}),
+        widget=forms.Textarea(attrs={"rows": 4}),
     )
 
     class Meta:
@@ -151,7 +147,6 @@ class LLMModelBulkEditForm(TagsBulkEditFormMixin, NautobotBulkEditForm):  # pyli
 
         nullable_fields = [
             "description",
-            "documentation_url",
             "model_secret_key",
             "system_prompt",
             "model_config",

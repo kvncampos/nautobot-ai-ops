@@ -13,7 +13,7 @@ services:
       - "creds.env"
     healthcheck:
       test: ["CMD-SHELL", "redis-cli -a $$NAUTOBOT_REDIS_PASSWORD ping | grep -q PONG"]
-      interval: 5s
-      timeout: 3s
+      interval: "5s"
+      timeout: "3s"
       retries: 5
-      start_period: 10s
+      start_period: "10s"

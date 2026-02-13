@@ -78,17 +78,15 @@ class OpenAIHandler(BaseLLMProviderHandler):
 
         # Get base_url - prioritize kwargs (model_config), then provider config, then default
         # Support both 'base_url' and 'endpoint' as aliases
-        base_url = (
-            kwargs.pop("base_url", None) or kwargs.pop("endpoint", None) or self.config.get("base_url") or None
-        )
-        if base_url:
-            kwargs["base_url"] = base_url
+        base_url = kwargs.pop("base_url", None) or kwargs.pop("endpoint", None) or self.config.get("base_url") or None
 
         logger.info(f"Initializing ChatOpenAI with model={model_name}, temperature={temperature}")
 
+        # Pass base_url explicitly if set, or pass None to use OpenAI default
         return ChatOpenAI(
             model=model_name,
             api_key=api_key,
+            base_url=base_url,
             temperature=temperature,
             **kwargs,
         )

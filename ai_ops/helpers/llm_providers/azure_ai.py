@@ -80,10 +80,16 @@ class AzureAIHandler(BaseLLMProviderHandler):
             or self.config.get("azure_endpoint")
             or os.getenv("AZURE_OPENAI_ENDPOINT")
         )
+
         if not azure_endpoint:
             raise ValueError(
                 "Azure endpoint not provided. Set via model_config, provider config, or AZURE_OPENAI_ENDPOINT environment variable."
             )
+
+        # Remove deprecated parameters that conflict with Azure OpenAI >= 1.0.0
+        # These must not be passed to AzureChatOpenAI
+        kwargs.pop("base_url", None)
+        kwargs.pop("openai_api_base", None)
 
         # Get API key from parameter or environment
         api_key = api_key or os.getenv("AZURE_OPENAI_API_KEY")
