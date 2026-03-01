@@ -9,14 +9,24 @@ import asyncio
 import atexit
 import logging
 import signal
+import threading
+import types
+
+__all__ = ["async_shutdown", "register_shutdown_handlers", "reset_shutdown_state"]
 
 logger = logging.getLogger(__name__)
 
-# Track if shutdown has been initiated to prevent duplicate cleanup
+# Module-level lock protecting both _shutdown_initiated and _handlers_registered
+_module_lock = threading.Lock()
+
+# Tracks whether async_shutdown() has already run to prevent duplicate cleanup
 _shutdown_initiated = False
 
+# Tracks whether register_shutdown_handlers() has already registered handlers
+_handlers_registered = False
+
 # Note: This module is imported and used in ai_ops/__init__.py to register atexit and signal handlers.
-# It is safe to call register_shutdown_handlers() multiple times.
+# Call register_shutdown_handlers() once during AppConfig.ready() — it is idempotent.
 
 
 def async_shutdown() -> None:
@@ -26,34 +36,38 @@ def async_shutdown() -> None:
     event loop if needed (since the main loop may already be closed) and
     runs the async cleanup.
 
-    Safe to call multiple times - only performs cleanup once.
+    Thread-safe and idempotent — only performs cleanup on the first call.
     """
     global _shutdown_initiated
 
-    if _shutdown_initiated:
-        logger.debug("Shutdown already initiated, skipping duplicate cleanup")
-        return
+    with _module_lock:
+        if _shutdown_initiated:
+            logger.debug("Shutdown already initiated, skipping duplicate cleanup")
+            return
+        _shutdown_initiated = True
 
-    _shutdown_initiated = True
     logger.info("Initiating graceful async shutdown...")
 
     try:
-        # Try to get the running loop, create new one if needed
         try:
+            # Succeeds only when called from within the running event loop's thread.
             loop = asyncio.get_running_loop()
+            # Cannot block the loop's own thread — schedule cleanup as a best-effort
+            # task. For ASGI apps, prefer handling cleanup in the lifespan shutdown
+            # event to guarantee completion.
+            logger.warning(
+                "Event loop is running in the current thread; "
+                "cleanup scheduled as a best-effort task (may not complete before shutdown)"
+            )
+            loop.create_task(_async_cleanup())
         except RuntimeError:
-            # No running loop - create a new one for cleanup
+            # No running loop in this thread — create a fresh isolated one for cleanup.
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-
-        # Run cleanup with a timeout to prevent hanging
-        if loop.is_running():
-            # If loop is running (e.g., in async context), schedule cleanup
-            asyncio.ensure_future(_async_cleanup())
-        else:
-            # Run cleanup synchronously
-            loop.run_until_complete(asyncio.wait_for(_async_cleanup(), timeout=5.0))
-            loop.close()
+            try:
+                loop.run_until_complete(asyncio.wait_for(_async_cleanup(), timeout=5.0))
+            finally:
+                loop.close()
 
     except asyncio.TimeoutError:
         logger.warning("Async cleanup timed out after 5 seconds")
@@ -62,9 +76,9 @@ def async_shutdown() -> None:
         if "cannot schedule new futures" in str(e):
             logger.debug("Event loop already closed, skipping async cleanup")
         else:
-            logger.warning(f"RuntimeError during async shutdown: {e}")
+            logger.warning("RuntimeError during async shutdown: %s", e)
     except Exception as e:
-        logger.warning(f"Error during async shutdown cleanup: {e}")
+        logger.warning("Error during async shutdown cleanup: %s", e)
 
 
 async def _async_cleanup() -> None:
@@ -82,11 +96,11 @@ async def _async_cleanup() -> None:
 
         cleared_count = await clear_mcp_cache()
         if cleared_count > 0:
-            logger.info(f"Cleared MCP client cache ({cleared_count} servers)")
+            logger.info("Cleared MCP client cache (%d servers)", cleared_count)
     except ImportError:
         logger.debug("MCP agent module not available for cleanup")
     except Exception as e:
-        logger.warning(f"Error clearing MCP cache: {e}")
+        logger.warning("Error clearing MCP cache: %s", e)
 
     # Reset MemorySaver checkpointer
     try:
@@ -99,23 +113,23 @@ async def _async_cleanup() -> None:
     except ImportError:
         logger.debug("Checkpointer module not available for cleanup")
     except Exception as e:
-        logger.warning(f"Error clearing checkpointer: {e}")
+        logger.warning("Error clearing checkpointer: %s", e)
 
     logger.debug("Async cleanup complete")
 
 
-def _signal_handler(signum: int, frame) -> None:
+def _signal_handler(signum: int, frame: types.FrameType | None) -> None:
     """Signal handler for SIGTERM and SIGINT.
 
     Performs graceful shutdown before the interpreter begins shutting down.
     This is called earlier in the shutdown sequence than atexit handlers.
 
     Args:
-        signum: Signal number (e.g., signal.SIGTERM)
-        frame: Current stack frame (unused)
+        signum: Signal number (e.g., signal.SIGTERM).
+        frame: Current stack frame (unused).
     """
     sig_name = signal.Signals(signum).name
-    logger.info(f"Received {sig_name}, initiating graceful shutdown...")
+    logger.info("Received %s, initiating graceful shutdown...", sig_name)
 
     # Perform async cleanup
     async_shutdown()
@@ -135,29 +149,38 @@ def register_shutdown_handlers() -> None:
     - SIGTERM handler for production graceful shutdown (e.g., Kubernetes)
     - SIGINT handler for development Ctrl+C
 
-    Safe to call multiple times - handlers are only registered once.
+    Idempotent — handlers are registered exactly once regardless of how many
+    times this function is called.
     """
+    global _handlers_registered
+
+    with _module_lock:
+        if _handlers_registered:
+            logger.debug("Shutdown handlers already registered, skipping")
+            return
+        _handlers_registered = True
+
     # Register atexit handler (runs during normal interpreter shutdown)
     atexit.register(async_shutdown)
     logger.debug("Registered atexit shutdown handler")
 
-    # Register signal handlers for production shutdown
-    # Only register if we're the main process (not a Gunicorn worker child)
+    # Register signal handlers for production shutdown.
+    # Signals can only be registered from the main thread; failures are non-fatal.
     try:
-        # SIGTERM - sent by Kubernetes/Docker for graceful shutdown
+        # SIGTERM — sent by Kubernetes/Docker for graceful shutdown
         signal.signal(signal.SIGTERM, _signal_handler)
         logger.debug("Registered SIGTERM shutdown handler")
     except (ValueError, OSError) as e:
         # ValueError: signal only works in main thread
         # OSError: can happen in certain contexts
-        logger.debug(f"Could not register SIGTERM handler: {e}")
+        logger.debug("Could not register SIGTERM handler: %s", e)
 
     try:
-        # SIGINT - sent by Ctrl+C in development
+        # SIGINT — sent by Ctrl+C in development
         signal.signal(signal.SIGINT, _signal_handler)
         logger.debug("Registered SIGINT shutdown handler")
     except (ValueError, OSError) as e:
-        logger.debug(f"Could not register SIGINT handler: {e}")
+        logger.debug("Could not register SIGINT handler: %s", e)
 
     logger.info("Async shutdown handlers registered")
 
@@ -166,6 +189,10 @@ def reset_shutdown_state() -> None:
     """Reset shutdown state for testing purposes.
 
     Only use this in test fixtures to reset the global state between tests.
+    Resets both the shutdown-initiated and handler-registration flags.
     """
-    global _shutdown_initiated
-    _shutdown_initiated = False
+    global _shutdown_initiated, _handlers_registered
+
+    with _module_lock:
+        _shutdown_initiated = False
+        _handlers_registered = False

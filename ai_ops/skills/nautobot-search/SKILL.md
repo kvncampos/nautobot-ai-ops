@@ -1,3 +1,8 @@
+---
+name: nautobot-search
+description: Comprehensive search capabilities across Nautobot's inventory including devices, circuits, IP addresses, VLANs, and other network objects.
+---
+
 # Nautobot Search Skill
 
 ## Description

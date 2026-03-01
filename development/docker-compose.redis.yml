@@ -1,9 +1,15 @@
 ---
 services:
   redis:
-    # Using Redis Stack for RediSearch module (required for semantic cache vector search)
+    # Using Redis Stack for RediSearch module (required for LangGraph checkpoint/store index creation).
+    # RediSearch only supports index creation on db=0 — all LangGraph URLs must use /0 explicitly.
+    # Omitting the path also defaults to db=0, but an explicit /0 avoids URL-parse ambiguity
+    # in langgraph-redis / redisvl that can trigger "Cannot create index on db != 0".
     # See: https://redis.io/docs/stack/
-    image: "redis/redis-stack-server:latest"
+    #
+    # Pin to a specific version to avoid silent breaking changes from :latest.
+    # Upgrade deliberately and test RediSearch index creation after any version bump.
+    image: "redis/redis-stack-server:7.2.0-v15"
     command:
       - "sh"
       - "-c"  # this is to evaluate the $NAUTOBOT_REDIS_PASSWORD from the env
@@ -12,8 +18,9 @@ services:
       - "development.env"
       - "creds.env"
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a $$NAUTOBOT_REDIS_PASSWORD ping | grep -q PONG"]
+      # Verify both connectivity and RediSearch module load on startup.
+      test: ["CMD-SHELL", "redis-cli -a $$NAUTOBOT_REDIS_PASSWORD ping | grep -q PONG && redis-cli -a $$NAUTOBOT_REDIS_PASSWORD MODULE LIST | grep -qi search"]
       interval: "5s"
       timeout: "3s"
       retries: 5
-      start_period: "10s"
+      start_period: "15s"

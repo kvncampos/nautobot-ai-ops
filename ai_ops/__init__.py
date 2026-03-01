@@ -5,7 +5,7 @@ import sys
 from importlib import metadata
 from pathlib import Path
 
-from nautobot.apps import ConstanceConfigItem, NautobotAppConfig, nautobot_database_ready
+from nautobot.apps import ConstanceConfigItem, NautobotAppConfig
 
 try:
     __version__ = metadata.version("nautobot-ai-ops")
@@ -75,10 +75,6 @@ class AiOpsConfig(NautobotAppConfig):
 
         from .helpers.async_shutdown import register_shutdown_handlers
         from .helpers.logging_config import setup_ai_ops_logging
-        from .signals import (
-            setup_chat_session_cleanup_schedule,
-            setup_checkpoint_cleanup_schedule,
-        )
 
         logger = logging.getLogger(__name__)
 
@@ -89,36 +85,49 @@ class AiOpsConfig(NautobotAppConfig):
         # Handles both development (auto-reloader) and production (SIGTERM/SIGINT) scenarios
         register_shutdown_handlers()
 
-        # NOTE: Default data (providers, middleware types, statuses) is now populated via
-        # migration 0006_populate_default_data.py instead of signals for better consistency
-
-        # Job scheduling signals (still run on app ready)
-        nautobot_database_ready.connect(setup_checkpoint_cleanup_schedule, sender=self)
-        # nautobot_database_ready.connect(setup_mcp_health_check_schedule, sender=self)
-        nautobot_database_ready.connect(setup_chat_session_cleanup_schedule, sender=self)
+        # NOTE: All default data and scheduled job creation is handled by data migrations
+        # (0006_populate_default_data, 0008_default_scheduled_jobs) so no signals are needed.
 
         # Note: Periodic tasks are handled via Nautobot Jobs (ai_agents.jobs).
         # These jobs can be scheduled through the Nautobot UI for automatic execution.
 
-        # Warm caches on startup (if event loop is available)
-        # During unit tests, there may not be a running event loop
+        # Warm the MCP client cache on startup using a background thread with
+        # its own event loop.  AppConfig.ready() is called synchronously by
+        # Django — there is never a *running* loop here, so loop.create_task()
+        # always falls into the RuntimeError branch and the warmup silently
+        # never runs.  A daemon thread runs the coroutine to completion without
+        # blocking the main thread or the Django startup sequence.
+        #
+        # NOTE: Redis/Postgres async connections (checkpointer, store) are NOT
+        # warmed up here.  Those connections are bound to the event loop they
+        # were created in.  A background thread's loop is always closed before
+        # any Django request loop starts, so the stored connections would be
+        # immediately detected as stale and recreated on the first request
+        # anyway — making the warmup work pointless.  Those connections are
+        # initialised lazily on the first request instead.
         try:
             import asyncio
+            import threading
 
             from ai_ops.agents.multi_mcp_agent import warm_mcp_cache
 
-            # Try to get the running event loop
-            try:
-                loop = asyncio.get_running_loop()
-                # If we have a running loop, schedule the tasks
-                loop.create_task(warm_mcp_cache())
-                logger.info("Scheduled MCP cache warming")
-            except RuntimeError:
-                # No running event loop (e.g., during tests or startup)
-                # This is expected and not an error
-                logger.debug("No running event loop available for cache warming")
+            def _run_startup_warmup() -> None:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    loop.run_until_complete(warm_mcp_cache())
+                finally:
+                    loop.close()
+
+            warmup_thread = threading.Thread(
+                target=_run_startup_warmup,
+                name="ai-ops-startup-warmup",
+                daemon=True,  # won't block interpreter shutdown
+            )
+            warmup_thread.start()
+            logger.info("Started startup warmup thread (MCP cache)")
         except Exception as e:
-            logger.warning(f"Failed to warm caches on startup: {e}")
+            logger.warning(f"Failed to start startup warmup: {e}")
 
         super().ready()
 

@@ -99,6 +99,14 @@ def setup_ai_ops_logging() -> None:
     # Mark as configured
     _logging_configured = True
 
+    # Suppress noisy INFO lines from redisvl (langgraph-checkpoint-redis
+    # dependency).  On every reconnection it logs "Index already exists, not
+    # overwriting." for each RediSearch index — informational noise that carries
+    # no actionable value once the indexes are created the first time.
+    # Setting WARNING on the top-level redisvl logger silences all its INFO
+    # lines regardless of the exact sub-logger name (redisvl.index, etc.).
+    logging.getLogger("redisvl").setLevel(logging.WARNING)
+
     # Log setup confirmation
     logging.getLogger(__name__).info("AI Ops logging configured: concise format")
 

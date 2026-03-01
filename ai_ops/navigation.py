@@ -99,6 +99,9 @@ mcp_items = (
 menu_items = (
     NavMenuTab(
         name="AI Platform",
+        # Custom SVG icon (white version for visibility on dark backgrounds)
+        # File location: ai_ops/static/ai_ops/icons/robot-happy-outline-white.svg
+        icon="ai_ops/icons/robot-happy-outline-white.svg",
         groups=(
             NavMenuGroup(
                 name="Chat & Assistance",

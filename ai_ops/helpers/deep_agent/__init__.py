@@ -14,16 +14,17 @@ architecture including:
 from .agents_loader import load_agents
 from .backend_factory import create_composite_backend
 from .checkpoint_factory import get_checkpointer
-from .mcp_tools_auth import get_mcp_tools_with_auth
+from .mcp_tools_auth import get_mcp_tools
 from .middleware import ToolErrorHandlerMiddleware, ToolResultCacheMiddleware
-from .store_factory import get_store
+from .store_factory import get_store, managed_store
 
 __all__ = [
     "get_checkpointer",
     "get_store",
+    "managed_store",
     "ToolErrorHandlerMiddleware",
     "ToolResultCacheMiddleware",
-    "get_mcp_tools_with_auth",
+    "get_mcp_tools",
     "load_agents",
     "create_composite_backend",
 ]
