@@ -1,6 +1,10 @@
-# Langfuse & Semantic Cache Setup Instructions
+# Langfuse Observability Setup
 
-## Issues Fixed
+## Overview
+
+Langfuse provides full LLM observability for the Deep Agent: every LLM call, tool invocation, and subagent delegation is captured as a trace. This guide covers the complete setup for local development using the included Docker Compose stack.
+
+## Issues Addressed in This Release
 
 ### 1. **Langfuse Authentication Errors** ✅
 **Problem**: Invalid credentials errors in Langfuse logs
@@ -14,48 +18,32 @@ langfuse-web-1 | storing api-key-non-existent in redis
 
 **Solution**: Updated configuration to support proper API key generation workflow.
 
-### 2. **Semantic Cache Ollama Connection** ✅
-**Problem**: Semantic cache failing to connect to Ollama
-```
-[SEMANTIC_CACHE] ⚠ Initialization failed: Failed to connect to Ollama
-```
-
-**Root Cause**: No Ollama service defined in docker-compose setup.
-
-**Solution**: Added Ollama service to `docker-compose.langfuse.yml`.
-
-### 3. **Missing S3 Bucket Configurations** ✅
-**Problem**: Langfuse v3 requires multiple S3 buckets but only events bucket was configured.
+### 2. **Missing S3 Bucket Configurations** ✅
+**Problem**: Langfuse v3 requires multiple S3 buckets but only the events bucket was configured.
 
 **Root Cause**: Incomplete S3/MinIO configuration per [Langfuse documentation](https://langfuse.com/self-hosting/configuration).
 
-**Solution**: Added configurations for:
+**Solution**: Added configurations for all three required buckets:
+- `LANGFUSE_S3_EVENT_UPLOAD_*` (required)
 - `LANGFUSE_S3_MEDIA_UPLOAD_*` (required)
 - `LANGFUSE_S3_BATCH_EXPORT_*` (optional)
-- Updated MinIO to create all buckets on startup
+- MinIO pre-creates all buckets on startup
 
 ---
 
 ## Changes Made
 
 ### 1. `development/development.env`
-- ✅ Updated Langfuse API key configuration with instructions
+- ✅ Updated Langfuse API key configuration with setup instructions
 - ✅ Added missing S3 access key credentials
 - ✅ Added all required S3 bucket configurations
-- ✅ Updated Ollama endpoint configuration
 
 ### 2. `development/docker-compose.langfuse.yml`
-- ✅ Added **Ollama service** for embeddings and semantic cache
-- ✅ Updated MinIO to create 3 buckets: `langfuse-events`, `langfuse-media`, `langfuse-batch`
-- ✅ Added `ollama_data` volume
+- ✅ Updated MinIO to pre-create all 3 buckets: `langfuse-events`, `langfuse-media`, `langfuse-batch`
 
 ### 3. `development/creds.example.env`
 - ✅ Added detailed Langfuse API key setup instructions
 - ✅ Added support for headless initialization (optional)
-
-### 4. `network-agent/docker-compose.yml` (bonus fix)
-- ✅ Added missing media and batch export S3 configurations
-- ✅ Updated MinIO bucket creation
 
 ---
 
@@ -80,32 +68,22 @@ langfuse-web-1 | storing api-key-non-existent in redis
    invoke debug
    ```
 
-4. **Pull Ollama embedding model** (after services are up):
-   ```bash
-   docker exec -it <ollama-container-name> ollama pull mxbai-embed-large
-   ```
-   
-   To find the Ollama container name:
-   ```bash
-   docker ps | grep ollama
-   ```
-
-5. **Generate Langfuse API Keys**:
+4. **Generate Langfuse API Keys**:
    - Access Langfuse UI: http://localhost:8000
    - Create an account or login
    - Go to: **Settings → API Keys**
    - Click **"Create new key"**
    - Copy the keys
 
-6. **Update `creds.env`** with the generated keys:
+5. **Update `creds.env`** with the generated keys:
    ```env
    LANGFUSE_PUBLIC_KEY="pk-lf-xxxxxxxxxxxxxxxx"
    LANGFUSE_SECRET_KEY="sk-lf-xxxxxxxxxxxxxxxx"
    ```
 
-7. **Restart Nautobot** to apply the keys:
+6. **Restart Nautobot** to apply the keys:
    ```bash
-   docker-compose restart nautobot worker beat
+   docker compose restart nautobot worker beat
    ```
 
 ### Option B: Headless Initialization (For Automation/CI)
@@ -132,29 +110,19 @@ Then copy the auto-generated keys from logs to `LANGFUSE_PUBLIC_KEY` and `LANGFU
 ## Verification
 
 ### 1. Check Langfuse Connection
-Look for this log in Nautobot:
+Look for this log line in Nautobot after sending a message:
 ```
-[deep_agent] ✓ Langfuse observability enabled
-```
-
-Instead of:
-```
-[deep_agent] ⚠ Failed to initialize Langfuse: <error>
+[deep_agent] Langfuse callback attached to graph
 ```
 
-### 2. Check Semantic Cache
-Look for this log:
+If Langfuse initialization fails you will see:
 ```
-[deep_agent] Semantic caching enabled (ttl=3600s, threshold=0.05)
-```
-
-Instead of:
-```
-[SEMANTIC_CACHE] ⚠ Initialization failed: Failed to connect to Ollama
+[deep_agent] Failed to initialize Langfuse: <error>
 ```
 
-### 3. Check MinIO Buckets
+### 2. Check MinIO Buckets
 Access MinIO console: http://localhost:9003
+
 - Username: `minio`
 - Password: `miniosecret`
 
@@ -163,45 +131,41 @@ Verify 3 buckets exist:
 - `langfuse-media`
 - `langfuse-batch`
 
+### 3. View Traces in Langfuse UI
+Open http://localhost:8000, go to your project, and click **Traces**. Each conversation turn appears as a top-level trace with child spans for each LLM call and tool invocation.
+
 ---
 
 ## Troubleshooting
 
 ### Issue: Langfuse still shows "Invalid credentials"
-**Solution**: 
-1. Make sure you've generated keys from the UI (Step 5 above)
+**Solution**:
+1. Make sure you've generated keys from the UI (Step 4 in Option A above)
 2. Verify keys are set in `creds.env`
-3. Restart the services that use Langfuse
+3. Restart the services that use Langfuse:
+   ```bash
+   docker compose restart nautobot worker beat
+   ```
 
-### Issue: Semantic cache still failing
+### Issue: No traces appearing in Langfuse UI
 **Solutions**:
-1. Check Ollama is running:
+1. Verify `ENABLE_LANGFUSE=true` is set in `development.env`
+2. Check that `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` are non-empty in `creds.env`
+3. Confirm Langfuse services are healthy:
    ```bash
-   docker ps | grep ollama
-   curl http://localhost:11434/api/tags
-   ```
-
-2. Pull the embedding model:
-   ```bash
-   docker exec -it <ollama-container> ollama pull mxbai-embed-large
-   ```
-
-3. Check Redis is accessible:
-   ```bash
-   docker exec -it redis redis-cli ping
-   # Should return: PONG
+   docker compose ps langfuse-web langfuse-worker
    ```
 
 ### Issue: MinIO buckets not created
 **Solution**:
 ```bash
-# Recreate MinIO service
-docker-compose down minio
+# Recreate MinIO service to re-run bucket creation
+docker compose down minio
 docker volume rm <project>_minio_data
-docker-compose up -d minio
+docker compose up -d minio
 
 # Verify buckets
-docker exec -it minio-<container> ls -la /data/
+docker compose exec minio ls -la /data/
 ```
 
 ---
@@ -215,36 +179,29 @@ docker exec -it minio-<container> ls -la /data/
 │  │ Deep Agent   │────▶│  Langfuse (Port 8000)    │     │
 │  │              │     │  - Web UI & API          │     │
 │  │ - LLM calls  │     │  - Trace collection      │     │
-│  │ - Semantic   │     └──────────┬───────────────┘     │
-│  │   Cache      │                │                      │
+│  │ - Tool calls │     └──────────┬───────────────┘     │
+│  │ - Subagents  │                │                      │
 │  └───────┬──────┘                │                      │
 │          │                       │                      │
 │          ▼                       ▼                      │
 │  ┌──────────────┐     ┌────────────────────┐           │
-│  │   Ollama     │     │    MinIO (S3)      │           │
-│  │ Port: 11434  │     │    Port: 9002/9003 │           │
+│  │   Redis      │     │    MinIO (S3)      │           │
+│  │ Port: 6379   │     │    Port: 9002/9003 │           │
 │  │              │     │                    │           │
-│  │ - Embeddings │     │ - langfuse-events  │           │
-│  │ - mxbai-     │     │ - langfuse-media   │           │
-│  │   embed-     │     │ - langfuse-batch   │           │
-│  │   large      │     └────────────────────┘           │
-│  └──────────────┘                                       │
+│  │ - Checkpoint │     │ - langfuse-events  │           │
+│  │ - Store      │     │ - langfuse-media   │           │
+│  │ - Tool cache │     │ - langfuse-batch   │           │
+│  └──────────────┘     └────────────────────┘           │
 │                                                          │
-│  ┌──────────────┐     ┌────────────────────┐           │
-│  │   Redis      │────▶│   PostgreSQL       │           │
-│  │ Port: 6379   │     │   Port: 5432       │           │
-│  │              │     │                    │           │
-│  │ - Cache      │     │ - Nautobot DB      │           │
-│  │ - Semantic   │     │ - Langfuse DB      │           │
-│  │   Cache      │     └────────────────────┘           │
-│  └──────────────┘                                       │
-│                       ┌────────────────────┐           │
-│                       │   ClickHouse       │           │
-│                       │   Port: 8123/9000  │           │
-│                       │                    │           │
-│                       │ - Analytics DB     │           │
-│                       │ - Traces storage   │           │
-│                       └────────────────────┘           │
+│  ┌──────────────────┐  ┌────────────────────┐           │
+│  │   PostgreSQL     │  │   ClickHouse       │           │
+│  │   Port: 5432     │  │   Port: 8123/9000  │           │
+│  │                  │  │                    │           │
+│  │ - Nautobot DB    │  │ - Analytics DB     │           │
+│  │ - Langfuse DB    │  │ - Traces storage   │           │
+│  │ - LangGraph      │  └────────────────────┘           │
+│  │   checkpoint DB  │                                    │
+│  └──────────────────┘                                    │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -255,7 +212,7 @@ docker exec -it minio-<container> ls -la /data/
 - [Langfuse Self-Hosting Configuration](https://langfuse.com/self-hosting/configuration)
 - [Langfuse ClickHouse Setup](https://langfuse.com/self-hosting/deployment/infrastructure/clickhouse)
 - [Langfuse Headless Initialization](https://langfuse.com/self-hosting/administration/headless-initialization)
-- [Ollama Documentation](https://ollama.com/library/mxbai-embed-large)
+- [Deep Agent Architecture](DEEP_AGENT_ARCHITECTURE.md)
 
 ---
 
@@ -263,7 +220,6 @@ docker exec -it minio-<container> ls -la /data/
 
 All configuration issues have been resolved:
 - ✅ Langfuse authentication properly configured
-- ✅ Ollama service added for semantic cache
 - ✅ All required S3/MinIO buckets configured
 - ✅ Missing access keys added
 - ✅ Documentation updated

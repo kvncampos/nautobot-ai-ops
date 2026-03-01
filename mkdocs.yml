@@ -122,7 +122,7 @@ nav:
       - Uninstall: "admin/uninstall.md"
       - Compatibility Matrix: "admin/compatibility_matrix.md"
       - Health Checks: "admin/health_checks.md"
-      - Langfuse & Semantic Cache Setup: "langfuse_setup.md"
+      - Langfuse Observability Setup: "langfuse_setup.md"
       - Release Notes:
           - "admin/release_notes/index.md"
           - v2.0: "admin/release_notes/version_2.0.md"
