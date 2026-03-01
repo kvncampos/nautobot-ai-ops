@@ -65,7 +65,7 @@ langfuse-web-1 | storing api-key-non-existent in redis
 
 1. **Copy the example creds file** (if you haven't already):
    ```bash
-   cd /Users/kvncampos/CodeProjects/AI_PROJECTS/nautobot-ai-ops/development
+   cd development
    cp creds.example.env creds.env
    ```
 
@@ -77,7 +77,6 @@ langfuse-web-1 | storing api-key-non-existent in redis
 
 3. **Start the services**:
    ```bash
-   cd /Users/kvncampos/CodeProjects/AI_PROJECTS/nautobot-ai-ops
    invoke debug
    ```
 

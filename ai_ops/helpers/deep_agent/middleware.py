@@ -19,6 +19,69 @@ from langchain_core.messages import ToolMessage
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Shared Redis client for ToolResultCacheMiddleware
+# ---------------------------------------------------------------------------
+# All ToolResultCacheMiddleware instances share a single connection pool so
+# that per-request re-instantiation (get_middleware() always creates fresh
+# instances) does not leak connection pools.
+_shared_redis: aioredis.Redis | None = None
+_shared_redis_unavailable = False
+
+
+async def _get_shared_redis() -> aioredis.Redis | None:
+    """Return the shared Redis client for tool caching, creating it on first call.
+
+    A module-level pool is used so that fresh middleware instances created on
+    every request all reuse the same underlying connection pool rather than
+    opening (and leaking) a new pool each time.
+
+    Returns:
+        Configured ``aioredis.Redis`` instance, or ``None`` if unavailable.
+    """
+    global _shared_redis, _shared_redis_unavailable
+
+    if _shared_redis_unavailable:
+        return None
+
+    if _shared_redis is not None:
+        return _shared_redis
+
+    redis_url = os.getenv("TOOL_CACHE_REDIS_URL") or os.getenv("REDIS_URL")
+    if not redis_url:
+        logger.warning("[TOOL_CACHE] No TOOL_CACHE_REDIS_URL or REDIS_URL configured, caching disabled")
+        _shared_redis_unavailable = True
+        return None
+
+    try:
+        client = aioredis.from_url(redis_url, decode_responses=True)
+        await client.ping()
+        _shared_redis = client
+        logger.info("[TOOL_CACHE] Shared Redis connection established")
+        return _shared_redis
+    except Exception as e:
+        logger.warning(f"[TOOL_CACHE] Redis unavailable, caching disabled: {e}")
+        _shared_redis_unavailable = True
+        return None
+
+
+async def close_tool_cache_redis() -> None:
+    """Close the shared tool-cache Redis client.
+
+    Call this during application shutdown (e.g., an AppConfig ``ready()`` /
+    shutdown signal) to cleanly drain the connection pool.
+    """
+    global _shared_redis, _shared_redis_unavailable
+    if _shared_redis is not None:
+        try:
+            await _shared_redis.aclose()
+            logger.info("[TOOL_CACHE] Shared Redis connection closed")
+        except Exception as exc:
+            logger.debug(f"[TOOL_CACHE] Error closing shared Redis: {exc}")
+        finally:
+            _shared_redis = None
+            _shared_redis_unavailable = False
+
 
 class ToolErrorHandlerMiddleware(AgentMiddleware):
     """
@@ -159,33 +222,14 @@ class ToolResultCacheMiddleware(AgentMiddleware):
         """
         super().__init__()
         self.tool_cache_config = tool_cache_config or self.DEFAULT_TOOL_CACHE_CONFIG
-        self._redis: aioredis.Redis | None = None
-        self._redis_unavailable = False
 
     async def _get_redis(self) -> aioredis.Redis | None:
-        """Lazily connect to Redis. Returns None if unavailable."""
-        if self._redis_unavailable:
-            return None
+        """Return the shared module-level Redis client.
 
-        if self._redis is not None:
-            return self._redis
-
-        redis_url = os.getenv("TOOL_CACHE_REDIS_URL") or os.getenv("REDIS_URL")
-        if not redis_url:
-            logger.warning("[TOOL_CACHE] No TOOL_CACHE_REDIS_URL or REDIS_URL configured, caching disabled")
-            self._redis_unavailable = True
-            return None
-
-        try:
-            self._redis = aioredis.from_url(redis_url, decode_responses=True)
-            await self._redis.ping()
-            logger.info("[TOOL_CACHE] Redis connection established")
-            return self._redis
-        except Exception as e:
-            logger.warning(f"[TOOL_CACHE] Redis unavailable, caching disabled: {e}")
-            self._redis_unavailable = True
-            self._redis = None
-            return None
+        Delegates to :func:`_get_shared_redis` so that all middleware instances
+        (re-created on every request) share the same connection pool.
+        """
+        return await _get_shared_redis()
 
     @staticmethod
     def _build_cache_key(tool_name: str, tool_args: dict) -> str:

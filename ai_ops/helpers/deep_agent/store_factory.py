@@ -333,8 +333,8 @@ async def get_store(agent_name: str = "deep_agent") -> StoreType:
 
     Backend priority (controlled by ``STORE_BACKEND`` env var):
 
-    1. Redis          (if ``STORE_REDIS_URL`` / ``REDIS_URL`` set and healthy)
-    2. PostgreSQL     (automatic fallback, or ``STORE_BACKEND=postgres``)
+    1. PostgreSQL     (default in ``auto`` mode, or ``STORE_BACKEND=postgres``)
+    2. Redis          (fallback if PostgreSQL is unavailable, or ``STORE_BACKEND=redis``)
     3. InMemoryStore  (automatic last resort if both above fail, or ``STORE_BACKEND=memory``)
 
     Stores are cached globally per ``agent_name`` and reused across calls.

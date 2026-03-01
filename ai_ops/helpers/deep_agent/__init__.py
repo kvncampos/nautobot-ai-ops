@@ -15,7 +15,7 @@ from .agents_loader import load_agents
 from .backend_factory import create_composite_backend
 from .checkpoint_factory import get_checkpointer
 from .mcp_tools_auth import get_mcp_tools
-from .middleware import ToolErrorHandlerMiddleware, ToolResultCacheMiddleware
+from .middleware import ToolErrorHandlerMiddleware, ToolResultCacheMiddleware, close_tool_cache_redis
 from .store_factory import get_store, managed_store
 
 __all__ = [
@@ -24,6 +24,7 @@ __all__ = [
     "managed_store",
     "ToolErrorHandlerMiddleware",
     "ToolResultCacheMiddleware",
+    "close_tool_cache_redis",
     "get_mcp_tools",
     "load_agents",
     "create_composite_backend",

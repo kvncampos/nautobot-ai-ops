@@ -83,7 +83,8 @@ class LLMModelForm(NautobotModelForm):  # pylint: disable=too-many-ancestors
         required=False,
         initial=dict,
         help_text=(
-            "Model-specific configuration as JSON. See Documentation URL field for provider-specific parameters.<br><br>"
+            "Model-specific configuration as JSON. Refer to the provider's <em>Documentation URL</em> "
+            "(set on the associated LLM Provider) for the full list of supported parameters.<br><br>"
             "<strong>Common parameters:</strong><br>"
             "• max_tokens: Maximum tokens in response<br>"
             "• top_p: Nucleus sampling threshold (0.0-1.0)<br>"
@@ -91,13 +92,13 @@ class LLMModelForm(NautobotModelForm):  # pylint: disable=too-many-ancestors
             "• presence_penalty: Penalize token repetition (-2.0 to 2.0)<br>"
             "• frequency_penalty: Penalize frequent tokens (-2.0 to 2.0)<br><br>"
             "<strong>Provider-specific parameters:</strong><br>"
-            "• azure_endpoint: Azure OpenAI endpoint URL (e.g., 'https://your-resource.openai.azure.com/')<br>"
-            "• api_version: Azure API version (e.g., '2024-02-15-preview')<br>"
-            "• base_url: Custom endpoint for OpenAI/Ollama (e.g., 'http://localhost:11434')<br><br>"
-            "<strong>Example for Azure:</strong><br>"
-            "<code>{'azure_endpoint': 'https://my-resource.openai.azure.com/', 'api_version': '2024-02-15-preview', 'max_tokens': 4096}</code><br>"
-            "<strong>Example for Ollama:</strong><br>"
-            "<code>{'base_url': 'http://localhost:11434', 'num_predict': 2048}</code>"
+            '• azure_endpoint: Azure OpenAI endpoint URL (e.g., "https://your-resource.openai.azure.com/")<br>'
+            '• api_version: Azure API version (e.g., "2024-02-15-preview")<br>'
+            '• base_url: Custom endpoint for OpenAI/Ollama (e.g., "http://localhost:11434")<br><br>'
+            "<strong>Example for Azure (valid JSON):</strong><br>"
+            '<code>{"azure_endpoint": "https://my-resource.openai.azure.com/", "api_version": "2024-02-15-preview", "max_tokens": 4096}</code><br>'
+            "<strong>Example for Ollama (valid JSON):</strong><br>"
+            '<code>{"base_url": "http://localhost:11434", "num_predict": 2048}</code>'
         ),
         widget=forms.Textarea(attrs={"rows": 8, "class": "json-field"}),
     )

@@ -1,11 +1,38 @@
 """App declaration for ai_ops."""
 
 # Metadata is inherited from Nautobot. If not including Nautobot in the environment, this should be added
+import os
 import sys
+import threading
 from importlib import metadata
 from pathlib import Path
 
 from nautobot.apps import ConstanceConfigItem, NautobotAppConfig
+
+# Process-level guard: ensures only one warmup thread is ever started, even when
+# Django calls ready() multiple times (e.g. auto-reloader spawning a child process
+# that imports all apps again, or multiple AppConfig instances in tests).
+_WARMUP_STARTED = threading.Event()
+
+# Management commands that perform DB migrations, testing, or other non-serving
+# work where warming the MCP cache is wasteful or actively harmful.
+_SKIP_WARMUP_COMMANDS = frozenset(
+    [
+        "migrate",
+        "makemigrations",
+        "test",
+        "shell",
+        "shell_plus",
+        "collectstatic",
+        "check",
+        "inspectdb",
+        "showmigrations",
+        "sqlmigrate",
+        "dbshell",
+        "createsuperuser",
+        "changepassword",
+    ]
+)
 
 try:
     __version__ = metadata.version("nautobot-ai-ops")
@@ -105,29 +132,49 @@ class AiOpsConfig(NautobotAppConfig):
         # immediately detected as stale and recreated on the first request
         # anyway — making the warmup work pointless.  Those connections are
         # initialised lazily on the first request instead.
-        try:
-            import asyncio
-            import threading
+        #
+        # Guards applied before starting the thread:
+        #   1. NAUTOBOT_AI_OPS_SKIP_WARMUP=1  — explicit opt-out (useful in CI/test)
+        #   2. sys.argv[1] in _SKIP_WARMUP_COMMANDS — management commands that
+        #      should not trigger network/DB calls (migrate, test, shell, …)
+        #   3. _WARMUP_STARTED event — process-level dedup so multiple ready()
+        #      calls (auto-reloader child, duplicate AppConfig) only fire once.
+        _management_cmd = len(sys.argv) > 1 and sys.argv[1] in _SKIP_WARMUP_COMMANDS
+        _env_skip = os.environ.get("NAUTOBOT_AI_OPS_SKIP_WARMUP", "").lower() in {"1", "true", "yes"}
 
-            from ai_ops.agents.multi_mcp_agent import warm_mcp_cache
+        if _env_skip:
+            logger.debug("Skipping MCP warmup: NAUTOBOT_AI_OPS_SKIP_WARMUP is set")
+        elif _management_cmd:
+            logger.debug("Skipping MCP warmup: running under management command '%s'", sys.argv[1])
+        elif _WARMUP_STARTED.is_set():
+            logger.debug("Skipping MCP warmup: already started in this process")
+        else:
+            # Atomically claim the warmup slot before spawning the thread.
+            _WARMUP_STARTED.set()
+            try:
+                import asyncio
 
-            def _run_startup_warmup() -> None:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                try:
-                    loop.run_until_complete(warm_mcp_cache())
-                finally:
-                    loop.close()
+                from ai_ops.agents.multi_mcp_agent import warm_mcp_cache
 
-            warmup_thread = threading.Thread(
-                target=_run_startup_warmup,
-                name="ai-ops-startup-warmup",
-                daemon=True,  # won't block interpreter shutdown
-            )
-            warmup_thread.start()
-            logger.info("Started startup warmup thread (MCP cache)")
-        except Exception as e:
-            logger.warning(f"Failed to start startup warmup: {e}")
+                def _run_startup_warmup() -> None:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        loop.run_until_complete(warm_mcp_cache())
+                    finally:
+                        loop.close()
+
+                warmup_thread = threading.Thread(
+                    target=_run_startup_warmup,
+                    name="ai-ops-startup-warmup",
+                    daemon=True,  # won't block interpreter shutdown
+                )
+                warmup_thread.start()
+                logger.info("Started startup warmup thread (MCP cache)")
+            except Exception as e:
+                # Release the guard so a later process restart can retry.
+                _WARMUP_STARTED.clear()
+                logger.warning(f"Failed to start startup warmup: {e}")
 
         super().ready()
 
