@@ -65,8 +65,14 @@ class OllamaHandler(BaseLLMProviderHandler):
                 "langchain-ollama is required for Ollama provider. Install it with: pip install langchain-ollama"
             ) from e
 
-        # Get base URL from config or environment
-        base_url = self.config.get("base_url") or os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434")
+        # Get base URL - prioritize kwargs (model_config), then provider config, then environment
+        # Support both 'base_url' and 'endpoint' as aliases
+        base_url = (
+            kwargs.pop("base_url", None)
+            or kwargs.pop("endpoint", None)
+            or self.config.get("base_url")
+            or os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434")
+        )
 
         logger.info(f"Initializing ChatOllama with model={model_name}, base_url={base_url}, temperature={temperature}")
 

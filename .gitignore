@@ -312,3 +312,6 @@ public
 /dump.sql
 /nautobot_initiatives/static/nautobot_initiatives/docs
 /ai_ops/static/ai_ops/docs
+
+# LangGraph large tool results
+ai_ops/large_tool_results/

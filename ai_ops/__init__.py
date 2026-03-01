@@ -1,11 +1,38 @@
 """App declaration for ai_ops."""
 
 # Metadata is inherited from Nautobot. If not including Nautobot in the environment, this should be added
+import os
 import sys
+import threading
 from importlib import metadata
 from pathlib import Path
 
-from nautobot.apps import ConstanceConfigItem, NautobotAppConfig, nautobot_database_ready
+from nautobot.apps import ConstanceConfigItem, NautobotAppConfig
+
+# Process-level guard: ensures only one warmup thread is ever started, even when
+# Django calls ready() multiple times (e.g. auto-reloader spawning a child process
+# that imports all apps again, or multiple AppConfig instances in tests).
+_WARMUP_STARTED = threading.Event()
+
+# Management commands that perform DB migrations, testing, or other non-serving
+# work where warming the MCP cache is wasteful or actively harmful.
+_SKIP_WARMUP_COMMANDS = frozenset(
+    [
+        "migrate",
+        "makemigrations",
+        "test",
+        "shell",
+        "shell_plus",
+        "collectstatic",
+        "check",
+        "inspectdb",
+        "showmigrations",
+        "sqlmigrate",
+        "dbshell",
+        "createsuperuser",
+        "changepassword",
+    ]
+)
 
 try:
     __version__ = metadata.version("nautobot-ai-ops")
@@ -75,15 +102,6 @@ class AiOpsConfig(NautobotAppConfig):
 
         from .helpers.async_shutdown import register_shutdown_handlers
         from .helpers.logging_config import setup_ai_ops_logging
-        from .signals import (
-            assign_mcp_server_statuses,
-            assign_system_prompt_statuses,
-            create_default_llm_providers,
-            create_default_middleware_types,
-            setup_chat_session_cleanup_schedule,
-            setup_checkpoint_cleanup_schedule,
-            setup_mcp_health_check_schedule,
-        )
 
         logger = logging.getLogger(__name__)
 
@@ -94,36 +112,69 @@ class AiOpsConfig(NautobotAppConfig):
         # Handles both development (auto-reloader) and production (SIGTERM/SIGINT) scenarios
         register_shutdown_handlers()
 
-        nautobot_database_ready.connect(assign_mcp_server_statuses, sender=self)
-        nautobot_database_ready.connect(assign_system_prompt_statuses, sender=self)
-        nautobot_database_ready.connect(create_default_llm_providers, sender=self)
-        nautobot_database_ready.connect(create_default_middleware_types, sender=self)
-        nautobot_database_ready.connect(setup_checkpoint_cleanup_schedule, sender=self)
-        nautobot_database_ready.connect(setup_mcp_health_check_schedule, sender=self)
-        nautobot_database_ready.connect(setup_chat_session_cleanup_schedule, sender=self)
+        # NOTE: All default data and scheduled job creation is handled by data migrations
+        # (0006_populate_default_data, 0008_default_scheduled_jobs) so no signals are needed.
 
         # Note: Periodic tasks are handled via Nautobot Jobs (ai_agents.jobs).
         # These jobs can be scheduled through the Nautobot UI for automatic execution.
 
-        # Warm caches on startup (if event loop is available)
-        # During unit tests, there may not be a running event loop
-        try:
-            import asyncio
+        # Warm the MCP client cache on startup using a background thread with
+        # its own event loop.  AppConfig.ready() is called synchronously by
+        # Django — there is never a *running* loop here, so loop.create_task()
+        # always falls into the RuntimeError branch and the warmup silently
+        # never runs.  A daemon thread runs the coroutine to completion without
+        # blocking the main thread or the Django startup sequence.
+        #
+        # NOTE: Redis/Postgres async connections (checkpointer, store) are NOT
+        # warmed up here.  Those connections are bound to the event loop they
+        # were created in.  A background thread's loop is always closed before
+        # any Django request loop starts, so the stored connections would be
+        # immediately detected as stale and recreated on the first request
+        # anyway — making the warmup work pointless.  Those connections are
+        # initialised lazily on the first request instead.
+        #
+        # Guards applied before starting the thread:
+        #   1. NAUTOBOT_AI_OPS_SKIP_WARMUP=1  — explicit opt-out (useful in CI/test)
+        #   2. sys.argv[1] in _SKIP_WARMUP_COMMANDS — management commands that
+        #      should not trigger network/DB calls (migrate, test, shell, …)
+        #   3. _WARMUP_STARTED event — process-level dedup so multiple ready()
+        #      calls (auto-reloader child, duplicate AppConfig) only fire once.
+        _management_cmd = len(sys.argv) > 1 and sys.argv[1] in _SKIP_WARMUP_COMMANDS
+        _env_skip = os.environ.get("NAUTOBOT_AI_OPS_SKIP_WARMUP", "").lower() in {"1", "true", "yes"}
 
-            from ai_ops.agents.multi_mcp_agent import warm_mcp_cache
-
-            # Try to get the running event loop
+        if _env_skip:
+            logger.debug("Skipping MCP warmup: NAUTOBOT_AI_OPS_SKIP_WARMUP is set")
+        elif _management_cmd:
+            logger.debug("Skipping MCP warmup: running under management command '%s'", sys.argv[1])
+        elif _WARMUP_STARTED.is_set():
+            logger.debug("Skipping MCP warmup: already started in this process")
+        else:
+            # Atomically claim the warmup slot before spawning the thread.
+            _WARMUP_STARTED.set()
             try:
-                loop = asyncio.get_running_loop()
-                # If we have a running loop, schedule the tasks
-                loop.create_task(warm_mcp_cache())
-                logger.info("Scheduled MCP cache warming")
-            except RuntimeError:
-                # No running event loop (e.g., during tests or startup)
-                # This is expected and not an error
-                logger.debug("No running event loop available for cache warming")
-        except Exception as e:
-            logger.warning(f"Failed to warm caches on startup: {e}")
+                import asyncio
+
+                from ai_ops.agents.multi_mcp_agent import warm_mcp_cache
+
+                def _run_startup_warmup() -> None:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        loop.run_until_complete(warm_mcp_cache())
+                    finally:
+                        loop.close()
+
+                warmup_thread = threading.Thread(
+                    target=_run_startup_warmup,
+                    name="ai-ops-startup-warmup",
+                    daemon=True,  # won't block interpreter shutdown
+                )
+                warmup_thread.start()
+                logger.info("Started startup warmup thread (MCP cache)")
+            except Exception as e:
+                # Release the guard so a later process restart can retry.
+                _WARMUP_STARTED.clear()
+                logger.warning(f"Failed to start startup warmup: {e}")
 
         super().ready()
 

@@ -62,14 +62,5 @@ The Nautobot AI Ops Agent is built to:
 > “Write a contributor-friendly explanation of how MCP tools interact with Nautobot jobs.”
 
 ### 🧪 Write tests  
-> “Generate pytest unit tests for the `InferenceEngine` class.”
-
+> “Generate unit tests following best practices for Nautobot Testing.
 ---
-
-If you'd like, I can also generate:
-
-✅ A **more advanced agent config** (with custom instructions, rules, suggested tools)  
-✅ A **role‑specialized trio of agents** (Architect, Developer, Reviewer)  
-✅ A **full project-wide AI onboarding file** (“How to contribute with AI assistance”)  
-
-Just let me know!

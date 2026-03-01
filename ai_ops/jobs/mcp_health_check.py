@@ -52,7 +52,7 @@ class MCPServerHealthCheckJob(Job):
             cache_cleared = result.get("cache_cleared", False)
 
             self.logger.info(
-                f"✅ MCP health check completed: "
+                f"MCP health check completed: "
                 f"{checked} server(s) checked using {workers} worker(s), "
                 f"{changed} status change(s), {failed} failure(s)"
             )

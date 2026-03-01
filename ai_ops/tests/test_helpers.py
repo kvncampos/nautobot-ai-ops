@@ -349,8 +349,8 @@ class GetActivePromptTestCase(TestCase):
 
         # Should fallback to code-based prompt since assigned prompt is not Approved
         result = get_active_prompt(self.model)
-        # Fallback will use global file-based prompt (multi_mcp_system_prompt)
-        self.assertIn("intelligent AI assistant", result)
+        # Fallback will use global file-based prompt (system_prompt) which contains "You are a Nautobot assistant"
+        self.assertIn("You are a Nautobot assistant", result)
 
     def test_get_active_prompt_fallback_to_file_based(self):
         """Test get_active_prompt fallback to file-based global prompt."""
@@ -379,7 +379,7 @@ class GetActivePromptTestCase(TestCase):
 
         result = get_active_prompt(self.model)
         # Should use the file-based prompt
-        self.assertIn("intelligent AI assistant", result)
+        self.assertIn("Nautobot assistant ", result)
 
     def test_get_active_prompt_ultimate_fallback(self):
         """Test get_active_prompt ultimate fallback to code when no prompts exist."""
@@ -391,7 +391,7 @@ class GetActivePromptTestCase(TestCase):
 
         result = get_active_prompt(self.model)
         # Should fallback to global file-based prompt (multi_mcp_system_prompt)
-        self.assertIn("intelligent AI assistant", result)
+        self.assertIn("Nautobot assistant ", result)
 
     def test_get_active_prompt_variable_substitution(self):
         """Test that prompt variables are correctly substituted."""
@@ -434,7 +434,7 @@ class GetActivePromptTestCase(TestCase):
         # Should not raise, should return fallback prompt
         result = get_active_prompt(None)
         # Fallback will use global file-based prompt (multi_mcp_system_prompt)
-        self.assertIn("intelligent AI assistant", result)
+        self.assertIn("Nautobot assistant ", result)
 
     def test_get_active_prompt_unknown_variable_preserved(self):
         """Test that unknown variables in prompt don't cause errors."""
@@ -486,7 +486,7 @@ class GetActivePromptTestCase(TestCase):
         # Should fallback since status is not Approved
         result = get_active_prompt(self.model)
         # Fallback will use global file-based prompt (multi_mcp_system_prompt)
-        self.assertIn("intelligent AI assistant", result)
+        self.assertIn("Nautobot assistant ", result)
         self.assertNotIn("This is deprecated content", result)
 
     def test_get_active_prompt_refreshes_model_for_prompt(self):

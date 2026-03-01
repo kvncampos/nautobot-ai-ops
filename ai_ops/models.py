@@ -291,14 +291,6 @@ class LLMModel(PrimaryModel):  # pylint: disable=too-many-ancestors
         blank=True,
         help_text="Name of the Secret object in Nautobot that contains the API key",
     )
-    endpoint = models.URLField(
-        max_length=500,
-        blank=True,
-        help_text="LLM Endpoint URL (e.g., https://your-resource.openai.azure.com/, https://openai.com/api/v1/)",
-    )
-    api_version = models.CharField(
-        max_length=50, blank=True, default="", help_text="Azure OpenAI API version (e.g., 2024-02-15-preview)"
-    )
     is_default = models.BooleanField(
         default=False, help_text="Whether this is the default model to use when no model is specified"
     )
@@ -307,6 +299,12 @@ class LLMModel(PrimaryModel):  # pylint: disable=too-many-ancestors
         default=300,
         help_text="Cache time-to-live in seconds for MCP client connections (minimum 60 seconds)",
         validators=[MinValueValidator(60)],
+    )
+    model_config = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Additional model-specific configuration parameters (e.g., max_tokens, top_p, top_k, etc.). "
+        "These parameters are passed directly to the LangChain chat model constructor.",
     )
     system_prompt = models.ForeignKey(
         "SystemPrompt",
@@ -369,8 +367,8 @@ class LLMModel(PrimaryModel):  # pylint: disable=too-many-ancestors
                 "description": model.description,
                 "is_default": model.is_default,
                 "llm_provider": model.llm_provider.name,
-                "endpoint": model.endpoint,
-                "api_version": model.api_version,
+                "model_config": model.model_config,
+                "documentation_url": model.llm_provider.documentation_url,
             }
             for model in models
         ]
