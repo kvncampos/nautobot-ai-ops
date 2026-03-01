@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nautobot-ai-ops"
-version = "1.0.6"
+version = "2.0.0"
 description = "AI Ops - Advanced artificial intelligence capabilities for Nautobot through multi-provider LLM architecture and Model Context Protocol"
 authors = ["Kevin Campos <kvncampos@duck.com>"]
 readme = "README.md"
@@ -202,7 +202,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.towncrier]
 package = "ai_ops"
 directory = "changes"
-filename = "docs/admin/release_notes/version_1.0.md"
+filename = "docs/admin/release_notes/version_2.0.md"
 template = "development/towncrier_template.j2"
 start_string = "<!-- towncrier release notes start -->"
 issue_format = "[#{issue}](https://github.com/kvncampos/nautobot-ai-ops/issues/{issue})"
