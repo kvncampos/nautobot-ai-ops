@@ -17,10 +17,13 @@ theme:
     - "content.action.edit"
     - "content.action.view"
     - "content.code.copy"
+    - "content.tabs.link"
+    - "content.tooltips"
     - "navigation.footer"
     - "navigation.indexes"
     - "navigation.tabs"
     - "navigation.tabs.sticky"
+    - "navigation.top"
     - "navigation.tracking"
     - "search.highlight"
     - "search.share"
@@ -83,6 +86,11 @@ markdown_extensions:
         - name: "mermaid"
           class: "mermaid"
           format: !!python/name:pymdownx.superfences.fence_code_format
+  - "pymdownx.tabbed":
+      alternate_style: true
+  - "pymdownx.emoji":
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - "footnotes"
 plugins:
   - "search"
@@ -129,7 +137,7 @@ nav:
           - v1.0: "admin/release_notes/version_1.0.md"
   - Developer Guide:
       - Architecture Overview: "dev/architecture.md"
-      - Deep Agent Architecture: "DEEP_AGENT_ARCHITECTURE.md"
+      - Deep Agent Architecture: "dev/deep_agent_architecture.md"
       - Extending the App: "dev/extending.md"
       - Contributing to the App: "dev/contributing.md"
       - Development Environment: "dev/dev_environment.md"

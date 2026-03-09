@@ -1,0 +1,1 @@
+Updated `docs/user/mcp_server_configuration.md` to use FastMCP for all server implementation examples and added external resource links to the official MCP and FastMCP documentation. Updated `mkdocs.yml` with Material theme improvements: content tabs, tooltips, navigation top button, `pymdownx.tabbed`, and emoji support.

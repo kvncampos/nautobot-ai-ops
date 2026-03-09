@@ -2,6 +2,17 @@
 
 This guide provides comprehensive instructions for configuring Model Context Protocol (MCP) servers with the AI Ops App. MCP servers extend the AI agent's capabilities by providing custom tools, context, and integrations.
 
+> **External Resources**
+>
+> This guide covers configuration specific to the AI Ops App. For deeper learning on MCP itself, refer to the official sources:
+>
+> - **[MCP Official Docs](https://modelcontextprotocol.io/introduction)** — The authoritative reference for the Model Context Protocol specification, architecture, and SDKs.
+> - **[MCP Server Quickstart](https://modelcontextprotocol.io/quickstart/server)** — Step-by-step guide for building your first MCP server with the Python SDK.
+> - **[FastMCP Documentation](https://gofastmcp.com/getting-started/welcome)** — The recommended high-level Python framework for building MCP servers quickly and Pythonically.
+> - **[FastMCP Quickstart](https://gofastmcp.com/getting-started/quickstart)** — Minimal examples to get a FastMCP server running in minutes.
+>
+> The code examples in this guide use **FastMCP**, which is the fastest and most ergonomic way to build production MCP servers. When in doubt, start there.
+
 ## Overview
 
 MCP (Model Context Protocol) is an open protocol that enables AI agents to interact with external tools and services. The AI Ops App can connect to multiple MCP servers simultaneously, allowing the agent to access a wide range of capabilities.
@@ -305,82 +316,88 @@ MCP Type: Internal
 
 ### Creating a Simple MCP Server
 
-Example using Python and the MCP SDK:
+The recommended approach is to use **[FastMCP](https://gofastmcp.com/getting-started/welcome)** — a high-level Python framework that handles schema generation, validation, and transport automatically. It dramatically reduces boilerplate compared to the low-level MCP SDK.
+
+Install FastMCP first:
+
+```bash
+pip install fastmcp
+```
+
+Full server example:
 
 ```python
 # mcp_server.py
-from mcp.server import Server
-from mcp.types import Tool, TextContent
+import os
 import httpx
+from fastmcp import FastMCP
 
-app = Server("nautobot-tools")
+mcp = FastMCP("nautobot-tools")
 
-@app.tool()
-async def get_device_info(device_name: str) -> str:
+NAUTOBOT_URL = os.environ.get("NAUTOBOT_URL", "http://nautobot:8080")
+NAUTOBOT_TOKEN = os.environ["NAUTOBOT_TOKEN"]
+HEADERS = {"Authorization": f"Token {NAUTOBOT_TOKEN}"}
+
+
+@mcp.tool
+async def get_device_info(device_name: str) -> dict:
     """Get device information from Nautobot.
-    
+
     Args:
         device_name: Name of the device to query
-        
-    Returns:
-        Device information as JSON string
     """
     async with httpx.AsyncClient() as client:
         response = await client.get(
-            f"http://nautobot/api/dcim/devices/?name={device_name}",
-            headers={"Authorization": "Token YOUR_TOKEN"}
+            f"{NAUTOBOT_URL}/api/dcim/devices/",
+            params={"name": device_name},
+            headers=HEADERS,
         )
+        response.raise_for_status()
         return response.json()
 
-@app.tool()
-async def list_devices(site: str = None, role: str = None) -> str:
+
+@mcp.tool
+async def list_devices(site: str = None, role: str = None) -> dict:
     """List devices with optional filters.
-    
+
     Args:
         site: Filter by site name (optional)
         role: Filter by device role (optional)
-        
-    Returns:
-        List of devices as JSON string
     """
     params = {}
     if site:
         params["site"] = site
     if role:
         params["role"] = role
-    
+
     async with httpx.AsyncClient() as client:
         response = await client.get(
-            "http://nautobot/api/dcim/devices/",
+            f"{NAUTOBOT_URL}/api/dcim/devices/",
             params=params,
-            headers={"Authorization": "Token YOUR_TOKEN"}
+            headers=HEADERS,
         )
+        response.raise_for_status()
         return response.json()
 
-@app.tool()
+
+@mcp.tool
 async def update_device_status(device_name: str, status: str) -> str:
     """Update device operational status.
-    
+
     Args:
         device_name: Name of the device
         status: New status (Active, Offline, Maintenance)
-        
-    Returns:
-        Success message
     """
     # Implementation
     pass
 
-# Health check endpoint
-@app.health()
-async def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy", "tools": len(app.tools)}
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Run with HTTP transport (streamable-http) for remote access
+    mcp.run(transport="streamable-http", host="0.0.0.0", port=8000)
 ```
+
+> **Note:** FastMCP automatically exposes a `/mcp` endpoint and handles tool discovery. See the [FastMCP server docs](https://gofastmcp.com/getting-started/quickstart) for transport options (stdio, HTTP, SSE) and advanced configuration.
 
 ### Docker Deployment
 
@@ -437,18 +454,27 @@ The AI Ops App performs automatic health checks on configured MCP servers:
 
 ### Health Check Endpoint
 
-MCP servers must implement a health check endpoint:
+MCP servers should implement a health check endpoint. When using FastMCP with HTTP transport, you can mount it alongside a FastAPI app to add a `/health` route:
 
 ```python
-@app.get("/health")
+from datetime import datetime
+from fastapi import FastAPI
+from fastmcp import FastMCP
+
+mcp = FastMCP("nautobot-tools")
+api = FastAPI()
+
+@api.get("/health")
 async def health():
     """Health check endpoint."""
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
         "version": "1.0.0",
-        "tools_available": 5
     }
+
+# Mount MCP under /mcp
+api.mount("/mcp", mcp.http_app())
 ```
 
 **Response Format:**
@@ -456,10 +482,11 @@ async def health():
 {
   "status": "healthy",
   "timestamp": "2024-01-09T12:34:56.789Z",
-  "version": "1.0.0",
-  "tools_available": 5
+  "version": "1.0.0"
 }
 ```
+
+> For more deployment patterns (standalone vs. mounted), see the [FastMCP server documentation](https://gofastmcp.com/getting-started/welcome).
 
 ### Status Management
 
@@ -485,22 +512,32 @@ async def health():
 
 ### Authentication
 
-Implement authentication for MCP servers:
+Implement authentication for MCP servers. With FastMCP + FastAPI, you can add a dependency that validates tokens before any tool is invoked:
 
 ```python
-from fastapi import Header, HTTPException
+import os
+from fastapi import FastAPI, Header, HTTPException, Depends
+from fastmcp import FastMCP
 
-@app.tool()
-async def secure_tool(
-    param: str,
-    authorization: str = Header(None)
-) -> str:
-    """Secured tool requiring authentication."""
-    if not validate_token(authorization):
+mcp = FastMCP("nautobot-tools")
+api = FastAPI()
+
+VALID_TOKEN = os.environ["MCP_AUTH_TOKEN"]
+
+
+async def verify_token(authorization: str = Header(None)):
+    if authorization != f"Bearer {VALID_TOKEN}":
         raise HTTPException(status_code=401, detail="Unauthorized")
-    # Tool logic
-    pass
+
+
+# Apply auth to all /mcp routes
+api.mount("/mcp", mcp.http_app())
+api.add_middleware(...)  # or use a dependency on the router
 ```
+
+For simpler setups, validate credentials directly inside each tool using environment variables or a shared secrets store.
+
+> MCP's official authentication guidance: [MCP Authorization spec](https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization)
 
 ### Network Security
 
@@ -711,11 +748,17 @@ Use external load balancer or DNS round-robin.
 
 ## Advanced Configuration
 
+FastMCP supports Pydantic models as tool parameters out of the box — no extra wiring required. See the [FastMCP tools documentation](https://gofastmcp.com/getting-started/welcome) for the full feature set.
+
 ### Custom Tool Parameters
 
 ```python
 from typing import Optional, List
 from pydantic import BaseModel, Field
+from fastmcp import FastMCP
+
+mcp = FastMCP("nautobot-tools")
+
 
 class DeviceFilter(BaseModel):
     site: Optional[str] = Field(None, description="Site name")
@@ -723,39 +766,29 @@ class DeviceFilter(BaseModel):
     status: Optional[str] = Field("Active", description="Device status")
     tags: Optional[List[str]] = Field(None, description="Device tags")
 
-@app.tool()
-async def search_devices(filters: DeviceFilter) -> str:
+
+@mcp.tool
+async def search_devices(filters: DeviceFilter) -> dict:
     """Advanced device search with multiple filters."""
-    # Complex query logic
+    # FastMCP validates `filters` automatically via Pydantic
     pass
-```
-
-### Streaming Responses
-
-```python
-@app.tool()
-async def stream_logs(device_name: str):
-    """Stream device logs in real-time."""
-    async for log_line in get_device_logs(device_name):
-        yield log_line
 ```
 
 ### Tool Composition
 
 ```python
-@app.tool()
-async def troubleshoot_device(device_name: str) -> str:
+@mcp.tool
+async def troubleshoot_device(device_name: str) -> dict:
     """Comprehensive device troubleshooting."""
-    # Compose multiple tools
     info = await get_device_info(device_name)
     alerts = await get_device_alerts(device_name)
     metrics = await get_device_metrics(device_name)
-    
+
     return {
         "device_info": info,
         "alerts": alerts,
         "metrics": metrics,
-        "recommendation": generate_recommendation(info, alerts, metrics)
+        "recommendation": generate_recommendation(info, alerts, metrics),
     }
 ```
 
@@ -839,6 +872,21 @@ async def logged_tool(param: str) -> str:
         logger.error(f"Tool failed: {str(e)}", exc_info=True)
         raise
 ```
+
+## External Resources
+
+The following official resources are the best place to go for help beyond this guide:
+
+| Resource | Description |
+| -------- | ----------- |
+| [MCP Introduction](https://modelcontextprotocol.io/introduction) | Protocol overview, concepts, and architecture |
+| [Build an MCP Server (Quickstart)](https://modelcontextprotocol.io/quickstart/server) | Official step-by-step tutorial using the Python MCP SDK |
+| [MCP Specification](https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization) | Full protocol spec including auth, transports, and message formats |
+| [FastMCP Welcome](https://gofastmcp.com/getting-started/welcome) | FastMCP framework overview and concepts |
+| [FastMCP Quickstart](https://gofastmcp.com/getting-started/quickstart) | Minimal working examples — start here for new servers |
+| [FastMCP Full Docs Index](https://gofastmcp.com/llms.txt) | Machine-readable sitemap of all FastMCP documentation pages |
+
+> **Recommendation:** For new MCP server projects, start with the [FastMCP Quickstart](https://gofastmcp.com/getting-started/quickstart). It covers installation, tool registration, transport selection, and deployment in a single page. Fall back to the [official MCP Python SDK](https://modelcontextprotocol.io/quickstart/server) only when you need low-level protocol control.
 
 ## Next Steps
 

@@ -1,0 +1,1 @@
+Added `docs/dev/deep_agent_architecture.md` — a comprehensive developer reference for the Deep Agent runtime, including accurate Mermaid flowcharts, component reference tables, environment variable docs, error handling behavior, and troubleshooting tabs sourced directly from `deep_mcp_agent.py`.
