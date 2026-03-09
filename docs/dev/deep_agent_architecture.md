@@ -2,7 +2,7 @@
 
 The Deep Agent is the production AI agent in AI Ops. It is built on the [deepagents](https://github.com/langchain-ai/deepagents) framework and processes every user query through a structured pipeline that assembles, runs, and tears down a LangGraph graph on each request.
 
-This page documents the **actual runtime behavior** as implemented in [`ai_ops/agents/deep_mcp_agent.py`](../../ai_ops/agents/deep_mcp_agent.py).
+This page documents the **actual runtime behavior** as implemented in `ai_ops/agents/deep_mcp_agent.py`.
 
 ---
 
@@ -86,7 +86,7 @@ SystemMessage(content=[{
 
 Cache performance is logged per-request:
 
-```
+```text
 [CacheMetrics] correlation_id=abc123 cache_creation=1204 cache_read=4820 input_tokens=312
 ```
 
@@ -94,25 +94,21 @@ Cache performance is logged per-request:
 
 ## Middleware
 
-Middleware is loaded fresh from the database on every request. If no middleware is configured in Nautobot, the agent falls back to `ToolErrorHandlerMiddleware` with the retry count from `TOOL_MAX_RETRIES`.
+Middleware is loaded fresh from the database on every request. Navigate to **AI Platform → Middleware → LLM Middleware** to attach middleware to a model. All configured middleware is instantiated in priority order before each request.
 
-=== "DB-configured middleware"
+If no middleware is configured in the database, the agent falls back to `ToolErrorHandlerMiddleware`:
 
-    Navigate to **AI Platform → Middleware → LLM Middleware** to attach middleware to a model. All configured middleware is instantiated in priority order before each request.
-
-=== "Default fallback"
-
-    ```python
-    # Triggered when no middleware exists in DB
-    max_retries = int(os.getenv("TOOL_MAX_RETRIES", "2"))
-    middleware.append(ToolErrorHandlerMiddleware(max_retries=max_retries))
-    ```
+```python
+# Triggered when no middleware exists in DB
+max_retries = int(os.getenv("TOOL_MAX_RETRIES", "2"))
+middleware.append(ToolErrorHandlerMiddleware(max_retries=max_retries))
+```
 
 ---
 
 ## Subagent Configuration
 
-Subagents are defined in [`ai_ops/agents/subagents.yaml`](../../ai_ops/agents/subagents.yaml). Each receives the full MCP tool set by default.
+Subagents are defined in `ai_ops/agents/subagents.yaml`. Each receives the full MCP tool set by default.
 
 ```yaml
 nautobot-query:
@@ -130,7 +126,7 @@ The parent agent delegates to subagents automatically when the query matches the
 
 Skills are markdown files in `ai_ops/skills/<skill-name>/SKILL.md`. They are exposed to the agent at the virtual path `/skills` and provide domain-specific instructions and examples.
 
-```
+```text
 ai_ops/skills/
 └── nautobot-search/
     └── SKILL.md   ← instructions, examples, tool guidance
@@ -245,7 +241,7 @@ Connection pools are managed by `checkpoint_factory.py` and `store_factory.py`. 
 
 ## Directory Structure
 
-```
+```text
 ai_ops/
 ├── agents/
 │   ├── deep_mcp_agent.py       ← This agent
@@ -288,50 +284,50 @@ ai_ops/
 
 ## Troubleshooting
 
-=== "Subagents not loading"
+### Subagents not loading
 
-    ```bash
-    # Verify the file exists
-    ls -la ai_ops/agents/subagents.yaml
+```bash
+# Verify the file exists
+ls -la ai_ops/agents/subagents.yaml
 
-    # Check logs for
-    # [deep_agent] Subagents loaded: N
-    ```
+# Check logs for:
+# [deep_agent] Subagents loaded: N
+```
 
-=== "MCP tool authentication failures"
+### MCP tool authentication failures
 
-    ```bash
-    # Verify MCPServer status in Nautobot
-    # AI Platform → MCP → MCP Servers → all must be "Healthy"
+```bash
+# Verify MCPServer status in Nautobot
+# AI Platform → MCP → MCP Servers → all must be "Healthy"
 
-    # Check logs for
-    # [get_mcp_tools] Retrieving MCP tools (authenticated=True)
-    # [deep_agent] Retrieved N MCP tools
-    ```
+# Check logs for:
+# [get_mcp_tools] Retrieving MCP tools (authenticated=True)
+# [deep_agent] Retrieved N MCP tools
+```
 
-=== "Event loop / connection pool errors"
+### Event loop / connection pool errors
 
-    ```bash
-    # The agent self-heals — check logs for
-    # [event_loop_error] Cleared cached checkpointers/stores
+```bash
+# The agent self-heals — check logs for:
+# [event_loop_error] Cleared cached checkpointers/stores
 
-    # If errors persist, restart the Nautobot worker
-    systemctl restart nautobot-worker
-    ```
+# If errors persist, restart the Nautobot worker
+systemctl restart nautobot-worker
+```
 
-=== "Langfuse not receiving traces"
+### Langfuse not receiving traces
 
-    ```bash
-    # Verify services are running
-    docker compose ps langfuse-web langfuse-worker
+```bash
+# Verify services are running
+docker compose ps langfuse-web langfuse-worker
 
-    # Check env vars are set
-    echo $LANGFUSE_PUBLIC_KEY
-    echo $ENABLE_LANGFUSE   # must be "true"
+# Check env vars are set
+echo $LANGFUSE_PUBLIC_KEY
+echo $ENABLE_LANGFUSE   # must be "true"
 
-    # Check logs for
-    # [deep_agent] Langfuse callback attached to graph
-    ```
+# Check logs for:
+# [deep_agent] Langfuse callback attached to graph
+```
 
 ---
 
